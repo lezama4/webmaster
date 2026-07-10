@@ -39,23 +39,23 @@ Chain strategy: pending
 
 ## Phase 2: Domain Layer — strict TDD (RED -> GREEN -> REFACTOR)
 
-- [ ] 2.1 [RED] `tests/unit/domain/profile.test.ts`: Profile state machine `pending->active|rejected`.
-- [ ] 2.2 [GREEN] `src/domain/profile/Profile.ts` entity + transitions.
-- [ ] 2.3 [RED] `tests/unit/domain/slot.test.ts`: Slot state machine `open->filled|closed`.
-- [ ] 2.4 [GREEN] `src/domain/slot/Slot.ts`.
-- [ ] 2.5 [RED] `tests/unit/domain/proposal.test.ts`: Proposal state machine `submitted->accepted|rejected`.
-- [ ] 2.6 [GREEN] `src/domain/proposal/Proposal.ts`.
-- [ ] 2.7 [RED] `tests/unit/domain/event.test.ts`: Event lifecycle `created->published->completed`.
-- [ ] 2.8 [GREEN] `src/domain/event/Event.ts`.
-- [ ] 2.9 [RED] `tests/unit/domain/acceptProposal.test.ts`: accept P1 -> auto-reject P2*, fill Slot, publish Event; deny on non-open Slot (spec scenarios in `slot-proposal-coordination`).
-- [ ] 2.10 [GREEN] Pure `src/domain/slot/acceptProposal.ts` (ADR D4 invariant).
-- [ ] 2.11 [REFACTOR] `src/domain/errors.ts` shared domain errors; add `src/domain/account/Account.ts`.
-- [ ] 2.12 [RED] `tests/unit/domain/profile.test.ts` (extend): Profile transitions `active -> deactivated` (Admin, M3) and `rejected -> pending` (re-registration, same profile, M2).
-- [ ] 2.13 [GREEN] Extend `src/domain/profile/Profile.ts` with `deactivate()` and `reactivate()` transitions.
-- [ ] 2.14 [RED] `tests/unit/domain/slot.test.ts` (extend): Slot invariants — `scheduledAt` strictly future at creation (via injected `Clock`), `durationMinutes` > 0, `title`/`description`/`location` length bounds (N2).
-- [ ] 2.15 [GREEN] Extend `src/domain/slot/Slot.ts` construction/validation with the invariants above; raise a domain validation error on violation.
-- [ ] 2.16 [RED] `tests/unit/domain/closeSlot.test.ts`: closing an `open` Slot with `submitted` Proposals transitions the Slot to `closed` and cascades every `submitted` Proposal to `rejected`; deny closing a non-open Slot (B2).
-- [ ] 2.17 [GREEN] Pure `src/domain/slot/closeSlot.ts` — mirrors `acceptProposal`'s shape (ADR D4 / Domain Model).
+- [x] 2.1 [RED] `tests/unit/domain/profile.test.ts`: Profile state machine `pending->active|rejected`.
+- [x] 2.2 [GREEN] `src/domain/profile/Profile.ts` entity + transitions.
+- [x] 2.3 [RED] `tests/unit/domain/slot.test.ts`: Slot state machine `open->filled|closed`.
+- [x] 2.4 [GREEN] `src/domain/slot/Slot.ts`.
+- [x] 2.5 [RED] `tests/unit/domain/proposal.test.ts`: Proposal state machine `submitted->accepted|rejected`.
+- [x] 2.6 [GREEN] `src/domain/proposal/Proposal.ts`.
+- [x] 2.7 [RED] `tests/unit/domain/event.test.ts`: Event lifecycle `created->published->completed`.
+- [x] 2.8 [GREEN] `src/domain/event/Event.ts`.
+- [x] 2.9 [RED] `tests/unit/domain/acceptProposal.test.ts`: accept P1 -> auto-reject P2*, fill Slot, publish Event; deny on non-open Slot (spec scenarios in `slot-proposal-coordination`).
+- [x] 2.10 [GREEN] Pure `src/domain/slot/acceptProposal.ts` (ADR D4 invariant).
+- [x] 2.11 [REFACTOR] `src/domain/errors.ts` shared domain errors; add `src/domain/account/Account.ts`. (Errors were shared from cycle 1; Account added test-first with `canHoldProfile`/`profileTypeForRole`.)
+- [x] 2.12 [RED] `tests/unit/domain/profile.test.ts` (extend): Profile transitions `active -> deactivated` (Admin, M3) and `rejected -> pending` (re-registration, same profile, M2).
+- [x] 2.13 [GREEN] Extend `src/domain/profile/Profile.ts` with `deactivate()` and `reactivate()` transitions.
+- [x] 2.14 [RED] `tests/unit/domain/slot.test.ts` (extend): Slot invariants — `scheduledAt` strictly future at creation (via injected `Clock`), `durationMinutes` > 0, `title`/`description`/`location` length bounds (N2).
+- [x] 2.15 [GREEN] Extend `src/domain/slot/Slot.ts` construction/validation with the invariants above; raise a domain validation error on violation.
+- [x] 2.16 [RED] `tests/unit/domain/closeSlot.test.ts`: closing an `open` Slot with `submitted` Proposals transitions the Slot to `closed` and cascades every `submitted` Proposal to `rejected`; deny closing a non-open Slot (B2). (Also covers `assertSlotOwnedBy` pure ownership guard.)
+- [x] 2.17 [GREEN] Pure `src/domain/slot/closeSlot.ts` — mirrors `acceptProposal`'s shape (ADR D4 / Domain Model). (Shared cascade-linkage guard extracted to `src/domain/slot/linkage.ts`, reused by `acceptProposal`.)
 
 ## Phase 3: Application Layer — strict TDD
 

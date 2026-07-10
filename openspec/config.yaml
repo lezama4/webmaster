@@ -2,23 +2,23 @@ schema: spec-driven
 
 context: |
   Project: Vivetutiempo (web master) — MSc thesis (TFM) project.
-  Stack (DECIDED, not yet scaffolded): Next.js (App Router + Route
-  Handlers) + TypeScript + Tailwind + PostgreSQL (Prisma) + Vitest/Playwright.
+  Stack (DECIDED): Next.js (App Router + Route Handlers) + TypeScript +
+  Tailwind + PostgreSQL (Prisma) + Vitest/Playwright. Scaffolded in Phase 1.
   Architecture: Clean/Hexagonal Architecture inside a single repo —
   domain/ application/ infrastructure/ ui/. Docker only for local Postgres.
   No Kubernetes, no AWS. Deploy target: Vercel + managed Postgres.
   Persistence mode: hybrid (Engram + openspec/).
 
-strict_tdd: false
+strict_tdd: true
 
 testing:
-  test_runner: none
-  reason: "App not scaffolded yet — no package.json or test config exists."
+  test_runner: "Vitest (unit/integration) + Playwright (E2E)"
+  reason: "Scaffolded and verified in Phase 1 (npm run test and test:e2e pass)."
   planned_framework: "Vitest (unit/integration, domain + application layers) + Playwright (E2E)"
   convention: >
-    Selective TDD once scaffolded: strict TDD in domain/ and application/
-    layers (pure business rules), pragmatic tests at infrastructure/ui edges.
-    Re-run sdd-init after scaffolding to activate strict_tdd.
+    Selective strict TDD: test-first (RED/GREEN/REFACTOR) in domain/ and
+    application/ layers (pure business rules); pragmatic integration/E2E tests
+    at infrastructure/ui edges.
 
 rules:
   proposal:
@@ -45,11 +45,11 @@ rules:
       enable strict_tdd).
   apply:
     - Follow existing code patterns.
-    tdd: false
-    test_command: ""
+    tdd: true
+    test_command: "npm run test"
   verify:
-    test_command: ""
-    build_command: ""
+    test_command: "npm run test"
+    build_command: "npm run build"
     coverage_threshold: 0
   archive:
     - Warn before merging destructive deltas.
