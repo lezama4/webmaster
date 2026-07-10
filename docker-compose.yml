@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vivetutiempo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vivetutiempo
+      POSTGRES_PASSWORD: vivetutiempo
+      POSTGRES_DB: vivetutiempo
+    ports:
+      - "5432:5432"
+    volumes:
+      - vivetutiempo-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  vivetutiempo-postgres-data:

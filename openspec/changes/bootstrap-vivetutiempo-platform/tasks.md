@@ -27,13 +27,13 @@ Chain strategy: pending
 
 ## Phase 1: Project Scaffolding (Foundation) — non-TDD
 
-- [ ] 1.1 Init Next.js App Router + TS + Tailwind: `package.json`, `tsconfig.json`, `tailwind.config.ts`, `next.config.ts`.
-- [ ] 1.2 Create layer folders: `src/domain/`, `src/application/`, `src/infrastructure/`, `src/ui/`, `src/app/` (ADR D5: `src/app` thin).
-- [ ] 1.3 Add `prisma/schema.prisma`: Account/Profile/Slot/Proposal/Event models + enums (no migration yet).
-- [ ] 1.4 Add `docker-compose.yml` for local Postgres.
-- [ ] 1.5 Configure Vitest: `vitest.config.ts`, `tests/unit/`, `tests/integration/`.
-- [ ] 1.6 Configure Playwright: `playwright.config.ts`, `e2e/`.
-- [ ] 1.7 Add `.env.example` (`DATABASE_URL`, `SESSION_SECRET`) + `README.md` skeleton.
+- [x] 1.1 Init Next.js App Router + TS + Tailwind: `package.json`, `tsconfig.json`, `tailwind.config.ts`, `next.config.ts`. (Tailwind v4 uses `postcss.config.mjs`, no `tailwind.config.ts` file — current Next.js scaffold default.)
+- [x] 1.2 Create layer folders: `src/domain/`, `src/application/`, `src/infrastructure/`, `src/ui/`, `src/app/` (ADR D5: `src/app` thin). Path aliases (`@domain/*`, `@application/*`, `@infrastructure/*`, `@ui/*`) added in `tsconfig.json`; ESLint boundary rule added in `eslint.config.mjs`.
+- [x] 1.3 Add `prisma/schema.prisma`: Account/Profile/Slot/Proposal/Event models + enums (no migration yet). Prisma pinned to 6.19.3 (see apply-progress deviation note — Prisma 7 changed schema config).
+- [x] 1.4 Add `docker-compose.yml` for local Postgres.
+- [x] 1.5 Configure Vitest: `vitest.config.ts`, `tests/unit/`, `tests/integration/`.
+- [x] 1.6 Configure Playwright: `playwright.config.ts`, `e2e/`.
+- [x] 1.7 Add `.env.example` (`DATABASE_URL`, `SESSION_SECRET`) + `README.md` skeleton.
 
 ## Phase 2: Domain Layer — strict TDD (RED -> GREEN -> REFACTOR)
 

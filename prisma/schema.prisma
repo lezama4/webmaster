@@ -1,0 +1,138 @@
+// Prisma schema — Vivetutiempo (Block 1: Core)
+//
+// Domain model per openspec/changes/bootstrap-vivetutiempo-platform/design.md.
+// This is the high-level schema only (Phase 1 scaffolding). The base
+// migration and the partial-unique-index raw-SQL migration required by
+// ADR D4 are Phase 4 tasks (4.1, 4.2) — not created yet.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountRole {
+  ADMIN
+  HOSPITAL
+  ARTIST
+  PATIENT
+}
+
+enum ProfileType {
+  HOSPITAL
+  ARTIST
+}
+
+enum ProfileStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+enum SlotStatus {
+  OPEN
+  FILLED
+  CLOSED
+}
+
+enum ProposalStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+enum EventStatus {
+  CREATED
+  PUBLISHED
+  COMPLETED
+}
+
+model Account {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  role         AccountRole
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  profile Profile?
+
+  @@map("accounts")
+}
+
+model Profile {
+  id        String        @id @default(cuid())
+  accountId String        @unique
+  account   Account       @relation(fields: [accountId], references: [id])
+  type      ProfileType
+  name      String
+  status    ProfileStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // HOSPITAL side
+  slots Slot[] @relation("HospitalSlots")
+
+  // ARTIST side
+  proposals Proposal[] @relation("ArtistProposals")
+
+  @@map("profiles")
+}
+
+model Slot {
+  id                String   @id @default(cuid())
+  hospitalProfileId String
+  hospitalProfile   Profile  @relation("HospitalSlots", fields: [hospitalProfileId], references: [id])
+  title             String
+  description       String
+  scheduledAt       DateTime
+  durationMinutes   Int
+  location          String
+  status            SlotStatus @default(OPEN)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  proposals Proposal[]
+  event     Event?
+
+  @@map("slots")
+}
+
+model Proposal {
+  id              String         @id @default(cuid())
+  slotId          String
+  slot            Slot           @relation(fields: [slotId], references: [id])
+  artistProfileId String
+  artistProfile   Profile        @relation("ArtistProposals", fields: [artistProfileId], references: [id])
+  message         String
+  status          ProposalStatus @default(SUBMITTED)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  event Event?
+
+  // NOTE (Phase 4, ADR D4 / task 4.2): Prisma cannot express partial unique
+  // indexes. The following invariants MUST be added via raw-SQL migration:
+  //   - UNIQUE(slot_id) WHERE status = 'accepted'
+  //   - UNIQUE(slot_id, artist_profile_id) WHERE status = 'submitted'
+  // Do NOT rely on @@unique([slotId]) here — it would block the
+  // resubmit-after-reject flow required by the spec.
+  @@map("proposals")
+}
+
+model Event {
+  id         String      @id @default(cuid())
+  slotId     String      @unique
+  slot       Slot        @relation(fields: [slotId], references: [id])
+  proposalId String      @unique
+  proposal   Proposal    @relation(fields: [proposalId], references: [id])
+  title      String
+  status     EventStatus @default(CREATED)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@map("events")
+}
