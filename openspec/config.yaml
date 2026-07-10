@@ -1,0 +1,55 @@
+schema: spec-driven
+
+context: |
+  Project: Vivetutiempo (web master) — MSc thesis (TFM) project.
+  Stack (DECIDED, not yet scaffolded): Next.js (App Router + Route
+  Handlers) + TypeScript + Tailwind + PostgreSQL (Prisma) + Vitest/Playwright.
+  Architecture: Clean/Hexagonal Architecture inside a single repo —
+  domain/ application/ infrastructure/ ui/. Docker only for local Postgres.
+  No Kubernetes, no AWS. Deploy target: Vercel + managed Postgres.
+  Persistence mode: hybrid (Engram + openspec/).
+
+strict_tdd: false
+
+testing:
+  test_runner: none
+  reason: "App not scaffolded yet — no package.json or test config exists."
+  planned_framework: "Vitest (unit/integration, domain + application layers) + Playwright (E2E)"
+  convention: >
+    Selective TDD once scaffolded: strict TDD in domain/ and application/
+    layers (pure business rules), pragmatic tests at infrastructure/ui edges.
+    Re-run sdd-init after scaffolding to activate strict_tdd.
+
+rules:
+  proposal:
+    - Include a rollback plan for risky changes.
+    - Treat real payments, real fiscal-deduction claims, and real hospital
+      system integrations as out of MVP scope unless explicitly justified.
+    - Treat donation/patronage flows as conceptual or simulated in the MVP.
+  specs:
+    - Use Given/When/Then for scenarios.
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY).
+    - Make role-based access rules explicit for each actor: hospital, artist/
+      dynamizer/volunteer, patient/family, patron/donor, admin.
+  design:
+    - Include sequence diagrams for complex multi-role flows (proposal
+      approval, event publication, feedback).
+    - Document architecture decisions with rationale.
+    - Respect hexagonal boundaries: domain/ MUST have no framework
+      dependencies; application/ orchestrates use cases; infrastructure/
+      adapts frameworks and persistence; ui/ is Next.js App Router only.
+  tasks:
+    - Group by phase, use hierarchical numbering.
+    - Keep tasks completable in one session.
+    - Flag scaffolding tasks that unlock test-runner setup (needed to later
+      enable strict_tdd).
+  apply:
+    - Follow existing code patterns.
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas.
