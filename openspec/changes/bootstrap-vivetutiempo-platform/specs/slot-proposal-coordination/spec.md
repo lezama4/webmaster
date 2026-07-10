@@ -16,6 +16,38 @@ An `active` Hospital MUST be able to publish a Slot. A newly published Slot MUST
 - WHEN the Hospital publishes a Slot
 - THEN the Slot is created in `open` state, owned by that Hospital
 
+### Requirement: Slot Fields Satisfy Domain Invariants
+
+A Slot MUST NOT be created with a `scheduledAt` in the past, a non-positive `durationMinutes`, or `title`/`description`/`location` text outside defined length bounds.
+
+#### Scenario: Publishing a Slot with a past scheduledAt is rejected
+
+- GIVEN an `active` Hospital profile
+- WHEN the Hospital attempts to publish a Slot whose `scheduledAt` is in the past (relative to the current time)
+- THEN the action MUST be denied with a domain validation error
+
+#### Scenario: Publishing a Slot with non-positive duration is rejected
+
+- GIVEN an `active` Hospital profile
+- WHEN the Hospital attempts to publish a Slot with `durationMinutes` of zero or less
+- THEN the action MUST be denied with a domain validation error
+
+### Requirement: Only Active Artists List Open Slots
+
+Only `active` Artists MUST be able to list open Slots. The listing MUST exclude Slots that are `filled`, `closed`, or whose `scheduledAt` has already passed.
+
+#### Scenario: Active Artist lists open Slots
+
+- GIVEN one `open` Slot with a future `scheduledAt`, one `filled` Slot, and one `open` Slot whose `scheduledAt` is now in the past
+- WHEN an `active` Artist lists open Slots
+- THEN only the first Slot MUST appear in the listing
+
+#### Scenario: Non-Artist or inactive Artist cannot list open Slots
+
+- GIVEN an Artist profile in `pending` state, or an actor of a different role
+- WHEN that actor attempts to list open Slots
+- THEN the action MUST be denied
+
 ### Requirement: Active Artist Submits a Proposal Against an Open Slot
 
 An `active` Artist MUST be able to submit a Proposal against an `open` Slot. A Slot MAY receive multiple competing Proposals.
@@ -32,9 +64,19 @@ An `active` Artist MUST be able to submit a Proposal against an `open` Slot. A S
 - WHEN a different `active` Artist submits a Proposal for the same Slot
 - THEN both Proposals coexist in `submitted` state
 
+### Requirement: Submission Cannot Race Past a Concurrent Approval or Close
+
+A Proposal submission that races against a concurrent approval or close on the same Slot MUST NOT result in an actionable Proposal against a Slot that is no longer `open`. Submission and the Slot-resolving transitions (approve, close) MUST be coordinated so that whichever completes second observes the other's outcome.
+
+#### Scenario: Submission loses a race against an in-flight approval
+
+- GIVEN an `open` Slot with a `submitted` Proposal P1
+- WHEN a Hospital's approval of P1 and a different Artist's submission of a new Proposal P2 are attempted concurrently, and the approval commits first (Slot becomes `filled`)
+- THEN P2's submission MUST be denied (it MUST NOT be inserted as an actionable `submitted` Proposal against the now-`filled` Slot)
+
 ### Requirement: Only the Owning Hospital Approves or Rejects Proposals
 
-Only the Hospital that owns a Slot MUST be able to approve or reject Proposals submitted against that Slot. Admin MUST NOT approve or reject Proposals.
+Only the Hospital that owns a Slot MUST be able to approve or reject Proposals submitted against that Slot. Admin MUST NOT approve or reject Proposals. Artist and Patient actors MUST NOT approve or reject Proposals. An approval or rejection request MUST target a Proposal that actually belongs to the Slot named in the request; a mismatch MUST be denied.
 
 #### Scenario: Owning Hospital approves a Proposal
 
@@ -47,6 +89,30 @@ Only the Hospital that owns a Slot MUST be able to approve or reject Proposals s
 - GIVEN a Slot owned by Hospital A
 - WHEN Hospital B attempts to approve or reject a Proposal on that Slot
 - THEN the action MUST be denied
+
+#### Scenario: Admin attempts to approve or reject a Proposal
+
+- GIVEN a Slot owned by Hospital A with a `submitted` Proposal
+- WHEN the Admin attempts to approve or reject that Proposal
+- THEN the action MUST be denied — Admin governs profiles only, never Proposals
+
+#### Scenario: Artist or Patient attempts a Hospital-only mutation
+
+- GIVEN a Slot owned by Hospital A with a `submitted` Proposal
+- WHEN an Artist or Patient actor attempts to approve, reject, or close that Slot
+- THEN the action MUST be denied
+
+#### Scenario: Proposal id does not belong to the Slot id in the request
+
+- GIVEN Proposal P1 submitted against Slot S1, and an unrelated Slot S2 also owned by Hospital A
+- WHEN Hospital A attempts to approve or reject P1 while addressing it through Slot S2 (e.g. a request naming S2's id with P1's id)
+- THEN the action MUST be denied, regardless of Hospital A owning both Slots
+
+#### Scenario: Acting on a Proposal already in a terminal state
+
+- GIVEN a Proposal already in `accepted` or `rejected` state
+- WHEN the owning Hospital attempts to approve or reject that same Proposal again
+- THEN the action MUST be denied — a terminal Proposal state MUST NOT be re-transitioned
 
 ### Requirement: Accepting a Proposal Auto-Rejects Competitors and Publishes an Event
 
@@ -71,18 +137,43 @@ The system MUST deny an approval or rejection attempt targeting a Slot that is a
 - WHEN the owning Hospital attempts to approve a Proposal on it
 - THEN the action MUST be denied
 
-### Requirement: Withdrawing a Slot Resolves Outstanding Proposals
+#### Scenario: Profile becomes rejected or deactivated between session creation and the mutation
 
-Closing or withdrawing a Slot that still has `submitted` Proposals MUST move the Slot out of `open` state and those Proposals MUST NOT remain actionable.
+- GIVEN a Hospital with a live session created while its profile was `active`
+- WHEN the Admin transitions that Hospital's profile to `rejected` or `deactivated`, and the Hospital then attempts to approve, reject, publish, or close a Slot using the pre-existing session
+- THEN the action MUST be denied by the application layer's live-status check, not merely by hiding the corresponding UI control
 
-#### Scenario: Hospital withdraws a Slot with outstanding Proposals
+### Requirement: The Owning Hospital Closes/Withdraws a Slot, Cascading Rejection to Outstanding Proposals
 
-- GIVEN an `open` Slot with `submitted` Proposals
-- WHEN the owning Hospital closes or withdraws the Slot
+The Hospital that owns an `open` Slot MUST be able to close (withdraw) it. Closing a Slot MUST transition it to `closed` and MUST explicitly and auditably transition every `submitted` Proposal against it to `rejected` in the same operation — no Proposal is left in `submitted` state against a non-open Slot. Only the owning Hospital may close its Slot; closing a Slot that is not `open` (already `filled` or `closed`) MUST be denied.
+
+#### Scenario: Hospital closes a Slot with outstanding Proposals
+
+- GIVEN an `open` Slot with `submitted` Proposals P1 and P2
+- WHEN the owning Hospital closes the Slot
 - THEN the Slot transitions to `closed`
-- AND the outstanding Proposals MUST NOT remain actionable
+- AND P1 and P2 both transition explicitly to `rejected`
 
-#### Scenario: No Proposals yet on a Slot
+#### Scenario: Hospital closes a Slot with no Proposals
+
+- GIVEN an `open` Slot with no Proposals
+- WHEN the owning Hospital closes the Slot
+- THEN the Slot transitions to `closed`
+- AND the system MUST show an empty state, not an error, for that Slot's (empty) Proposal list
+
+#### Scenario: Non-owning Hospital attempts to close a Slot
+
+- GIVEN an `open` Slot owned by Hospital A
+- WHEN Hospital B attempts to close that Slot
+- THEN the action MUST be denied
+
+#### Scenario: Closing an already-filled or already-closed Slot is denied
+
+- GIVEN a Slot in `filled` or `closed` state
+- WHEN the owning Hospital attempts to close it
+- THEN the action MUST be denied
+
+#### Scenario: No Proposals yet on an open Slot
 
 - GIVEN an `open` Slot with no Proposals
 - WHEN the owning Hospital views the Slot
