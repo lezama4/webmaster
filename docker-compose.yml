@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - vivetutiempo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vivetutiempo -d vivetutiempo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   vivetutiempo-postgres-data:

@@ -2,6 +2,34 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+// M5: relative-import patterns that reach from src/domain/ or
+// src/application/ into an outer layer, no matter how many `../`/`./`
+// segments precede the layer name. Matches on the import SPECIFIER text
+// (not resolved module paths), so it also catches boundary violations that
+// target a layer folder that does not exist yet (this scaffold has not
+// built application/infrastructure/ui yet).
+function relativeLayerPattern(...layers) {
+  return `^\\.{1,2}\\/(?:.*\\/)?(${layers.join("|")})(\\/|$)`;
+}
+
+const NODE_BUILTIN_PATTERN = "^node:";
+
+// Representative persistence/HTTP packages the domain/application layers
+// must never depend on directly (ADR D5) — not exhaustive, but proves a
+// class of violation is caught, per review M5.
+const RESTRICTED_PACKAGE_NAMES = [
+  "@prisma/client",
+  "pg",
+  "mysql2",
+  "mongodb",
+  "mongoose",
+  "redis",
+  "ioredis",
+  "axios",
+  "undici",
+  "express",
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -15,7 +43,11 @@ const eslintConfig = defineConfig([
   ]),
   // Hexagonal boundary rules (design ADR D5): domain/ is framework-free and
   // must not depend on Next.js, Prisma, or outer layers. application/ may
-  // depend on domain/ but not on infrastructure/ui/app.
+  // depend on domain/ but not on infrastructure/ui/app. M5: the boundary is
+  // enforced against BOTH aliased (`@/application/*`) and relative
+  // (`../application/*`) imports, Node builtins, representative
+  // persistence/HTTP packages, and the restricted globals the domain
+  // README bans (`process`, `fetch`).
   {
     files: ["src/domain/**/*.{ts,tsx}"],
     rules: {
@@ -24,15 +56,41 @@ const eslintConfig = defineConfig([
         {
           paths: [
             { name: "next", message: "domain/ must be framework-free (ADR D5)." },
-            { name: "@prisma/client", message: "domain/ must not depend on persistence." },
+            ...RESTRICTED_PACKAGE_NAMES.map((name) => ({
+              name,
+              message: "domain/ must not depend on persistence/HTTP packages (ADR D5).",
+            })),
           ],
           patterns: [
             {
-              group: ["next/*", "@/application/*", "@/infrastructure/*", "@/ui/*", "@/app/*", "@application/*", "@infrastructure/*", "@ui/*"],
+              group: [
+                "next/*",
+                "@/application/*",
+                "@/infrastructure/*",
+                "@/ui/*",
+                "@/app/*",
+                "@application/*",
+                "@infrastructure/*",
+                "@ui/*",
+              ],
               message: "domain/ may only depend on plain TypeScript (ADR D5).",
+            },
+            {
+              regex: relativeLayerPattern("application", "infrastructure", "ui", "app"),
+              message:
+                "domain/ must not reach into an outer layer via a relative import (ADR D5, M5).",
+            },
+            {
+              regex: NODE_BUILTIN_PATTERN,
+              message: "domain/ must not import Node.js builtins (ADR D5, M5).",
             },
           ],
         },
+      ],
+      "no-restricted-globals": [
+        "error",
+        { name: "process", message: "domain/ must not read process/env directly (ADR D5, M5)." },
+        { name: "fetch", message: "domain/ must not perform IO directly (ADR D5, M5)." },
       ],
     },
   },
@@ -44,12 +102,31 @@ const eslintConfig = defineConfig([
         {
           paths: [
             { name: "next", message: "application/ must stay framework-free." },
-            { name: "@prisma/client", message: "application/ depends on ports, not concrete adapters." },
+            ...RESTRICTED_PACKAGE_NAMES.map((name) => ({
+              name,
+              message: "application/ depends on ports, not concrete adapters.",
+            })),
           ],
           patterns: [
             {
-              group: ["next/*", "@/infrastructure/*", "@/ui/*", "@/app/*", "@infrastructure/*", "@ui/*"],
+              group: [
+                "next/*",
+                "@/infrastructure/*",
+                "@/ui/*",
+                "@/app/*",
+                "@infrastructure/*",
+                "@ui/*",
+              ],
               message: "application/ may depend on domain/ and its own ports only.",
+            },
+            {
+              regex: relativeLayerPattern("infrastructure", "ui", "app"),
+              message:
+                "application/ must not reach into an outer layer via a relative import (ADR D5, M5).",
+            },
+            {
+              regex: NODE_BUILTIN_PATTERN,
+              message: "application/ must not import Node.js builtins directly (ADR D5, M5).",
             },
           ],
         },

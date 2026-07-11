@@ -6,8 +6,8 @@ import {
   rejectProposal,
 } from "../proposal/Proposal";
 import type { Clock } from "../shared/Clock";
-import { assertProposalsBelongToSlot } from "./linkage";
-import { fillSlot, type Slot } from "./Slot";
+import { assertValidSlotAggregate } from "./aggregate";
+import { assertSlotOwnedBy, fillSlot, type Slot } from "./Slot";
 
 export interface AcceptProposalInput {
   /** The Slot being resolved. Must be 'open'. */
@@ -19,6 +19,11 @@ export interface AcceptProposalInput {
   /** Pre-generated id for the Event to create (IdGenerator is a port). */
   readonly eventId: string;
   readonly clock: Clock;
+  /**
+   * The acting Hospital's profile id (M2 — decision: ownership is a domain
+   * rule). Denied with `NotSlotOwnerError` when it does not own the Slot.
+   */
+  readonly actingHospitalProfileId: string;
 }
 
 /**
@@ -48,11 +53,15 @@ function findTargetProposal(input: AcceptProposalInput): Proposal {
  * 'open' Slot accepts it, auto-rejects every other 'submitted' Proposal on
  * that Slot, fills the Slot, and creates + publishes an Event — as one
  * deterministic decision. No IO, no persistence.
+ *
+ * Ownership (M2) and aggregate consistency (M4) are enforced BEFORE any
+ * transition is attempted.
  */
 export function acceptProposal(
   input: AcceptProposalInput,
 ): AcceptProposalOutcome {
-  assertProposalsBelongToSlot(input.slot, input.proposals);
+  assertSlotOwnedBy(input.slot, input.actingHospitalProfileId);
+  assertValidSlotAggregate(input.slot, input.proposals);
   const target = findTargetProposal(input);
 
   const acceptedProposal = acceptProposalTransition(target);

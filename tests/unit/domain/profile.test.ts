@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { InvalidTransitionError } from "@domain/errors";
+import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import {
   approveProfile,
+  type CreateProfileInput,
+  createProfile,
   deactivateProfile,
   type Profile,
   reactivateProfile,
+  rehydrateProfile,
   rejectProfile,
 } from "@domain/profile/Profile";
 import type { Clock } from "@domain/shared/Clock";
@@ -14,18 +17,162 @@ const NOW = new Date("2026-07-10T12:00:00Z");
 
 const fixedClock: Clock = { now: () => NOW };
 
-function pendingProfile(overrides: Partial<Profile> = {}): Profile {
-  return {
+function pendingProfile(overrides: Partial<CreateProfileInput> = {}): Profile {
+  return createProfile({
     id: "profile-1",
     accountId: "account-1",
     type: "hospital",
     name: "Hospital San Juan",
-    status: "pending",
     ...overrides,
-  };
+  });
 }
 
 describe("Profile state machine", () => {
+  describe("createProfile (M1: forces the initial state)", () => {
+    it("always creates a profile in 'pending' state", () => {
+      const profile = createProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+      });
+
+      expect(profile.status).toBe("pending");
+    });
+
+    it("denies creating a profile with an empty id", () => {
+      expect(() =>
+        createProfile({
+          id: "",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies creating a profile with an empty name", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "   ",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("MUST NOT be possible to construct a Profile in a privileged or terminal state via a literal (compile-time enforced, M1)", () => {
+      // @ts-expect-error - Profile's brand field is not exported, so a
+      // structural literal (even with every visible field, including a
+      // privileged 'active' status) can never satisfy the Profile type.
+      // The only ways in are createProfile (forces 'pending') and
+      // rehydrateProfile (validates persisted data).
+      const fabricated: Profile = {
+        id: "profile-x",
+        accountId: "account-x",
+        type: "hospital",
+        name: "Fabricated Hospital",
+        status: "active",
+      };
+
+      expect(fabricated).toBeDefined();
+    });
+  });
+
+  describe("rehydrateProfile (M1: validated reconstruction from persisted data)", () => {
+    it("rehydrates a profile in 'active' state (a status createProfile can never produce)", () => {
+      const profile = rehydrateProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        status: "active",
+      });
+
+      expect(profile.status).toBe("active");
+    });
+
+    it("rehydrates a profile in 'deactivated' state", () => {
+      const profile = rehydrateProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        status: "deactivated",
+      });
+
+      expect(profile.status).toBe("deactivated");
+    });
+
+    it("rehydrates a profile with a reviewRequestedAt timestamp, cloning it", () => {
+      const original = new Date("2026-01-01T00:00:00Z");
+
+      const profile = rehydrateProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        status: "pending",
+        reviewRequestedAt: original,
+      });
+
+      expect(profile.reviewRequestedAt).toEqual(original);
+      expect(profile.reviewRequestedAt).not.toBe(original);
+    });
+
+    it("denies rehydrating an invalid status", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          // @ts-expect-error - deliberately invalid persisted status.
+          status: "banned",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies rehydrating an invalid type", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          // @ts-expect-error - deliberately invalid persisted type.
+          type: "patient",
+          name: "Hospital San Juan",
+          status: "pending",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies rehydrating an empty accountId", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "",
+          type: "hospital",
+          name: "Hospital San Juan",
+          status: "pending",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies rehydrating a non-finite reviewRequestedAt", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          status: "pending",
+          reviewRequestedAt: new Date(NaN),
+        }),
+      ).toThrow(DomainValidationError);
+    });
+  });
+
   describe("approveProfile (pending -> active)", () => {
     it("transitions a pending profile to active", () => {
       const approved = approveProfile(pendingProfile());

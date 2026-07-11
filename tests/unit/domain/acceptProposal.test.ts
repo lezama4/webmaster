@@ -1,38 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
-import { type Proposal, rejectProposal } from "@domain/proposal/Proposal";
+import { DomainValidationError, InvalidTransitionError, NotSlotOwnerError } from "@domain/errors";
+import {
+  acceptProposal as acceptProposalTransition,
+  type CreateProposalInput,
+  createProposal,
+  type Proposal,
+  rejectProposal,
+} from "@domain/proposal/Proposal";
 import { acceptProposal } from "@domain/slot/acceptProposal";
-import { closeSlot, fillSlot, type Slot } from "@domain/slot/Slot";
+import { closeSlot, createSlot, type CreateSlotInput, fillSlot, type Slot } from "@domain/slot/Slot";
 import type { Clock } from "@domain/shared/Clock";
 
 const NOW = new Date("2026-07-10T12:00:00Z");
 
 const fixedClock: Clock = { now: () => NOW };
 
-function openSlot(overrides: Partial<Slot> = {}): Slot {
-  return {
-    id: "slot-1",
-    hospitalProfileId: "hospital-profile-1",
-    title: "Acoustic guitar afternoon",
-    description: "A relaxed acoustic session for the pediatric ward.",
-    scheduledAt: new Date("2026-08-01T17:00:00Z"),
-    durationMinutes: 60,
-    location: "Ward 3, Room 12",
-    status: "open",
-    ...overrides,
-  };
+const OWNER = "hospital-profile-1";
+const NON_OWNER = "hospital-profile-2";
+
+function openSlot(overrides: Partial<CreateSlotInput> = {}): Slot {
+  return createSlot(
+    {
+      id: "slot-1",
+      hospitalProfileId: OWNER,
+      title: "Acoustic guitar afternoon",
+      description: "A relaxed acoustic session for the pediatric ward.",
+      scheduledAt: new Date("2026-08-01T17:00:00Z"),
+      durationMinutes: 60,
+      location: "Ward 3, Room 12",
+      ...overrides,
+    },
+    fixedClock,
+  );
 }
 
-function proposal(id: string, overrides: Partial<Proposal> = {}): Proposal {
-  return {
+function proposal(id: string, overrides: Partial<CreateProposalInput> = {}): Proposal {
+  return createProposal({
     id,
     slotId: "slot-1",
     artistProfileId: `artist-of-${id}`,
     message: `Message from ${id}`,
-    status: "submitted",
     ...overrides,
-  };
+  });
 }
 
 describe("acceptProposal (pure domain invariant, ADR D4)", () => {
@@ -48,6 +58,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
       proposalId: "proposal-1",
       eventId: "event-1",
       clock: fixedClock,
+      actingHospitalProfileId: OWNER,
     });
 
     expect(outcome.acceptedProposal.id).toBe("proposal-1");
@@ -70,6 +81,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
       proposalId: "proposal-1",
       eventId: "event-1",
       clock: fixedClock,
+      actingHospitalProfileId: OWNER,
     });
 
     expect(outcome.event.id).toBe("event-1");
@@ -85,6 +97,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
       proposalId: "proposal-1",
       eventId: "event-1",
       clock: fixedClock,
+      actingHospitalProfileId: OWNER,
     });
 
     expect(outcome.occurredAt).toEqual(NOW);
@@ -99,6 +112,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
       proposalId: "proposal-1",
       eventId: "event-1",
       clock: fixedClock,
+      actingHospitalProfileId: OWNER,
     });
 
     expect(outcome.rejectedProposals).toEqual([]);
@@ -115,6 +129,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
       proposalId: "proposal-1",
       eventId: "event-1",
       clock: fixedClock,
+      actingHospitalProfileId: OWNER,
     });
 
     expect(slot.status).toBe("open");
@@ -132,6 +147,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(InvalidTransitionError);
   });
@@ -146,6 +162,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(InvalidTransitionError);
   });
@@ -158,6 +175,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-99",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(DomainValidationError);
   });
@@ -172,6 +190,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(DomainValidationError);
   });
@@ -186,6 +205,7 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(DomainValidationError);
   });
@@ -200,7 +220,69 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
+        actingHospitalProfileId: OWNER,
       }),
     ).toThrow(InvalidTransitionError);
+  });
+
+  describe("ownership enforcement (M2 — decision: ownership is a domain rule)", () => {
+    it("allows the owning Hospital to accept a proposal", () => {
+      const outcome = acceptProposal({
+        slot: openSlot(),
+        proposals: [proposal("proposal-1")],
+        proposalId: "proposal-1",
+        eventId: "event-1",
+        clock: fixedClock,
+        actingHospitalProfileId: OWNER,
+      });
+
+      expect(outcome.acceptedProposal.status).toBe("accepted");
+    });
+
+    it("denies a non-owning Hospital from accepting a proposal", () => {
+      expect(() =>
+        acceptProposal({
+          slot: openSlot(),
+          proposals: [proposal("proposal-1")],
+          proposalId: "proposal-1",
+          eventId: "event-1",
+          clock: fixedClock,
+          actingHospitalProfileId: NON_OWNER,
+        }),
+      ).toThrow(NotSlotOwnerError);
+    });
+  });
+
+  describe("aggregate snapshot validation (M4/Q3 — decision: fail fast)", () => {
+    it("denies accepting when an already-accepted rival is present on an 'open' slot", () => {
+      const acceptedRival = acceptProposalTransition(proposal("proposal-2"));
+
+      expect(() =>
+        acceptProposal({
+          slot: openSlot(),
+          proposals: [proposal("proposal-1"), acceptedRival],
+          proposalId: "proposal-1",
+          eventId: "event-1",
+          clock: fixedClock,
+          actingHospitalProfileId: OWNER,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies accepting when the target proposal set contains a duplicate id", () => {
+      const p1 = proposal("proposal-1");
+      const p1Duplicate = proposal("proposal-1");
+
+      expect(() =>
+        acceptProposal({
+          slot: openSlot(),
+          proposals: [p1, p1Duplicate],
+          proposalId: "proposal-1",
+          eventId: "event-1",
+          clock: fixedClock,
+          actingHospitalProfileId: OWNER,
+        }),
+      ).toThrow(DomainValidationError);
+    });
   });
 });

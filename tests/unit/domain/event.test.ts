@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { InvalidTransitionError } from "@domain/errors";
+import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import {
   completeEvent,
   createEvent,
   type Event,
   publishEvent,
+  rehydrateEvent,
 } from "@domain/event/Event";
 
 function newEvent(): Event {
@@ -32,6 +33,73 @@ describe("Event lifecycle", () => {
       expect(event.slotId).toBe("slot-1");
       expect(event.proposalId).toBe("proposal-1");
       expect(event.title).toBe("Acoustic guitar afternoon");
+    });
+
+    it("denies creating an event with an empty title", () => {
+      expect(() =>
+        createEvent({
+          id: "event-1",
+          slotId: "slot-1",
+          proposalId: "proposal-1",
+          title: "  ",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("MUST NOT be possible to construct an Event in a later-lifecycle state via a literal (compile-time enforced, M1)", () => {
+      // @ts-expect-error - Event's brand field is not exported, so a
+      // structural literal (even with every visible field, including a
+      // 'completed' status) can never satisfy the Event type. The only
+      // ways in are createEvent (forces 'created') and rehydrateEvent
+      // (validates persisted data).
+      const fabricated: Event = {
+        id: "event-x",
+        slotId: "slot-x",
+        proposalId: "proposal-x",
+        title: "fabricated",
+        status: "completed",
+      };
+
+      expect(fabricated).toBeDefined();
+    });
+  });
+
+  describe("rehydrateEvent (M1: validated reconstruction from persisted data)", () => {
+    it("rehydrates an event in 'published' state (a status createEvent can never produce)", () => {
+      const event = rehydrateEvent({
+        id: "event-1",
+        slotId: "slot-1",
+        proposalId: "proposal-1",
+        title: "Acoustic guitar afternoon",
+        status: "published",
+      });
+
+      expect(event.status).toBe("published");
+    });
+
+    it("rehydrates an event in 'completed' state", () => {
+      const event = rehydrateEvent({
+        id: "event-1",
+        slotId: "slot-1",
+        proposalId: "proposal-1",
+        title: "Acoustic guitar afternoon",
+        status: "completed",
+      });
+
+      expect(event.status).toBe("completed");
+    });
+
+    it("denies rehydrating an invalid status", () => {
+      expect(() =>
+        rehydrateEvent({
+          id: "event-1",
+          slotId: "slot-1",
+          proposalId: "proposal-1",
+          title: "Acoustic guitar afternoon",
+          // @ts-expect-error - deliberately invalid persisted status.
+          status: "cancelled",
+        }),
+      ).toThrow(DomainValidationError);
     });
   });
 

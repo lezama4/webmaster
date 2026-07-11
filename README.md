@@ -62,6 +62,17 @@ cp .env.example .env
 docker compose up -d
 ```
 
+Postgres has a healthcheck (`pg_isready`), so `docker compose` reports the
+container as reproducibly ready — no more racing a not-yet-accepting-
+connections database on a fresh start. To wait for it explicitly (e.g. in a
+setup script) before running migrations/seeds:
+
+```bash
+docker compose up -d --wait
+# or, to poll manually:
+docker compose exec postgres pg_isready -U vivetutiempo -d vivetutiempo
+```
+
 ### Generate the Prisma client / run migrations
 
 ```bash

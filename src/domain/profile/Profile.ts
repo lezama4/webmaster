@@ -1,9 +1,27 @@
-import { InvalidTransitionError } from "../errors";
+import { DomainValidationError, InvalidTransitionError } from "../errors";
 import type { Clock } from "../shared/Clock";
 
 export type ProfileType = "hospital" | "artist";
 
 export type ProfileStatus = "pending" | "active" | "rejected" | "deactivated";
+
+const PROFILE_TYPES: readonly ProfileType[] = ["hospital", "artist"];
+const PROFILE_STATUSES: readonly ProfileStatus[] = [
+  "pending",
+  "active",
+  "rejected",
+  "deactivated",
+];
+
+/**
+ * Nominal brand (M1): a unique symbol, never exported, so outer code cannot
+ * satisfy the `Profile` type with a structural literal — the ONLY ways to
+ * obtain a `Profile` are `createProfile` (forces `pending`) and
+ * `rehydrateProfile` (validates persisted data). The brand is type-only
+ * (erased at compile time), so `Profile` values stay plain, JSON-serializable
+ * objects at runtime.
+ */
+declare const PROFILE_BRAND: unique symbol;
 
 /**
  * Hospital/Artist profile awaiting or holding Admin validation.
@@ -11,7 +29,7 @@ export type ProfileStatus = "pending" | "active" | "rejected" | "deactivated";
  *                active -> deactivated (Admin, M3);
  *                rejected -> pending (re-registration, same profile, M2).
  */
-export interface Profile {
+export type Profile = {
   readonly id: string;
   readonly accountId: string;
   readonly type: ProfileType;
@@ -19,6 +37,104 @@ export interface Profile {
   readonly status: ProfileStatus;
   /** Set when a re-registration re-enters review (auditable, M2). */
   readonly reviewRequestedAt?: Date;
+} & { readonly [PROFILE_BRAND]: "Profile" };
+
+// TODO(B1, deferred to PR2/Phase 4): `prisma/schema.prisma` does not yet have
+// a `DEACTIVATED` enum value nor a durable `reviewRequestedAt`/review-history
+// representation, so a Prisma-backed repository cannot persist either fact
+// this type already models. Tracked as the review's BLOCKER finding B1 —
+// fix the schema/migration before building the persistence adapter, not here.
+
+export interface CreateProfileInput {
+  readonly id: string;
+  readonly accountId: string;
+  readonly type: ProfileType;
+  readonly name: string;
+}
+
+export interface RehydrateProfileInput {
+  readonly id: string;
+  readonly accountId: string;
+  readonly type: ProfileType;
+  readonly name: string;
+  readonly status: ProfileStatus;
+  readonly reviewRequestedAt?: Date;
+}
+
+function assertNonEmpty(field: string, value: string): void {
+  if (value.trim().length === 0) {
+    throw new DomainValidationError(`Profile ${field} must not be empty`);
+  }
+}
+
+function assertValidType(type: ProfileType): void {
+  if (!PROFILE_TYPES.includes(type)) {
+    throw new DomainValidationError(`Profile type '${type}' is invalid`);
+  }
+}
+
+function assertValidStatus(status: ProfileStatus): void {
+  if (!PROFILE_STATUSES.includes(status)) {
+    throw new DomainValidationError(`Profile status '${status}' is invalid`);
+  }
+}
+
+function assertValidReviewRequestedAt(reviewRequestedAt: Date | undefined): void {
+  if (
+    reviewRequestedAt !== undefined &&
+    !Number.isFinite(reviewRequestedAt.getTime())
+  ) {
+    throw new DomainValidationError(
+      "Profile reviewRequestedAt must be a valid date",
+    );
+  }
+}
+
+/**
+ * Creates a new Profile. ALWAYS starts in 'pending' (M1: the initial state
+ * is forced by this factory, not left to the caller to fabricate).
+ */
+export function createProfile(input: CreateProfileInput): Profile {
+  assertNonEmpty("id", input.id);
+  assertNonEmpty("accountId", input.accountId);
+  assertValidType(input.type);
+  assertNonEmpty("name", input.name);
+
+  return {
+    id: input.id,
+    accountId: input.accountId,
+    type: input.type,
+    name: input.name,
+    status: "pending",
+  } as Profile;
+}
+
+/**
+ * Rebuilds a Profile from persisted data (M1). Unlike `createProfile`, this
+ * MAY produce a Profile in any valid status (including `active` or
+ * `deactivated`) because it represents state that already went through a
+ * legitimate transition before being persisted — but every field is
+ * validated, so corrupt/invalid persisted data fails fast here rather than
+ * silently becoming a fabricated in-memory Profile.
+ */
+export function rehydrateProfile(input: RehydrateProfileInput): Profile {
+  assertNonEmpty("id", input.id);
+  assertNonEmpty("accountId", input.accountId);
+  assertValidType(input.type);
+  assertNonEmpty("name", input.name);
+  assertValidStatus(input.status);
+  assertValidReviewRequestedAt(input.reviewRequestedAt);
+
+  return {
+    id: input.id,
+    accountId: input.accountId,
+    type: input.type,
+    name: input.name,
+    status: input.status,
+    ...(input.reviewRequestedAt !== undefined
+      ? { reviewRequestedAt: new Date(input.reviewRequestedAt.getTime()) }
+      : {}),
+  } as Profile;
 }
 
 function assertStatus(

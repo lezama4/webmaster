@@ -6,6 +6,7 @@ import {
   createSlot,
   type CreateSlotInput,
   fillSlot,
+  rehydrateSlot,
   type Slot,
 } from "@domain/slot/Slot";
 import type { Clock } from "@domain/shared/Clock";
@@ -27,18 +28,8 @@ function slotInput(overrides: Partial<CreateSlotInput> = {}): CreateSlotInput {
   };
 }
 
-function openSlot(overrides: Partial<Slot> = {}): Slot {
-  return {
-    id: "slot-1",
-    hospitalProfileId: "hospital-profile-1",
-    title: "Acoustic guitar afternoon",
-    description: "A relaxed acoustic session for the pediatric ward.",
-    scheduledAt: new Date("2026-08-01T17:00:00Z"),
-    durationMinutes: 60,
-    location: "Ward 3, Room 12",
-    status: "open",
-    ...overrides,
-  };
+function openSlot(overrides: Partial<CreateSlotInput> = {}): Slot {
+  return createSlot(slotInput(overrides), fixedClock);
 }
 
 describe("Slot state machine", () => {
@@ -190,6 +181,140 @@ describe("Slot state machine", () => {
     it("rejects a location longer than 200 characters", () => {
       expect(() =>
         createSlot(slotInput({ location: "L".repeat(201) }), fixedClock),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("MUST NOT be possible to construct a Slot in 'filled'/'closed' state via a literal (compile-time enforced, M1)", () => {
+      // @ts-expect-error - Slot's brand field is not exported, so a
+      // structural literal (even with every visible field, including a
+      // terminal 'closed' status) can never satisfy the Slot type. The
+      // only ways in are createSlot (forces 'open') and rehydrateSlot
+      // (validates persisted data).
+      const fabricated: Slot = {
+        id: "slot-x",
+        hospitalProfileId: "hospital-profile-x",
+        title: "Fabricated slot",
+        description: "",
+        scheduledAt: new Date("2026-08-01T17:00:00Z"),
+        durationMinutes: 30,
+        location: "Nowhere",
+        status: "closed",
+      };
+
+      expect(fabricated).toBeDefined();
+    });
+  });
+
+  describe("createSlot date safety (M3)", () => {
+    it("rejects a non-finite scheduledAt (new Date(NaN))", () => {
+      expect(() =>
+        createSlot(slotInput({ scheduledAt: new Date(NaN) }), fixedClock),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("mutating the input Date after creation does not affect the Slot", () => {
+      const input = new Date("2026-08-01T17:00:00Z");
+      const originalMs = input.getTime();
+
+      const slot = createSlot(slotInput({ scheduledAt: input }), fixedClock);
+      input.setFullYear(1999);
+
+      expect(slot.scheduledAt.getTime()).toBe(originalMs);
+    });
+
+    it("mutating the returned Date does not affect internal state", () => {
+      const slot = createSlot(slotInput(), fixedClock);
+      const originalMs = slot.scheduledAt.getTime();
+
+      const returned = slot.scheduledAt;
+      returned.setFullYear(1999);
+
+      expect(slot.scheduledAt.getTime()).toBe(originalMs);
+      expect(slot.scheduledAt).not.toBe(returned);
+    });
+  });
+
+  describe("rehydrateSlot (M1: validated reconstruction from persisted data)", () => {
+    it("rehydrates a slot in 'filled' state with a scheduledAt in the past (legitimate for an already-resolved slot)", () => {
+      const past = new Date("2020-01-01T00:00:00Z");
+
+      const slot = rehydrateSlot({
+        id: "slot-1",
+        hospitalProfileId: "hospital-profile-1",
+        title: "Acoustic guitar afternoon",
+        description: "A relaxed acoustic session for the pediatric ward.",
+        scheduledAt: past,
+        durationMinutes: 60,
+        location: "Ward 3, Room 12",
+        status: "filled",
+      });
+
+      expect(slot.status).toBe("filled");
+      expect(slot.scheduledAt).toEqual(past);
+    });
+
+    it("rehydrates a slot in 'closed' state", () => {
+      const slot = rehydrateSlot({
+        id: "slot-1",
+        hospitalProfileId: "hospital-profile-1",
+        title: "Acoustic guitar afternoon",
+        description: "A relaxed acoustic session for the pediatric ward.",
+        scheduledAt: new Date("2020-01-01T00:00:00Z"),
+        durationMinutes: 60,
+        location: "Ward 3, Room 12",
+        status: "closed",
+      });
+
+      expect(slot.status).toBe("closed");
+    });
+
+    it("does not leak the caller's Date reference (M3 applies to rehydration too)", () => {
+      const input = new Date("2020-01-01T00:00:00Z");
+      const originalMs = input.getTime();
+
+      const slot = rehydrateSlot({
+        id: "slot-1",
+        hospitalProfileId: "hospital-profile-1",
+        title: "Acoustic guitar afternoon",
+        description: "A relaxed acoustic session for the pediatric ward.",
+        scheduledAt: input,
+        durationMinutes: 60,
+        location: "Ward 3, Room 12",
+        status: "closed",
+      });
+      input.setFullYear(1999);
+
+      expect(slot.scheduledAt.getTime()).toBe(originalMs);
+    });
+
+    it("denies rehydrating an invalid status", () => {
+      expect(() =>
+        rehydrateSlot({
+          id: "slot-1",
+          hospitalProfileId: "hospital-profile-1",
+          title: "Acoustic guitar afternoon",
+          description: "A relaxed acoustic session for the pediatric ward.",
+          scheduledAt: new Date("2020-01-01T00:00:00Z"),
+          durationMinutes: 60,
+          location: "Ward 3, Room 12",
+          // @ts-expect-error - deliberately invalid persisted status.
+          status: "cancelled",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies rehydrating a non-finite scheduledAt", () => {
+      expect(() =>
+        rehydrateSlot({
+          id: "slot-1",
+          hospitalProfileId: "hospital-profile-1",
+          title: "Acoustic guitar afternoon",
+          description: "A relaxed acoustic session for the pediatric ward.",
+          scheduledAt: new Date(NaN),
+          durationMinutes: 60,
+          location: "Ward 3, Room 12",
+          status: "open",
+        }),
       ).toThrow(DomainValidationError);
     });
   });
