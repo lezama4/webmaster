@@ -64,6 +64,16 @@ An `active` Artist MUST be able to submit a Proposal against an `open` Slot. A S
 - WHEN a different `active` Artist submits a Proposal for the same Slot
 - THEN both Proposals coexist in `submitted` state
 
+### Requirement: An Artist May Not Hold Two Simultaneous Open Proposals for the Same Slot
+
+An Artist MUST NOT have more than one `submitted` Proposal against the same Slot at the same time. A duplicate submission attempt by the same Artist, while an earlier Proposal from that Artist is still `submitted` against that Slot, MUST be denied as a conflict — never silently ignored, and never resulting in two simultaneously `submitted` Proposals from the same Artist for the same Slot.
+
+#### Scenario: Same Artist submits two concurrent Proposals for the same Slot
+
+- GIVEN an `open` Slot and an `active` Artist who already has one `submitted` Proposal against it
+- WHEN that same Artist submits a second Proposal for the same Slot while the first is still `submitted`
+- THEN the second submission MUST be denied as a conflict, and exactly one `submitted` Proposal from that Artist MUST exist for that Slot
+
 ### Requirement: Submission Cannot Race Past a Concurrent Approval or Close
 
 A Proposal submission that races against a concurrent approval or close on the same Slot MUST NOT result in an actionable Proposal against a Slot that is no longer `open`. Submission and the Slot-resolving transitions (approve, close) MUST be coordinated so that whichever completes second observes the other's outcome.
@@ -73,6 +83,28 @@ A Proposal submission that races against a concurrent approval or close on the s
 - GIVEN an `open` Slot with a `submitted` Proposal P1
 - WHEN a Hospital's approval of P1 and a different Artist's submission of a new Proposal P2 are attempted concurrently, and the approval commits first (Slot becomes `filled`)
 - THEN P2's submission MUST be denied (it MUST NOT be inserted as an actionable `submitted` Proposal against the now-`filled` Slot)
+
+#### Scenario: Submission loses a race against an in-flight close
+
+- GIVEN an `open` Slot with a `submitted` Proposal P1
+- WHEN the owning Hospital's close of the Slot and a different Artist's submission of a new Proposal P2 are attempted concurrently, and the close commits first (Slot becomes `closed`)
+- THEN P2's submission MUST be denied (it MUST NOT be inserted as an actionable `submitted` Proposal against the now-`closed` Slot)
+
+### Requirement: Manual Rejection Is Coordinated With a Concurrent Approval or Close
+
+A Hospital's manual rejection of a Proposal that races against a concurrent approval or close on the same Slot MUST NOT produce a contradictory outcome. Rejection and the other Slot-resolving transitions (approve, close) MUST be coordinated so that exactly one coherent result persists — never a Proposal that is both rejected and the one an approval accepted, and never a Slot left inconsistent with its Proposals' final states.
+
+#### Scenario: Rejection races a concurrent approval on a different Proposal
+
+- GIVEN an `open` Slot with Proposals P1 and P2, both `submitted`
+- WHEN the owning Hospital's rejection of P2 and the owning Hospital's approval of P1 are attempted concurrently
+- THEN exactly one coherent outcome MUST result — P1 `accepted` (auto-rejecting every other `submitted` Proposal, including P2) and the Slot `filled`, OR P2 explicitly `rejected` first followed by a fully-resolved approval of P1 — but never a response reporting success for both operations against contradictory final states
+
+#### Scenario: Rejection races a concurrent close
+
+- GIVEN an `open` Slot with a `submitted` Proposal P1
+- WHEN the owning Hospital's rejection of P1 and the owning Hospital's close of the Slot are attempted concurrently
+- THEN exactly one coherent outcome MUST result — P1 ends in `rejected` state and the Slot in `closed` state, with only one of the two requests treated as the operation that actually performed the transition (the other observes the already-terminal state and is denied)
 
 ### Requirement: Only the Owning Hospital Approves or Rejects Proposals
 

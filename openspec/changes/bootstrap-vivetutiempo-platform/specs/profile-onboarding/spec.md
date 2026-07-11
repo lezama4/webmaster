@@ -111,3 +111,9 @@ The Admin MUST be able to transition an `active` Hospital or Artist profile to `
 - GIVEN an `active` Hospital or Artist profile
 - WHEN an actor other than Admin (including the profile owner itself) attempts to deactivate it
 - THEN the action MUST be denied
+
+#### Scenario: A login attempt races a concurrent deactivation
+
+- GIVEN an `active` Hospital or Artist profile whose Account is attempting to log in
+- WHEN the Admin's deactivation of that profile and the Account's login attempt are attempted concurrently, and the deactivation commits first
+- THEN the login MUST be denied and no new session MUST be issued for that Account — the login's profile-status check and the deactivation MUST be coordinated so that whichever completes second observes the other's outcome, never issuing a session to an actor whose profile has just been deactivated
