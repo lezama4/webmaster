@@ -17,8 +17,20 @@ It MAY import from `src/domain`.
 ## Layout
 
 - `ports/` (Phase 3) — repository and adapter interfaces
-  (`AccountRepository`, `SlotRepository`, `MatchingUnitOfWork`,
-  `SessionPort`, `PasswordHasher`, `Clock`, `IdGenerator`, etc.).
-- `use-cases/` (Phase 3) — `registerProfile`, `login`, `logout`,
-  `validateProfile`, `publishSlot`, `listOpenSlots`, `submitProposal`,
-  `approveProposal`, `rejectProposal`, `listPublishedEvents`.
+  (`AccountRepository`, `ProfileRepository`, `SlotRepository`,
+  `ProposalRepository`, `EventRepository`, `PublicEventProjectionQuery`,
+  `MatchingUnitOfWork`, `ProfileUnitOfWork`, `SessionPort`,
+  `LoginRateLimiter`, `PasswordHasher`, `Clock`, `IdGenerator`).
+- `dto/` (Phase 3) — `PublicEventProjection` (D6 allow-list shape).
+- `use-cases/` (Phase 3, done) — `registerProfile` (incl. `rejected ->
+  pending` re-registration), `login`/`logout`, `validateProfile`,
+  `deactivateProfile`, `publishSlot`, `listOpenSlots`, `submitProposal`,
+  `approveProposal`, `rejectProposal`, `closeSlot`, `listPublishedEvents`.
+  All Slot-resolving use cases (`submitProposal`/`approveProposal`/
+  `rejectProposal`/`closeSlot`) commit exclusively through
+  `MatchingUnitOfWork.withLockedSlot` (lock-first, ADR D4). `login`,
+  `validateProfile`, and `deactivateProfile` coordinate Profile-status
+  transitions with session issuance/revocation exclusively through
+  `ProfileUnitOfWork.withLockedProfile` (ADR D7).
+- `use-cases/shared/guards.ts` — small role/ownership/live-status guard
+  helpers shared across use cases (N1 error taxonomy).

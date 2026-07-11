@@ -62,37 +62,37 @@ Chain strategy: pending
 
 ## Phase 3: Application Layer — strict TDD
 
-- [ ] 3.1 Define ports in `src/application/ports/`: `AccountRepository`, `ProfileRepository`, `SlotRepository`, `ProposalRepository`, `EventRepository`, `PublicEventProjectionQuery` (M6, pr2-review), `MatchingUnitOfWork` (`withLockedSlot`, B2/D4, pr2-review), `ProfileUnitOfWork` (`withLockedProfile`, M3/D7, pr2-review), `SessionPort` (`create`/`resolveValid`/`touch`/`revokeOne`/`revokeAllForAccount`, M3, pr2-review), `LoginRateLimiter` (M4, pr2-review), `PasswordHasher`, `Clock`, `IdGenerator`. Define the `Actor` type and the shared application error taxonomy (`UnauthenticatedError`, `ForbiddenError`, `ConflictError`, validation error) alongside the ports (N1, pr2-review — note: distinct from the pre-existing N1 "strict TDD timing" finding in `codex-planning-review.md`).
-- [ ] 3.2 [RED] Test `registerProfile` (creates `pending` Profile) w/ in-memory fakes.
-- [ ] 3.3 [GREEN] `src/application/use-cases/registerProfile.ts`.
-- [ ] 3.4 [RED] Test `login`: session issuance, invalid creds, and denial via `LoginRateLimiter` (generic error, identical for unknown and locked-out accounts, M4 pr2-review — distinct from the pre-existing M4 "public projection allow-list" finding); test `logout`.
-- [ ] 3.5 [GREEN] `src/application/use-cases/login.ts` (depends on `LoginRateLimiter`), `logout.ts`.
-- [ ] 3.6 [RED] Test `validateProfile` (Admin-only; non-admin denied).
-- [ ] 3.7 [GREEN] `src/application/use-cases/validateProfile.ts`.
-- [ ] 3.8 [RED] Test `publishSlot`/`listOpenSlots` (active-Hospital gate).
-- [ ] 3.9 [GREEN] `src/application/use-cases/publishSlot.ts`, `listOpenSlots.ts`.
-- [ ] 3.10 [RED] Test `submitProposal` (active-Artist gate, open-Slot only).
-- [ ] 3.11 [GREEN] `src/application/use-cases/submitProposal.ts`.
-- [ ] 3.12 [RED] Test `approveProposal`/`rejectProposal` (ownership 403, cascade via `domain.acceptProposal`, non-open-Slot denial, terminal-Proposal denial).
-- [ ] 3.13 [GREEN] `src/application/use-cases/approveProposal.ts`, `rejectProposal.ts` — both commit exclusively through `MatchingUnitOfWork.withLockedSlot` (M1 pr2-review, D4).
-- [ ] 3.14 [RED] Test `listPublishedEvents` (public; unpublished items excluded) using a fake `PublicEventProjectionQuery`.
-- [ ] 3.15 [GREEN] `src/application/use-cases/listPublishedEvents.ts` depending only on `PublicEventProjectionQuery` (M6 pr2-review) — no repository, no Prisma import.
-- [ ] 3.16 [RED] Test `closeSlot` use case: ownership check (403 non-owner), denies on non-open Slot, calls `domain.closeSlot`, persists cascade via `MatchingUnitOfWork.withLockedSlot` (B2).
-- [ ] 3.17 [GREEN] `src/application/use-cases/closeSlot.ts`.
-- [ ] 3.18 [RED] Test `deactivateProfile` use case: Admin-only (403 non-Admin), `active -> deactivated`, and the transition + `SessionPort.revokeAllForAccount` happen inside one `ProfileUnitOfWork.withLockedProfile` call (M3).
-- [ ] 3.19 [GREEN] `src/application/use-cases/deactivateProfile.ts`.
-- [ ] 3.20 [RED] Test `registerProfile` reactivation branch: registering while an existing `rejected` Profile exists for the Account transitions that SAME Profile `rejected -> pending`, updating `reviewRequestedAt` as the new review request (not a second Profile row) (M2, D8).
-- [ ] 3.21 [GREEN] Extend `src/application/use-cases/registerProfile.ts` with the reactivation branch.
-- [ ] 3.22 [RED] Test `submitProposal`, `approveProposal`, `rejectProposal`, and `closeSlot` ALL commit exclusively through `MatchingUnitOfWork.withLockedSlot(slotId, work)`: a fake unit of work that locks first, then supplies the live Slot+Proposals to `work`, proves each use case recomputes its decision from the locked data rather than a pre-lock snapshot (B2/M1, pr2-review, ADR D4).
-- [ ] 3.23 [GREEN] Implement/align all four use cases against the `withLockedSlot` callback shape. `submitProposal`'s guard (Slot open + no existing `submitted` Proposal from the same Artist for the same Slot) and `rejectProposal`'s guard (targeted Proposal still `submitted`) both raise `ConflictError` on a 0-row/violated-guard result computed inside the callback (B1/B2/M1/M2, pr2-review — M2 DECISION on duplicate submissions).
-- [ ] 3.24 [RED] Test the authorization edge-case matrix (M6): Admin attempting `approveProposal`/`rejectProposal` (denied); Artist/Patient attempting Hospital-only or Admin-only use cases (denied); `approveProposal`/`rejectProposal` where the Proposal's `slotId` does not match the targeted Slot (denied); acting on an already-`accepted`/`rejected` Proposal (denied); an actor whose Profile turned `rejected`/`deactivated` after session issuance attempting any mutating use case (denied via live-status re-check, not session snapshot).
-- [ ] 3.25 [GREEN] Add/adjust guard clauses across `approveProposal.ts`, `rejectProposal.ts`, `submitProposal.ts`, `publishSlot.ts`, `closeSlot.ts`, `deactivateProfile.ts` enforcing role + ownership + Proposal/Slot linkage + live Profile status on every call, raising from the N1 error taxonomy.
-- [ ] 3.26 [RED] Test `listPublishedEvents` returns only the `PublicEventProjection` allow-list (title, description, scheduledAt, durationMinutes, artist public display name) — no location, Proposal message, email, or internal id (D6); test that the `PublicEventProjectionQuery` port boundary structurally cannot receive or forward a forbidden field (M6 pr2-review).
-- [ ] 3.27 [GREEN] `src/application/dto/PublicEventProjection.ts` (allow-list shape) + `PublicEventProjectionQuery` port contract, wired into `listPublishedEvents.ts` (ADR D6; M6 pr2-review).
-- [ ] 3.28 [RED] Test `deactivateProfile` and `validateProfile`'s reject branch each run their Profile-status transition and `SessionPort.revokeAllForAccount` inside the SAME `ProfileUnitOfWork.withLockedProfile` call — a simulated failure between the two steps (via a fake) leaves no partial state (M3).
-- [ ] 3.29 [GREEN] Extend `deactivateProfile.ts`/`validateProfile.ts` (reject branch) to coordinate the transition + revocation atomically via `ProfileUnitOfWork.withLockedProfile`.
-- [ ] 3.30 [RED] Test `login` re-checks the current Profile status inside the SAME `ProfileUnitOfWork.withLockedProfile` call that issues the session — a login racing a concurrent deactivation (simulated via a fake unit of work) MUST be denied, not issue a session (M3).
-- [ ] 3.31 [GREEN] Extend `login.ts` to coordinate the live-status check + `SessionPort.create` atomically via `ProfileUnitOfWork.withLockedProfile`.
+- [x] 3.1 Define ports in `src/application/ports/`: `AccountRepository`, `ProfileRepository`, `SlotRepository`, `ProposalRepository`, `EventRepository`, `PublicEventProjectionQuery` (M6, pr2-review), `MatchingUnitOfWork` (`withLockedSlot`, B2/D4, pr2-review), `ProfileUnitOfWork` (`withLockedProfile`, M3/D7, pr2-review), `SessionPort` (`create`/`resolveValid`/`touch`/`revokeOne`/`revokeAllForAccount`, M3, pr2-review), `LoginRateLimiter` (M4, pr2-review), `PasswordHasher`, `Clock`, `IdGenerator`. Define the `Actor` type and the shared application error taxonomy (`UnauthenticatedError`, `ForbiddenError`, `ConflictError`, validation error) alongside the ports (N1, pr2-review — note: distinct from the pre-existing N1 "strict TDD timing" finding in `codex-planning-review.md`).
+- [x] 3.2 [RED] Test `registerProfile` (creates `pending` Profile) w/ in-memory fakes.
+- [x] 3.3 [GREEN] `src/application/use-cases/registerProfile.ts`.
+- [x] 3.4 [RED] Test `login`: session issuance, invalid creds, and denial via `LoginRateLimiter` (generic error, identical for unknown and locked-out accounts, M4 pr2-review — distinct from the pre-existing M4 "public projection allow-list" finding); test `logout`.
+- [x] 3.5 [GREEN] `src/application/use-cases/login.ts` (depends on `LoginRateLimiter`), `logout.ts`.
+- [x] 3.6 [RED] Test `validateProfile` (Admin-only; non-admin denied).
+- [x] 3.7 [GREEN] `src/application/use-cases/validateProfile.ts`.
+- [x] 3.8 [RED] Test `publishSlot`/`listOpenSlots` (active-Hospital gate).
+- [x] 3.9 [GREEN] `src/application/use-cases/publishSlot.ts`, `listOpenSlots.ts`.
+- [x] 3.10 [RED] Test `submitProposal` (active-Artist gate, open-Slot only).
+- [x] 3.11 [GREEN] `src/application/use-cases/submitProposal.ts`.
+- [x] 3.12 [RED] Test `approveProposal`/`rejectProposal` (ownership 403, cascade via `domain.acceptProposal`, non-open-Slot denial, terminal-Proposal denial).
+- [x] 3.13 [GREEN] `src/application/use-cases/approveProposal.ts`, `rejectProposal.ts` — both commit exclusively through `MatchingUnitOfWork.withLockedSlot` (M1 pr2-review, D4).
+- [x] 3.14 [RED] Test `listPublishedEvents` (public; unpublished items excluded) using a fake `PublicEventProjectionQuery`.
+- [x] 3.15 [GREEN] `src/application/use-cases/listPublishedEvents.ts` depending only on `PublicEventProjectionQuery` (M6 pr2-review) — no repository, no Prisma import.
+- [x] 3.16 [RED] Test `closeSlot` use case: ownership check (403 non-owner), denies on non-open Slot, calls `domain.closeSlot`, persists cascade via `MatchingUnitOfWork.withLockedSlot` (B2).
+- [x] 3.17 [GREEN] `src/application/use-cases/closeSlot.ts`.
+- [x] 3.18 [RED] Test `deactivateProfile` use case: Admin-only (403 non-Admin), `active -> deactivated`, and the transition + `SessionPort.revokeAllForAccount` happen inside one `ProfileUnitOfWork.withLockedProfile` call (M3).
+- [x] 3.19 [GREEN] `src/application/use-cases/deactivateProfile.ts`.
+- [x] 3.20 [RED] Test `registerProfile` reactivation branch: registering while an existing `rejected` Profile exists for the Account transitions that SAME Profile `rejected -> pending`, updating `reviewRequestedAt` as the new review request (not a second Profile row) (M2, D8).
+- [x] 3.21 [GREEN] Extend `src/application/use-cases/registerProfile.ts` with the reactivation branch.
+- [x] 3.22 [RED] Test `submitProposal`, `approveProposal`, `rejectProposal`, and `closeSlot` ALL commit exclusively through `MatchingUnitOfWork.withLockedSlot(slotId, work)`: a fake unit of work that locks first, then supplies the live Slot+Proposals to `work`, proves each use case recomputes its decision from the locked data rather than a pre-lock snapshot (B2/M1, pr2-review, ADR D4).
+- [x] 3.23 [GREEN] Implement/align all four use cases against the `withLockedSlot` callback shape. `submitProposal`'s guard (Slot open + no existing `submitted` Proposal from the same Artist for the same Slot) and `rejectProposal`'s guard (targeted Proposal still `submitted`) both raise `ConflictError` on a 0-row/violated-guard result computed inside the callback (B1/B2/M1/M2, pr2-review — M2 DECISION on duplicate submissions).
+- [x] 3.24 [RED] Test the authorization edge-case matrix (M6): Admin attempting `approveProposal`/`rejectProposal` (denied); Artist/Patient attempting Hospital-only or Admin-only use cases (denied); `approveProposal`/`rejectProposal` where the Proposal's `slotId` does not match the targeted Slot (denied); acting on an already-`accepted`/`rejected` Proposal (denied); an actor whose Profile turned `rejected`/`deactivated` after session issuance attempting any mutating use case (denied via live-status re-check, not session snapshot).
+- [x] 3.25 [GREEN] Add/adjust guard clauses across `approveProposal.ts`, `rejectProposal.ts`, `submitProposal.ts`, `publishSlot.ts`, `closeSlot.ts`, `deactivateProfile.ts` enforcing role + ownership + Proposal/Slot linkage + live Profile status on every call, raising from the N1 error taxonomy.
+- [x] 3.26 [RED] Test `listPublishedEvents` returns only the `PublicEventProjection` allow-list (title, description, scheduledAt, durationMinutes, artist public display name) — no location, Proposal message, email, or internal id (D6); test that the `PublicEventProjectionQuery` port boundary structurally cannot receive or forward a forbidden field (M6 pr2-review).
+- [x] 3.27 [GREEN] `src/application/dto/PublicEventProjection.ts` (allow-list shape) + `PublicEventProjectionQuery` port contract, wired into `listPublishedEvents.ts` (ADR D6; M6 pr2-review).
+- [x] 3.28 [RED] Test `deactivateProfile` and `validateProfile`'s reject branch each run their Profile-status transition and `SessionPort.revokeAllForAccount` inside the SAME `ProfileUnitOfWork.withLockedProfile` call — a simulated failure between the two steps (via a fake) leaves no partial state (M3).
+- [x] 3.29 [GREEN] Extend `deactivateProfile.ts`/`validateProfile.ts` (reject branch) to coordinate the transition + revocation atomically via `ProfileUnitOfWork.withLockedProfile`.
+- [x] 3.30 [RED] Test `login` re-checks the current Profile status inside the SAME `ProfileUnitOfWork.withLockedProfile` call that issues the session — a login racing a concurrent deactivation (simulated via a fake unit of work) MUST be denied, not issue a session (M3).
+- [x] 3.31 [GREEN] Extend `login.ts` to coordinate the live-status check + `SessionPort.create` atomically via `ProfileUnitOfWork.withLockedProfile`.
 
 ## Phase 4: Infrastructure Layer — pragmatic tests
 
