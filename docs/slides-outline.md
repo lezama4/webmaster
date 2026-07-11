@@ -1,0 +1,455 @@
+# Vivetutiempo — Outline for TFM Defence Slides
+
+**Target duration:** 12–15 minutes  
+**Target length:** 17 slides  
+**Evidence cut-off:** Domain and application layers reviewed. Infrastructure,
+Prisma, migrations, UI, end-to-end flow, and deployment are in progress and
+must not be presented as completed or verified.
+
+## Slide 1 — Vivetutiempo: turning hospital idle time into living time
+
+**Suggested time:** 0:30
+
+**Bullets**
+
+- Master’s Final Project: secure coordination of cultural activities in hospitals.
+- A non-profit, multi-role web platform.
+- Author, Master’s programme, academic year, supervisor.
+
+**Visual**
+
+- Minimal title image or diagram: Hospital ↔ Artist → Published Event → Patients/Families.
+
+**Speaker note**
+
+“This project is not a hospital information system and it does not manage
+clinical records. It addresses a narrower but real coordination problem: how to
+turn available time in hospitals and cultural offers into safe, traceable public
+events.”
+
+---
+
+## Slide 2 — The problem: idle time requires coordination, not only good ideas
+
+**Suggested time:** 0:45
+
+**Bullets**
+
+- Patients and families may spend long periods waiting, accompanying or recovering.
+- Cultural and human activities can improve that experience.
+- The hard part is operational coordination: availability, proposals, approval,
+  governance, and safe public communication.
+- A hospital context makes location, identity, and private messages sensitive by context.
+
+**Visual**
+
+- Three disconnected icons labelled “hospital agenda”, “artist offer”, and
+  “public information”, followed by a highlighted coordination gap.
+
+**Speaker note**
+
+“The differentiator is not claiming to invent art in hospitals. It is modelling
+the coordination layer that connects an available hospital slot with competing
+activity proposals, while preserving governance and confidentiality.”
+
+---
+
+## Slide 3 — The solution: Vivetutiempo
+
+**Suggested time:** 0:45
+
+**Bullets**
+
+- Hospital publishes an agenda Slot.
+- Active Artists submit competing Proposals.
+- The owning Hospital accepts one or rejects proposals.
+- Acceptance creates and publishes an Event.
+- Anyone can browse published Events anonymously.
+
+**Visual**
+
+```text
+Hospital Slot → Artist Proposal(s) → Hospital decision → Published Event → Public browsing
+```
+
+**Speaker note**
+
+“The central rule is deliberately not first-come-first-served. A Slot can have
+several proposals and the Hospital chooses the one that best fits its context.”
+
+---
+
+## Slide 4 — MVP scope: depth before breadth
+
+**Suggested time:** 0:50
+
+**Bullets**
+
+| Block | Scope | Status at this evidence cut-off |
+| --- | --- | --- |
+| 1. Core | Onboarding, Slot/Proposal coordination, Event publication, public browsing. | Domain and application implemented; infrastructure/UI/deployment in progress. |
+| 2. Rating | One rating per Patient/Family account and completed Event. | Planned. |
+| 3. Patronage | Simulated campaigns behind a `PaymentGateway` port. | Planned; no real payments. |
+
+- No EHR integration, native mobile app, real payments, Kubernetes, or AWS in the MVP.
+
+**Speaker note**
+
+“The scope is intentionally sequential. A complete, demonstrable core is more
+defensible than several partially built modules. Real payments are explicitly
+out of scope; the future block models only a simulated adapter boundary.”
+
+---
+
+## Slide 5 — Technology choices and their rationale
+
+**Suggested time:** 0:55
+
+**Bullets**
+
+- Next.js, TypeScript and Tailwind: one web repository with typed delivery and UI.
+- PostgreSQL + Prisma: transactional persistence target; adapter implementation is in progress.
+- Vitest + Playwright: unit, integration and E2E strategy.
+- Vercel + managed PostgreSQL: deployable MVP with low operational overhead.
+- **Monolith over microservices:** fewer distributed failure modes and less infrastructure without a current need.
+- **DB-backed sessions over JWT:** immediate revocation after profile rejection/deactivation.
+
+**Visual**
+
+- A compact “decision / rejected alternative / reason” table.
+
+**Speaker note**
+
+“The project chooses intentional simplicity. Microservices or Kubernetes would
+add deployment and observability complexity without improving this core
+workflow. Sessions are chosen because governance requires revocation, not
+because JWT is inherently wrong.”
+
+---
+
+## Slide 6 — Hexagonal architecture in a single repository
+
+**Suggested time:** 0:55
+
+**Bullets**
+
+- `domain/`: framework-free entities, state machines, pure rules.
+- `application/`: use cases and ports; orchestrates the domain.
+- `infrastructure/`: Prisma, sessions, hashing and HTTP adapters — **in progress**.
+- `ui/` and `app/`: presentation and thin Next.js entry points — **in progress**.
+- Dependencies point inward; domain/application do not import Next.js or Prisma.
+
+**Visual**
+
+```text
+UI / Next.js  →  Application (use cases + ports)  →  Domain
+                      ↑
+              Infrastructure adapters
+```
+
+**Speaker note**
+
+“The architectural test is simple: business rules must still be testable if we
+replace Prisma or the delivery framework. Ports express what the application
+needs; adapters decide how it is persisted or delivered.”
+
+---
+
+## Slide 7 — Domain model: explicit state machines
+
+**Suggested time:** 1:00
+
+**Bullets**
+
+- `Profile`: `pending → active | rejected`; `active → deactivated`; `rejected → pending`.
+- `Slot`: `open → filled | closed`.
+- `Proposal`: `submitted → accepted | rejected`.
+- `Event`: `created → published → completed`.
+- Factories enforce initial state; transitions reject illegal changes.
+- Domain rules are implemented and unit-tested without framework or database dependencies.
+
+**Visual**
+
+- Four small state diagrams rather than a dense class diagram.
+
+**Speaker note**
+
+“Explicit states make invalid paths visible. For example, a terminal Proposal
+cannot be accepted again, and a non-active Profile cannot perform its role
+actions. The `completed` Event state is a deliberate seam for Block 2.”
+
+---
+
+## Slide 8 — Critical invariant: accept one Proposal, resolve the entire Slot
+
+**Suggested time:** 1:10
+
+**Bullets**
+
+- Preconditions: active owning Hospital, open Slot, matching submitted Proposal.
+- One pure operation produces four outcomes:
+  - selected Proposal → `accepted`;
+  - Slot → `filled`;
+  - every rival submitted Proposal → `rejected`;
+  - new Event → `published`.
+- Closing a Slot similarly rejects every submitted Proposal.
+- Concurrency design: `withLockedSlot` locks first, reads live data inside the
+  transaction, decides, persists, then commits.
+
+**Visual**
+
+```text
+lock Slot first → reload Slot + all Proposals → pure decision → atomic persistence
+```
+
+**Speaker note**
+
+“The key insight came from an adversarial review: locking after a decision is
+too late. A concurrent submission could otherwise survive on a filled Slot.
+The application contract is implemented; proof of real PostgreSQL locking and
+rollback is still pending the infrastructure integration tests.”
+
+---
+
+## Slide 9 — Development process: Spec-Driven Development
+
+**Suggested time:** 0:45
+
+**Bullets**
+
+```text
+Proposal → behaviour specifications → design / ADRs → task plan
+         → layer-by-layer implementation → verification → review
+```
+
+- Proposal defines problem, scope and success criteria.
+- Specifications use concrete Given/When/Then scenarios.
+- ADRs turn requirements into technical decisions and rejected alternatives.
+- Tasks provide traceability from design to implementation and verification.
+
+**Speaker note**
+
+“The specification is not documentation written at the end. It is the contract
+used to decide what must be implemented and, equally important, what must not
+be claimed yet.”
+
+---
+
+## Slide 10 — AI as a directed engineering tool
+
+**Suggested time:** 0:40
+
+**Bullets**
+
+- AI work is constrained by specifications, scope boundaries and layer rules.
+- Different roles are used for implementation and independent adversarial review.
+- Human judgement owns requirements, trade-offs, acceptance and final responsibility.
+- Artefacts, tests and review reports make the process inspectable.
+
+**Visual**
+
+- “Human decision → bounded AI task → code/review artefact → human validation.”
+
+**Speaker note**
+
+“The value of AI is acceleration with constraints, not automatic correctness.
+The project treats generated output as an input to a reviewable engineering
+process, rather than evidence on its own.”
+
+---
+
+## Slide 11 — Adversarial review: evidence of rigor, not just happy paths
+
+**Suggested time:** 1:05
+
+**Bullets**
+
+- Planning review found a stale-read concurrency race.
+  - Result: lock-first `MatchingUnitOfWork` design.
+- Domain review found missing persistence support for `DEACTIVATED` and
+  re-registration traceability.
+  - Result: required schema/migration work, currently in progress.
+- Application review found that a TypeScript allow-list is not runtime redaction
+  and that re-registration lacked credential proof.
+  - Result: explicit release-blocking hardening items.
+- Review reports preserve both findings and evidence status.
+
+**Visual**
+
+- Timeline: “finding → design correction → verification gate”.
+
+**Speaker note**
+
+“This is a central differentiator of the project. The review process does not
+hide defects. It turns them into explicit design changes or release gates. Two
+security issues remain open in the reviewed application and are not presented
+as solved.”
+
+---
+
+## Slide 12 — Quality strategy: tests where the risk is
+
+**Suggested time:** 0:55
+
+**Bullets**
+
+- Domain unit tests: states, factories, ownership, cascades and illegal transitions.
+- Application unit tests: roles, live-profile checks, use-case orchestration and port contracts.
+- Integration tests: PostgreSQL transactions, locks, partial indexes and session adapter — **in progress**.
+- E2E tests: public browsing and the complete role flow — **planned for Block 1 completion**.
+- No coverage percentage or production claim is made in this presentation without a reproducible execution record.
+
+**Visual**
+
+- Test pyramid with “implemented”, “in progress”, and “planned” labels.
+
+**Speaker note**
+
+“Selective strict TDD focuses on the most valuable rules: state transitions and
+business invariants. In-memory doubles prove orchestration, but they cannot
+prove a row lock or database rollback. That distinction is intentional.”
+
+---
+
+## Slide 13 — Security by design: minimise the public and privileged surfaces
+
+**Suggested time:** 1:10
+
+**Bullets**
+
+- OWASP threat model: access control, sessions, CSRF, injection, integrity,
+  logging, configuration and supply chain.
+- Public output is limited to: title, description, date/time, duration and
+  artist display name.
+- Always excluded: room/ward, proposal message, email and internal IDs.
+- Server-side roles, ownership and active Profile checks protect mutations.
+- Designed session lifecycle: argon2id, revocable DB sessions, rotation, idle/
+  absolute expiry and rate limiting — **adapter verification pending**.
+- Hospital-context minimisation: no clinical data; location and private messages
+  are treated as confidential.
+
+**Visual**
+
+- “Public allow-list” box next to “never expose” box.
+
+**Speaker note**
+
+“Security is both architecture and implementation. The domain/application
+layers already express role and ownership controls, but a runtime public DTO,
+CSRF routes, persistence adapter and deployment configuration must still be
+verified before the MVP is exposed.”
+
+---
+
+## Slide 14 — Demonstration scenario: the end-to-end story to show
+
+**Suggested time:** 1:00
+
+**Bullets**
+
+1. Admin activates a Hospital and an Artist profile.
+2. Active Hospital publishes a future Slot.
+3. Active Artist submits a Proposal; a second Artist may compete.
+4. Owning Hospital accepts one Proposal.
+5. The system fills the Slot, rejects rivals and publishes an Event.
+6. An anonymous visitor sees only the public Event projection.
+
+**Visual**
+
+- Six-step live-demo checklist; display the expected state after each step.
+
+**Speaker note**
+
+“This is the intended final live demonstration, not a claim that an E2E demo
+was executed at this evidence cut-off. Before the defence, it must run against
+the deployed core with non-sensitive seed data and verify the public response
+does not contain forbidden fields.”
+
+---
+
+## Slide 15 — Honest project status
+
+**Suggested time:** 0:55
+
+**Bullets**
+
+| Implemented and reviewed | In progress / must be verified | Planned |
+| --- | --- | --- |
+| Domain state machines, pure acceptance/close operations, application ports and use cases, unit-test suites. | Prisma repositories, migrations, row locks/indexes, session adapter, CSRF, rate limiter, public runtime mapper, UI, integration/E2E tests, deployment. | Block 2 ratings, Block 3 simulated patronage, enriched public experience. |
+
+- Open release gates: runtime public no-leak, credential-verified re-registration,
+  atomic session revocation, real concurrency tests, production hardening.
+
+**Speaker note**
+
+“This slide is deliberately explicit. A defensible TFM does not convert a
+design decision or interface into a production guarantee. The next milestone is
+verification of the real adapters, not additional feature scope.”
+
+---
+
+## Slide 16 — Future work after a secure core
+
+**Suggested time:** 0:40
+
+**Bullets**
+
+- Complete Block 1: infrastructure, accessible UI, seeds, deployment and smoke test.
+- Block 2: ratings only after `Event.completed`, with one rating per account/event.
+- Block 3: simulated patronage through `PaymentGateway`; real payment processing
+  requires a separate legal, privacy, fraud and financial threat model.
+- Improve public browsing with accessibility information and non-sensitive filters.
+- Add operational controls: monitoring, incident response, retention/deletion and dependency governance.
+
+**Speaker note**
+
+“The architecture leaves extension points, but extension is not a licence to
+skip security. Payments, external integrations and richer patient-facing
+features each require their own threat modelling before implementation.”
+
+---
+
+## Slide 17 — Conclusions and lessons learned
+
+**Suggested time:** 0:45
+
+**Bullets**
+
+- A social problem can be addressed with a narrow, testable and deployable core.
+- Explicit domain states and invariants make business correctness reviewable.
+- Hexagonal boundaries keep framework and persistence details replaceable.
+- Concurrency and public data minimisation are first-class design concerns.
+- SDD, tests and adversarial review turn AI-assisted work into inspectable engineering.
+- Final conclusion: the project is strongest when it states evidence and open
+  risks with the same precision as completed features.
+
+**Visual**
+
+- One closing sentence: “A safe coordination core before feature breadth.”
+
+**Speaker note**
+
+“The main learning is not a framework choice. It is the discipline of treating
+business rules, security constraints and verification evidence as part of the
+product. Questions are welcome.”
+
+## Presenter checklist before the defence
+
+- Replace placeholders on Slide 1 with author, Master’s programme, supervisor and date.
+- Add academic references on arts/humanisation in hospitals; do not make empirical claims without them.
+- Update Slides 12–15 only from reproducible execution evidence after the
+  infrastructure and deployment are complete.
+- Rehearse the live-demo fallback: a recorded demonstration is useful, but it
+  must be identified as recorded and match the deployed revision.
+- Keep technical identifiers in speaker notes where possible; the oral message
+  should explain the decision and the evidence, not recite source code.
+
+## Source artefacts
+
+- [`docs/memoria-tfm-borrador.md`](memoria-tfm-borrador.md)
+- [`docs/security-threat-model.md`](security-threat-model.md)
+- [`proposal.md`](../openspec/changes/bootstrap-vivetutiempo-platform/proposal.md)
+- [`design.md`](../openspec/changes/bootstrap-vivetutiempo-platform/design.md)
+- [Specifications](../openspec/changes/bootstrap-vivetutiempo-platform/specs/)
+- [Adversarial reviews](../openspec/changes/bootstrap-vivetutiempo-platform/reviews/)
+- [`src/domain/`](../src/domain/) and [`src/application/`](../src/application/)

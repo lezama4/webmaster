@@ -1,9 +1,10 @@
 // Prisma schema — Vivetutiempo (Block 1: Core)
 //
 // Domain model per openspec/changes/bootstrap-vivetutiempo-platform/design.md.
-// This is the high-level schema only (Phase 1 scaffolding). The base
-// migration and the partial-unique-index raw-SQL migration required by
-// ADR D4 are Phase 4 tasks (4.1, 4.2) — not created yet.
+// Includes the D8 additions (ProfileStatus.DEACTIVATED, Profile.reviewRequestedAt,
+// Session model) and the login-rate-limiter window table (D7/M4). The two
+// partial unique indexes required by ADR D4 cannot be expressed in Prisma —
+// they live in the raw-SQL migration (see prisma/migrations, B1).
 
 generator client {
   provider = "prisma-client-js"
@@ -30,6 +31,7 @@ enum ProfileStatus {
   PENDING
   ACTIVE
   REJECTED
+  DEACTIVATED
 }
 
 enum SlotStatus {
@@ -58,9 +60,41 @@ model Account {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  profile Profile?
+  profile  Profile?
+  sessions Session[]
 
   @@map("accounts")
+}
+
+// DB-backed session row (ADR D1/D7/D8). Stores only a SHA-256 hash of the
+// opaque, CSPRNG-generated bearer token — a leaked row (backup, log,
+// replica) is never a usable live session. Absolute + idle expiry per D7.
+model Session {
+  id                String   @id @default(cuid())
+  accountId         String
+  account           Account  @relation(fields: [accountId], references: [id])
+  tokenHash         String   @unique
+  absoluteExpiresAt DateTime
+  lastActiveAt      DateTime
+  createdAt         DateTime @default(now())
+
+  // Required by SessionPort.revokeAllForAccount (D7/M3).
+  @@index([accountId])
+  @@map("sessions")
+}
+
+// Login-rate-limiter rolling window (ADR D7, M4 pr2-review). `key` is a
+// SHA-256 hash of the scoped identifier (account email or truncated IP) —
+// no raw email/IP is ever stored here. Retention/cleanup policy: rows whose
+// window has fully lapsed are purged opportunistically on every isAllowed
+// check and deleted on successful login — expired windows are never
+// retained indefinitely.
+model LoginAttemptWindow {
+  key             String   @id
+  failureCount    Int      @default(0)
+  windowStartedAt DateTime
+
+  @@map("login_attempt_windows")
 }
 
 model Profile {
@@ -70,6 +104,10 @@ model Profile {
   type      ProfileType
   name      String
   status    ProfileStatus @default(PENDING)
+  // Durable evidence of the latest review request (D8/B3): a re-registration
+  // (`rejected -> pending`, M2) updates this timestamp so Admin traceability
+  // survives a restart. Full review-history table is BACKLOG.
+  reviewRequestedAt DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -114,10 +152,11 @@ model Proposal {
 
   event Event?
 
-  // NOTE (Phase 4, ADR D4 / task 4.2): Prisma cannot express partial unique
-  // indexes. The following invariants MUST be added via raw-SQL migration:
-  //   - UNIQUE(slot_id) WHERE status = 'accepted'
-  //   - UNIQUE(slot_id, artist_profile_id) WHERE status = 'submitted'
+  // NOTE (ADR D4, B1 pr2-review): Prisma cannot express partial unique
+  // indexes. Two invariants are enforced by the raw-SQL migration
+  // `prisma/migrations/*_partial_unique_indexes/migration.sql`:
+  //   - UNIQUE("slotId") WHERE "status" = 'ACCEPTED'::"ProposalStatus"
+  //   - UNIQUE("slotId","artistProfileId") WHERE "status" = 'SUBMITTED'::"ProposalStatus"
   // Do NOT rely on @@unique([slotId]) here — it would block the
   // resubmit-after-reject flow required by the spec.
   @@map("proposals")
