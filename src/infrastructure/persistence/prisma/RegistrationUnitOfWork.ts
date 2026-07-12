@@ -81,7 +81,7 @@ export class PrismaRegistrationUnitOfWork implements RegistrationUnitOfWork {
           );
 
           if (!lockedRows[0]) {
-            await tx.$queryRaw(
+            await tx.$executeRaw(
               Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${normalizedEmailForAdvisoryLock(email)}))`,
             );
             lockedRows = await tx.$queryRaw<LockedAccountRow[]>(
