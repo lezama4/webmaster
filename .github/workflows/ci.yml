@@ -44,9 +44,9 @@ jobs:
       RATE_LIMIT_HMAC_SECRET: ci-rate-limit-hmac-secret-not-for-production-0123456789
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "npm"
