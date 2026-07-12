@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
+/*
+ * Vivetutiempo design tokens — "warm & human" direction.
+ * A desaturated terracotta/coral accent over warm sand neutrals: hopeful and
+ * people-centered, while staying calm enough for hospitals and reviewers.
+ * Single accent (saturation < 80%), warm greys throughout, no pure black.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #fbf7f3;
+  --surface: #ffffff;
+  --surface-2: #f6efe8;
+  --foreground: #2a211c;
+  --muted: #7c6f66;
+  --border: #ece2d8;
+  --primary: #c85a3f;
+  --primary-hover: #b04c34;
+  --primary-foreground: #fdf3ee;
+  --accent: #d9a441;
+  --ring: #c85a3f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1512;
+    --surface: #221b17;
+    --surface-2: #2b221c;
+    --foreground: #f0e9e3;
+    --muted: #a99a8e;
+    --border: #372c25;
+    --primary: #e07a5f;
+    --primary-hover: #ec8a70;
+    --primary-foreground: #241611;
+    --accent: #e2b25a;
+    --ring: #e07a5f;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Consistent focus ring for keyboard users across interactive elements. */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
