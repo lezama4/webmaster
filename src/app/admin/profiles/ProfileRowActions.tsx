@@ -4,25 +4,25 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { primaryButton, secondaryButton } from "@ui/components/ui";
 
-type Action = "approve" | "reject" | "deactivate";
+type Action = "approve" | "reject";
 
 const LABEL: Record<Action, string> = {
   approve: "Approve",
   reject: "Reject",
-  deactivate: "Deactivate",
 };
 
 const PENDING_LABEL: Record<Action, string> = {
   approve: "Approving…",
   reject: "Rejecting…",
-  deactivate: "Deactivating…",
 };
 
 /**
- * Approve / reject / deactivate actions for one Admin queue row (5.3/5.11).
- * Each button POSTs to its matching route and refreshes the queue on
- * success; a failure (e.g. a still-pending Profile cannot be deactivated
- * yet) is shown inline rather than thrown away.
+ * Approve / reject actions for one Admin validation-queue row (5.3). The
+ * queue holds only `pending` Profiles, so deactivation (an `active`-only
+ * transition, 5.11) has no valid target here and is intentionally absent —
+ * it belongs to a future active-profiles view. Each button POSTs to its
+ * matching route and refreshes the queue on success; a failure is shown
+ * inline rather than thrown away.
  */
 export function ProfileRowActions({ profileId }: { profileId: string }) {
   const router = useRouter();
@@ -68,14 +68,6 @@ export function ProfileRowActions({ profileId }: { profileId: string }) {
           className={secondaryButton}
         >
           {pending === "reject" ? PENDING_LABEL.reject : LABEL.reject}
-        </button>
-        <button
-          type="button"
-          disabled={pending !== null}
-          onClick={() => run("deactivate")}
-          className={secondaryButton}
-        >
-          {pending === "deactivate" ? PENDING_LABEL.deactivate : LABEL.deactivate}
         </button>
       </div>
       {error ? <p className="text-xs text-primary">{error}</p> : null}
