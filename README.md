@@ -154,12 +154,12 @@ parciales para las invariantes de Proposals.
 ### 4. Seed de demostración
 
 ```bash
-# TBD: el seed todavía no está implementado.
-# El comando previsto se documentará aquí cuando exista prisma/seed.ts.
+npm run db:seed
 ```
 
-No cargues cuentas de demostración manuales en un entorno compartido. El seed
-final será idempotente y utilizará datos ficticios.
+El seed es idempotente: actualiza exclusivamente sus registros de demostración
+con identificadores estables y utiliza datos ficticios. No cargues cuentas de
+demostración manuales en un entorno compartido.
 
 ### 5. Arrancar la aplicación
 
@@ -185,20 +185,20 @@ no está disponible localmente, Vitest los marca como **skipped**, no como
 aprobados. La ejecución requerida de esas suites ocurre en GitHub Actions con
 un servicio PostgreSQL efímero. Ver [Testing y calidad](#testing-y-calidad).
 
-## Credenciales de prueba
+## Seed credentials
 
-**TBD.** Aún no existe `prisma/seed.ts`, por lo que no hay credenciales de
-demostración fijadas. Cuando el seed esté implementado, esta tabla se completará
-con datos ficticios y contraseñas exclusivas del entorno demo:
+Todas estas credenciales son ficticias y exclusivas del seed de demostración.
+No se deben reutilizar en ningún entorno real.
 
-| Rol | Email | Contraseña | Estado esperado |
+| Role | Email | Password | Expected state |
 | --- | --- | --- | --- |
-| Admin | TBD | TBD | Puede validar y desactivar perfiles. |
-| Hospital A | TBD | TBD | Activo; propietario de Slots demo. |
-| Hospital B | TBD | TBD | Caso pendiente o no propietario. |
-| Artista A | TBD | TBD | Activo; Proposal principal. |
-| Artista B | TBD | TBD | Activo; Proposal competidora. |
-| Paciente/Familiar | TBD | TBD | Rol de demostración/consulta. |
+| Admin | `admin@vtt.test` | `VivetuTiempo2026!` | Can validate and deactivate Profiles. |
+| Hospital (San Juan) | `hospital.sanjuan@vtt.test` | `VivetuTiempo2026!` | Active; owns all five demo Slots. |
+| Hospital (Esperanza) | `hospital.esperanza@vtt.test` | `VivetuTiempo2026!` | Pending; demonstrates Admin validation. |
+| Artist (Clara) | `artist.clara@vtt.test` | `VivetuTiempo2026!` | Active; submits S1 and owns the accepted S5 Proposal. |
+| Artist (Mateo) | `artist.mateo@vtt.test` | `VivetuTiempo2026!` | Active; submits S1, owns the accepted S2 Proposal, and the S4 cascade-rejected Proposal. |
+| Artist (Lucía) | `artist.lucia@vtt.test` | `VivetuTiempo2026!` | Pending; demonstrates Admin validation. |
+| Patient/Family (Ana) | `patient.ana@vtt.test` | `VivetuTiempo2026!` | Authenticated browsing role; no Profile in Block 1. |
 
 ## Despliegue
 
