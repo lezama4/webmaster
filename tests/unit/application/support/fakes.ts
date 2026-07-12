@@ -49,6 +49,10 @@ import type {
   OpenSlotListingItem,
   OpenSlotListingQuery,
 } from "@application/ports/OpenSlotListingQuery";
+import type { PendingProfileView } from "@application/dto/PendingProfileView";
+import type { PendingProfileQuery } from "@application/ports/PendingProfileQuery";
+import type { HospitalSlotView } from "@application/dto/HospitalSlotView";
+import type { HospitalSlotBoardQuery } from "@application/ports/HospitalSlotBoardQuery";
 
 export const NOW = new Date("2026-07-10T12:00:00Z");
 
@@ -472,5 +476,25 @@ export class FakeOpenSlotListingQuery implements OpenSlotListingQuery {
   constructor(private readonly items: readonly OpenSlotListingItem[]) {}
   async listOpenUpcoming(now: Date): Promise<readonly OpenSlotListingItem[]> {
     return this.items.filter((item) => item.scheduledAt.getTime() > now.getTime());
+  }
+}
+
+/** In-memory `PendingProfileQuery` fake — the fake trusts caller-supplied ordering (5.3/5.12). */
+export class FakePendingProfileQuery implements PendingProfileQuery {
+  constructor(private readonly items: readonly PendingProfileView[]) {}
+  async listPending(): Promise<readonly PendingProfileView[]> {
+    return this.items;
+  }
+}
+
+/** In-memory `HospitalSlotBoardQuery` fake — records every `hospitalProfileId` it is called with, so tests can assert scoping (5.4/5.6/5.10). */
+export class FakeHospitalSlotBoardQuery implements HospitalSlotBoardQuery {
+  readonly calls: string[] = [];
+  constructor(private readonly items: readonly HospitalSlotView[]) {}
+  async listForHospital(
+    hospitalProfileId: string,
+  ): Promise<readonly HospitalSlotView[]> {
+    this.calls.push(hospitalProfileId);
+    return this.items;
   }
 }

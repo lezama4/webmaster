@@ -11,12 +11,16 @@ import type { LoginDeps } from "@application/use-cases/login";
 import type { LogoutDeps } from "@application/use-cases/logout";
 import type { PublishSlotDeps } from "@application/use-cases/publishSlot";
 import type { ListPublishedEventsDeps } from "@application/use-cases/listPublishedEvents";
+import type { ListPendingProfilesDeps } from "@application/use-cases/listPendingProfiles";
+import type { ListHospitalSlotsDeps } from "@application/use-cases/listHospitalSlots";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaRegistrationUnitOfWork } from "@infrastructure/persistence/prisma/RegistrationUnitOfWork";
 import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
 import { PrismaPublicEventProjectionQuery } from "@infrastructure/persistence/prisma/PublicEventProjectionQuery";
+import { PrismaPendingProfileQuery } from "@infrastructure/persistence/prisma/PendingProfileQuery";
+import { PrismaHospitalSlotBoardQuery } from "@infrastructure/persistence/prisma/HospitalSlotBoardQuery";
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
@@ -143,5 +147,20 @@ export function adminDeps(): AdminDeps {
   return {
     profiles: new PrismaProfileRepository(prismaClient),
     profileUnitOfWork: new PrismaProfileUnitOfWork(prismaClient),
+  };
+}
+
+/** `listPendingProfiles` deps — Admin pending-profile queue (5.3/5.12). */
+export function pendingProfilesDeps(): ListPendingProfilesDeps {
+  return {
+    pendingProfileQuery: new PrismaPendingProfileQuery(prismaClient),
+  };
+}
+
+/** `listHospitalSlots` deps — Hospital's own slot board (5.4/5.6/5.10). */
+export function hospitalSlotBoardDeps(): ListHospitalSlotsDeps {
+  return {
+    profiles: new PrismaProfileRepository(prismaClient),
+    hospitalSlotBoardQuery: new PrismaHospitalSlotBoardQuery(prismaClient),
   };
 }
