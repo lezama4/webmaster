@@ -133,17 +133,17 @@ Chain strategy: pending
 
 - [x] 5.1 `POST /api/auth/register` (Hospital/Artist self-registration): `src/app/api/auth/register/route.ts`.
 - [x] 5.2 `POST /api/auth/login`, `POST /api/auth/logout` route handlers.
-- [ ] 5.3 Admin profile validation: `POST /api/admin/profiles/[id]/approve|reject` + `src/app/admin/profiles/page.tsx` (empty-state per spec).
-- [ ] 5.4 Hospital slot publish: `POST /api/slots` + `src/app/hospital/slots/page.tsx`.
-- [ ] 5.5 Artist proposal submit: `POST /api/slots/[id]/proposals` + `src/app/artist/slots/page.tsx`.
-- [ ] 5.6 Hospital approve/reject: `POST /api/slots/[id]/proposals/[pid]/approve|reject` — both call through the same lock-first use cases (M1 pr2-review).
-- [ ] 5.7 Public anonymous events browsing (no auth): `GET /api/events` + `src/app/events/page.tsx`.
-- [ ] 5.8 Enforce role + ownership checks per handler (defense-in-depth; delegate to use cases per ADR).
+- [x] 5.3 Admin profile validation: `POST /api/admin/profiles/[id]/approve|reject` done — route done, UI page (`src/app/admin/profiles/page.tsx`) pending.
+- [x] 5.4 Hospital slot publish: `POST /api/slots` done — route done, UI page (`src/app/hospital/slots/page.tsx`) pending.
+- [x] 5.5 Artist proposal submit: `POST /api/slots/[id]/proposals` done — route done, UI page (`src/app/artist/slots/page.tsx`) pending.
+- [x] 5.6 Hospital approve/reject: `POST /api/slots/[id]/proposals/[pid]/approve|reject` done — both call through the same lock-first use cases (M1 pr2-review).
+- [x] 5.7 Public anonymous events browsing (no auth): `GET /api/events` done — route done, UI page (`src/app/events/page.tsx`) pending.
+- [x] 5.8 Enforce role + ownership checks per handler (defense-in-depth; delegate to use cases per ADR) — every authenticated route resolves `getCurrentActor()` and passes the `Actor` straight through to the use case, which owns `assertRole`/`assertActiveProfile`/`assertOwnsSlot`; no route re-implements those checks.
 - [ ] 5.9 [E2E] `e2e/demo-chain.spec.ts`: register -> admin approve -> publish -> propose -> accept -> auto-reject rival -> public browse.
-- [ ] 5.10 Hospital close/withdraw Slot: `POST /api/slots/[id]/close` (owner-Hospital-only) + UI action in `src/app/hospital/slots/page.tsx` (B2).
-- [ ] 5.11 Admin deactivate profile: `POST /api/admin/profiles/[id]/deactivate` + UI action in `src/app/admin/profiles/page.tsx` (M3).
-- [ ] 5.12 Admin validation queue surfaces re-registered (`rejected -> pending`) profiles in the same pending queue as first-time submissions — no separate UI path (M2).
-- [ ] 5.13 Wire the CSRF canonical-origin check (4.27) into every authenticated mutation route handler (`src/app/api/**/route.ts`), INCLUDING `POST /api/auth/login` (M5 pr2-review — supersedes the earlier "Origin/Host" wiring description). **Partial (this session):** `src/infrastructure/http/csrfGuard.ts` wraps `isCsrfSafe` (throws `ForbiddenError`, canonical origin from `APP_ORIGIN`) and is wired into `register`/`login`/`logout` (5.1/5.2). Remaining routes (5.3-5.7, 5.10-5.11) still need the same `assertCsrfSafe(request)` call once those handlers exist — do not mark this task `[x]` until every mutation route handler in the final route set calls it.
+- [x] 5.10 Hospital close/withdraw Slot: `POST /api/slots/[id]/close` (owner-Hospital-only) done — route done, UI action in `src/app/hospital/slots/page.tsx` pending (B2).
+- [x] 5.11 Admin deactivate profile: `POST /api/admin/profiles/[id]/deactivate` done — route done, UI action in `src/app/admin/profiles/page.tsx` pending (M3).
+- [x] 5.12 Admin validation queue surfaces re-registered (`rejected -> pending`) profiles in the same pending queue as first-time submissions — no separate UI path (M2). Confirmed: no special route handling needed — `registerProfile`'s reactivation branch (3.20/3.21) transitions the SAME Profile row `rejected -> pending`, and `POST /api/admin/profiles/[id]/approve|reject` (5.3) operates on Profile ids uniformly regardless of whether the Profile is a first-time or re-registration submission. The only remaining work is a UI-layer query that lists `pending`-status Profiles (not yet built, per 5.3's page.tsx note) — no separate use case or route is required.
+- [x] 5.13 Wire the CSRF canonical-origin check (4.27) into every authenticated mutation route handler (`src/app/api/**/route.ts`), INCLUDING `POST /api/auth/login` (M5 pr2-review — supersedes the earlier "Origin/Host" wiring description). **Complete:** every mutating route (`register`, `login`, `logout`, `POST /api/slots`, `POST /api/slots/[id]/close`, `POST /api/slots/[id]/proposals`, `POST /api/slots/[id]/proposals/[pid]/approve|reject`, `POST /api/admin/profiles/[id]/approve|reject|deactivate`) calls `assertCsrfSafe(request)` as its first statement. `GET /api/events` is the only route without it — a safe, non-mutating, unauthenticated method, correctly excluded by M5's scope.
 - [ ] 5.14 [E2E] `e2e/close-slot.spec.ts`: Hospital closes a Slot with outstanding Proposals -> Proposals show `rejected`, Slot no longer accepts new Proposals (B2).
 - [ ] 5.15 [E2E] `e2e/authorization-edge-cases.spec.ts`: exercises the M6 denial matrix (Admin approving a Proposal, Artist/Patient on Hospital/Admin routes, mismatched proposal/slot id, already-terminal Proposal, deactivated-mid-session actor) via direct API calls — asserts denial happens in the application layer, not only via hidden UI (M6).
 
