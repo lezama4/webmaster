@@ -11,7 +11,7 @@ import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/Prof
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 
 /**
@@ -87,7 +87,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       },
     );
 
-    await tick(); // let login's SELECT ... FOR UPDATE reach Postgres and block.
+    await waitForPostgresLockWait(client, "accounts");
     deactivateHoldsLock.resolve(); // release deactivation — it commits.
 
     const [deactivateResult, loginResult] = await Promise.allSettled([
@@ -174,7 +174,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       { profiles, profileUnitOfWork: new PrismaProfileUnitOfWork(client) },
     );
 
-    await tick(); // let deactivation's SELECT ... FOR UPDATE reach Postgres and block.
+    await waitForPostgresLockWait(client, "accounts");
     loginHoldsLock.resolve(); // release login — it commits (issues a session).
 
     const [loginResult, deactivateResult] = await Promise.allSettled([

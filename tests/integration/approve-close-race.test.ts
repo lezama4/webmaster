@@ -3,7 +3,7 @@ import { approveProposal } from "@application/use-cases/approveProposal";
 import { closeSlot } from "@application/use-cases/closeSlot";
 import { ConflictError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
   createArtistProfile,
@@ -62,7 +62,7 @@ describe.skipIf(!dbAvailable)("race: approve vs close (4.13, pr2b-M5)", () => {
 
     const closePromise = closeSlot(hospitalActor, { slotId: slot.id }, slotDeps(client));
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     approveHoldsLock.resolve();
 
     const [approveResult, closeResult] = await Promise.allSettled([approvePromise, closePromise]);
@@ -105,7 +105,7 @@ describe.skipIf(!dbAvailable)("race: approve vs close (4.13, pr2b-M5)", () => {
       slotDeps(client),
     );
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     closeHoldsLock.resolve();
 
     const [closeResult, approveResult] = await Promise.allSettled([closePromise, approvePromise]);

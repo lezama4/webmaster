@@ -11,6 +11,12 @@ import { PrismaClient } from "@prisma/client";
 let cachedAvailability: Promise<boolean> | undefined;
 
 export function isDatabaseAvailable(): Promise<boolean> {
+  // Match globalSetup: local default runs are unit-focused and integration is
+  // opt-in, while GitHub Actions sets CI=true and always exercises Postgres.
+  const integrationEnabled =
+    process.env.CI === "true" || process.env.VIVETUTIEMPO_RUN_INTEGRATION === "true";
+  if (!integrationEnabled) return Promise.resolve(false);
+
   if (!cachedAvailability) {
     cachedAvailability = (async () => {
       const client = new PrismaClient();

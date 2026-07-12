@@ -21,6 +21,13 @@ import { PrismaClient } from "@prisma/client";
  * a partially- or un-migrated schema.
  */
 export default async function setup(): Promise<void> {
+  // Local unit runs must not wait on a Docker/WSL PostgreSQL connection that
+  // cannot exist in this environment. CI always sets `CI=true`; a developer
+  // with a working local database can opt in explicitly.
+  const integrationEnabled =
+    process.env.CI === "true" || process.env.VIVETUTIEMPO_RUN_INTEGRATION === "true";
+  if (!integrationEnabled) return;
+
   const probe = new PrismaClient();
   let reachable = true;
   try {

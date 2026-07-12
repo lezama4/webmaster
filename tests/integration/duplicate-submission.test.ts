@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { submitProposal } from "@application/use-cases/submitProposal";
 import { ConflictError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import { createArtistProfile, createHospitalProfile, createOpenSlot } from "./support/fixtures";
 import { actorFor, slotDeps } from "./support/wiring";
@@ -56,7 +56,7 @@ describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16, pr2
       slotDeps(client),
     );
 
-    await tick(); // let the second submit's SELECT ... FOR UPDATE actually reach Postgres and block.
+    await waitForPostgresLockWait(client, "slots");
     firstHoldsLock.resolve(); // release the first — it commits.
 
     const [firstResult, secondResult] = await Promise.allSettled([firstPromise, secondPromise]);
@@ -105,7 +105,7 @@ describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16, pr2
       slotDeps(client),
     );
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     secondHoldsLock.resolve();
 
     const [secondResult, firstResult] = await Promise.allSettled([secondPromise, firstPromise]);

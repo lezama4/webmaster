@@ -37,6 +37,11 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://vivetutiempo:vivetutiempo@localhost:5432/vivetutiempo
+      # Non-production deterministic values required by the Postgres-backed
+      # rate limiter. Production uses separately managed secrets; these exist
+      # only so integration/race tests exercise the real HMAC key path.
+      SESSION_SECRET: ci-session-secret-not-for-production-0123456789
+      RATE_LIMIT_HMAC_SECRET: ci-rate-limit-hmac-secret-not-for-production-0123456789
 
     steps:
       - uses: actions/checkout@v4

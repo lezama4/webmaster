@@ -3,7 +3,7 @@ import { approveProposal } from "@application/use-cases/approveProposal";
 import { submitProposal } from "@application/use-cases/submitProposal";
 import { ConflictError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
   createArtistProfile,
@@ -65,7 +65,7 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
       slotDeps(client),
     );
 
-    await tick(); // let submit's SELECT ... FOR UPDATE actually reach Postgres and block.
+    await waitForPostgresLockWait(client, "slots");
     approveHoldsLock.resolve(); // release approve — it commits, filling the Slot.
 
     const [approveResult, submitResult] = await Promise.allSettled([
@@ -84,5 +84,60 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
     // Only Clara's original Proposal exists — Mateo's late submit never persisted.
     expect(proposals.map((p) => p.artistProfileId)).toEqual([clara.id]);
     expect(proposals[0]!.status).toBe("ACCEPTED");
+  });
+
+  it("submit locks FIRST — approval waits, then accepts its target and cascade-rejects the already-committed late proposal", async () => {
+    const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
+    const { profile: clara } = await createArtistProfile(client, { name: "Clara" });
+    const { profile: mateo } = await createArtistProfile(client, { name: "Mateo" });
+    const slot = await createOpenSlot(client, hospital.id);
+    const claraProposal = await createSubmittedProposal(client, slot.id, clara.id);
+
+    const submitHoldsLock = createDeferred<void>();
+    const submitLockAcquired = createDeferred<void>();
+    const submitUoW = new PrismaMatchingUnitOfWork(client, {
+      afterLock: async () => {
+        submitLockAcquired.resolve();
+        await submitHoldsLock.promise;
+      },
+    });
+
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const mateoActor = actorFor(mateo, "mateo-account-unused", "artist");
+    const submitPromise = submitProposal(
+      mateoActor,
+      { slotId: slot.id, message: "Submitted before approval" },
+      { ...slotDeps(client), matchingUnitOfWork: submitUoW },
+    );
+
+    await submitLockAcquired.promise;
+
+    const approvePromise = approveProposal(
+      hospitalActor,
+      { slotId: slot.id, proposalId: claraProposal.id },
+      slotDeps(client),
+    );
+
+    await waitForPostgresLockWait(client, "slots");
+    submitHoldsLock.resolve();
+
+    const [submitResult, approveResult] = await Promise.allSettled([
+      submitPromise,
+      approvePromise,
+    ]);
+
+    expect(submitResult.status).toBe("fulfilled");
+    expect(approveResult.status).toBe("fulfilled");
+
+    const finalSlot = await client.slot.findUniqueOrThrow({ where: { id: slot.id } });
+    expect(finalSlot.status).toBe("FILLED");
+    const proposals = await client.proposal.findMany({ where: { slotId: slot.id } });
+    expect(proposals).toHaveLength(2);
+    expect(proposals.find((proposal) => proposal.id === claraProposal.id)?.status).toBe(
+      "ACCEPTED",
+    );
+    expect(proposals.find((proposal) => proposal.artistProfileId === mateo.id)?.status).toBe(
+      "REJECTED",
+    );
   });
 });

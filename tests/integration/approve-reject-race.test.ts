@@ -3,7 +3,7 @@ import { approveProposal } from "@application/use-cases/approveProposal";
 import { rejectProposal } from "@application/use-cases/rejectProposal";
 import { ConflictError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
   createArtistProfile,
@@ -63,7 +63,7 @@ describe.skipIf(!dbAvailable)("race: approve vs reject (4.14, pr2b-M5)", () => {
       slotDeps(client),
     );
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     approveHoldsLock.resolve();
 
     const [approveResult, rejectResult] = await Promise.allSettled([approvePromise, rejectPromise]);
@@ -106,7 +106,7 @@ describe.skipIf(!dbAvailable)("race: approve vs reject (4.14, pr2b-M5)", () => {
       slotDeps(client),
     );
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     rejectHoldsLock.resolve();
 
     const [rejectResult, approveResult] = await Promise.allSettled([rejectPromise, approvePromise]);

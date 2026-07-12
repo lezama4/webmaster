@@ -15,7 +15,44 @@ export function createDeferred<T = void>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-/** Yields to the event loop long enough for a concurrently-fired transaction to actually reach Postgres and block on `SELECT ... FOR UPDATE`, before the test releases the first transaction's hold on the lock. */
-export function tick(ms = 200): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** Tables whose lock-first adapters are exercised by the integration race suite. */
+export type LockWaitTable = "slots" | "accounts";
+
+/**
+ * Waits for observable PostgreSQL evidence that a second transaction is
+ * blocked on the lock-first `SELECT ... FOR UPDATE` for `table`. This is not
+ * a timing delay: the first transaction MUST NOT be released until this query
+ * observes `wait_event_type = 'Lock'` in `pg_stat_activity` for the second
+ * operation. The deadline merely fails a broken test rather than hanging CI.
+ */
+export async function waitForPostgresLockWait(
+  client: PrismaClient,
+  table: LockWaitTable,
+  timeoutMs = 10_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  const queryFragment = table === "slots" ? 'FROM "slots"' : 'FROM "accounts"';
+
+  while (Date.now() < deadline) {
+    const rows = await client.$queryRaw<{ readonly waiting: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND state = 'active'
+          AND wait_event_type = 'Lock'
+          AND query LIKE ${`%${queryFragment}%FOR UPDATE%`}
+      ) AS "waiting"
+    `;
+    if (rows[0]?.waiting) return;
+
+    // Yield after each real database observation without using a fixed sleep.
+    await Promise.resolve();
+  }
+
+  throw new Error(
+    `Timed out waiting for a blocked SELECT ... FOR UPDATE on '${table}'. ` +
+      "The race was not established, so the test must not release its first transaction.",
+  );
 }
+import type { PrismaClient } from "@prisma/client";

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { approveProposal } from "@application/use-cases/approveProposal";
 import { ConflictError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
-import { createDeferred, tick } from "./support/barrier";
+import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
   createArtistProfile,
@@ -70,7 +70,7 @@ describe.skipIf(!dbAvailable)("matching race: approve vs approve (4.10, pr2b-M5)
       slotDeps(client),
     );
 
-    await tick(); // let Mateo's SELECT ... FOR UPDATE actually reach Postgres and block.
+    await waitForPostgresLockWait(client, "slots");
     claraHoldsLock.resolve(); // release Clara's transaction — it commits, filling the Slot.
 
     const [claraResult, mateoResult] = await Promise.allSettled([claraPromise, mateoPromise]);
@@ -119,7 +119,7 @@ describe.skipIf(!dbAvailable)("matching race: approve vs approve (4.10, pr2b-M5)
       slotDeps(client),
     );
 
-    await tick();
+    await waitForPostgresLockWait(client, "slots");
     mateoHoldsLock.resolve();
 
     const [mateoResult, claraResult] = await Promise.allSettled([mateoPromise, claraPromise]);
