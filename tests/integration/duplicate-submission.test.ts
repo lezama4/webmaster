@@ -29,9 +29,9 @@ describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16, pr2
 
   it("persists exactly the FIRST-locked submission and denies the late-arriving one with ConflictError, never a raw DB error", async () => {
     const { profile: hospital } = await createHospitalProfile(client);
-    const { profile: artist } = await createArtistProfile(client);
+    const { account: artistAccount, profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
-    const artistActor = actorFor(artist, "artist-account-unused", "artist");
+    const artistActor = actorFor(artist, artistAccount.id, "artist");
 
     const firstHoldsLock = createDeferred<void>();
     const firstLockAcquired = createDeferred<void>();
@@ -75,9 +75,9 @@ describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16, pr2
 
   it("is symmetric: whichever of the two calls the caller happens to construct the barrier around still wins deterministically", async () => {
     const { profile: hospital } = await createHospitalProfile(client);
-    const { profile: artist } = await createArtistProfile(client);
+    const { account: artistAccount, profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
-    const artistActor = actorFor(artist, "artist-account-unused", "artist");
+    const artistActor = actorFor(artist, artistAccount.id, "artist");
 
     // Same mechanism, roles swapped relative to the test above — proves
     // the guard's outcome depends on LOCK ORDER, not on argument order or

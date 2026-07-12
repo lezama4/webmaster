@@ -34,7 +34,9 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
   it("denies a submit that arrives after approve has locked the Slot", async () => {
     const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
     const { profile: clara } = await createArtistProfile(client, { name: "Clara" });
-    const { profile: mateo } = await createArtistProfile(client, { name: "Mateo" });
+    const { account: mateoAccount, profile: mateo } = await createArtistProfile(client, {
+      name: "Mateo",
+    });
     const slot = await createOpenSlot(client, hospital.id);
     const claraProposal = await createSubmittedProposal(client, slot.id, clara.id);
 
@@ -49,7 +51,7 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
     });
 
     const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
-    const mateoActor = actorFor(mateo, "mateo-account-unused", "artist");
+    const mateoActor = actorFor(mateo, mateoAccount.id, "artist");
 
     const approvePromise = approveProposal(
       hospitalActor,
@@ -89,7 +91,9 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
   it("submit locks FIRST — approval waits, then accepts its target and cascade-rejects the already-committed late proposal", async () => {
     const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
     const { profile: clara } = await createArtistProfile(client, { name: "Clara" });
-    const { profile: mateo } = await createArtistProfile(client, { name: "Mateo" });
+    const { account: mateoAccount, profile: mateo } = await createArtistProfile(client, {
+      name: "Mateo",
+    });
     const slot = await createOpenSlot(client, hospital.id);
     const claraProposal = await createSubmittedProposal(client, slot.id, clara.id);
 
@@ -103,7 +107,7 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
     });
 
     const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
-    const mateoActor = actorFor(mateo, "mateo-account-unused", "artist");
+    const mateoActor = actorFor(mateo, mateoAccount.id, "artist");
     const submitPromise = submitProposal(
       mateoActor,
       { slotId: slot.id, message: "Submitted before approval" },

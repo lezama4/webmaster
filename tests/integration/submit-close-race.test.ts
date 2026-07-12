@@ -24,7 +24,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
 
   it("denies a submit that arrives after close has locked the Slot", async () => {
     const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
-    const { profile: artist } = await createArtistProfile(client);
+    const { account: artistAccount, profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
 
     const closeHoldsLock = createDeferred<void>();
@@ -38,7 +38,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
     });
 
     const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
-    const artistActor = actorFor(artist, "artist-account-unused", "artist");
+    const artistActor = actorFor(artist, artistAccount.id, "artist");
 
     const closePromise = closeSlot(
       hospitalActor,
@@ -72,7 +72,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
 
   it("submit locks FIRST — close waits, then closes the Slot and cascade-rejects that submission", async () => {
     const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
-    const { profile: artist } = await createArtistProfile(client);
+    const { account: artistAccount, profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
 
     const submitHoldsLock = createDeferred<void>();
@@ -85,7 +85,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
     });
 
     const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
-    const artistActor = actorFor(artist, "artist-account-unused", "artist");
+    const artistActor = actorFor(artist, artistAccount.id, "artist");
     const submitPromise = submitProposal(
       artistActor,
       { slotId: slot.id, message: "Submitted before closure" },

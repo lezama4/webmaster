@@ -85,7 +85,15 @@ describe.skipIf(!dbAvailable)("matching race: approve vs approve (4.10, pr2b-M5)
     const finalClara = await client.proposal.findUniqueOrThrow({ where: { id: claraProposal.id } });
     const finalMateo = await client.proposal.findUniqueOrThrow({ where: { id: mateoProposal.id } });
     expect(finalClara.status).toBe("ACCEPTED");
-    expect(finalMateo.status).toBe("SUBMITTED"); // Mateo's approve never persisted anything — it never got past the guard.
+    // Mateo's approve never persisted anything — it never got past the
+    // guard. But Mateo's own Proposal is NOT still "submitted": Clara's
+    // acceptProposal transaction, which committed first, atomically
+    // auto-rejects every OTHER submitted Proposal on the Slot as part of
+    // the accept cascade (domain invariant, ADR D4 — see
+    // `domain/slot/acceptProposal.ts`). Mateo's late approve then re-reads
+    // the LIVE (already-rejected) Proposal and the now-filled Slot, and is
+    // denied — but the rejection already happened via Clara's cascade.
+    expect(finalMateo.status).toBe("REJECTED");
 
     const events = await client.event.findMany({ where: { slotId: slot.id } });
     expect(events).toHaveLength(1);
@@ -134,7 +142,9 @@ describe.skipIf(!dbAvailable)("matching race: approve vs approve (4.10, pr2b-M5)
     const finalClara = await client.proposal.findUniqueOrThrow({ where: { id: claraProposal.id } });
     const finalMateo = await client.proposal.findUniqueOrThrow({ where: { id: mateoProposal.id } });
     expect(finalMateo.status).toBe("ACCEPTED");
-    expect(finalClara.status).toBe("SUBMITTED");
+    // Same cascade as the other linearization, mirrored: Mateo's approve
+    // committed first and auto-rejected Clara's still-submitted Proposal.
+    expect(finalClara.status).toBe("REJECTED");
 
     const events = await client.event.findMany({ where: { slotId: slot.id } });
     expect(events).toHaveLength(1);

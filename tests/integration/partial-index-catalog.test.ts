@@ -31,7 +31,12 @@ describe.skipIf(!dbAvailable)("partial unique index catalog (4.5, B1, pr2b-N1)",
     expect(def).not.toMatch(/"artistProfileId"/);
     // Partial: a WHERE clause carrying the exact predicate, not just the
     // literal text appearing somewhere unrelated in the definition.
-    expect(def).toMatch(/WHERE\s*\(?\s*"status"\s*=\s*'ACCEPTED'::"ProposalStatus"\s*\)?\s*$/);
+    // Postgres prints unquoted identifiers that don't need quoting (e.g. an
+    // all-lowercase column like `status`) without double quotes — unlike
+    // `"slotId"`/`"artistProfileId"`, which ARE quoted because they're
+    // camelCase. Both forms are accepted here; only the quoting style
+    // differs, not the column being matched.
+    expect(def).toMatch(/WHERE\s*\(?\s*"?status"?\s*=\s*'ACCEPTED'::"ProposalStatus"\s*\)?\s*$/);
   });
 
   it("proposals_submitted_per_slot_artist is a UNIQUE, partial index on (slotId, artistProfileId) WHERE status = SUBMITTED", async () => {
@@ -46,7 +51,8 @@ describe.skipIf(!dbAvailable)("partial unique index catalog (4.5, B1, pr2b-N1)",
     expect(def.startsWith("CREATE UNIQUE INDEX")).toBe(true);
     // Exact key list AND order — slotId first, artistProfileId second.
     expect(def).toMatch(/\(\s*"slotId",\s*"artistProfileId"\s*\)/);
-    expect(def).toMatch(/WHERE\s*\(?\s*"status"\s*=\s*'SUBMITTED'::"ProposalStatus"\s*\)?\s*$/);
+    // Same unquoted-vs-quoted identifier note as the index above.
+    expect(def).toMatch(/WHERE\s*\(?\s*"?status"?\s*=\s*'SUBMITTED'::"ProposalStatus"\s*\)?\s*$/);
   });
 
   it("queries pg_index directly to confirm indisunique and a partial predicate (indpred IS NOT NULL)", async () => {
