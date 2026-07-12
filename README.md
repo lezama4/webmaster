@@ -1,149 +1,267 @@
 # Vivetutiempo
 
-Vivetutiempo is a free, non-profit multi-role coordination platform that
-connects hospitals with available agenda slots, artists/dynamizers who can
-fill them with cultural and human activities, and the patients/families who
-benefit — with matching, approval, governance, and traceability.
+Plataforma web sin ánimo de lucro para coordinar actividades culturales en el
+ámbito hospitalario. Vivetutiempo conecta a los Hospitales que publican huecos
+de agenda con Artistas o dinamizadores que proponen actividades, bajo la
+gobernanza de un Administrador. El resultado es un Evento publicado que puede
+consultarse sin iniciar sesión.
 
-This repository is the deliverable of a Master's final project (TFM) in
-AI-assisted software development, built with Spec-Driven Development,
-Clean/Hexagonal Architecture, layered testing, and security by design.
+El flujo central es:
 
-> Status: Block 1 (Core) is in progress. See
-> `openspec/changes/bootstrap-vivetutiempo-platform/` for the spec, design,
-> and task breakdown driving this build.
-
-## Stack
-
-- **Frontend/Backend:** Next.js (App Router + Route Handlers), TypeScript
-- **Styling:** Tailwind CSS
-- **Database:** PostgreSQL, via Prisma ORM
-- **Auth:** DB-backed cookie sessions (httpOnly/Secure/SameSite=Lax) +
-  argon2id password hashing — see ADR D1 in `design.md`
-- **Testing:** Vitest (unit/integration), Playwright (E2E)
-- **Local infra:** Docker Compose (PostgreSQL only)
-- **Deployment target:** Vercel + managed PostgreSQL
-
-## Architecture
-
-Hexagonal / Clean Architecture in a single repo:
-
-```
-src/
-  domain/          Framework-free entities, state machines, pure domain logic
-  application/     Use cases + port interfaces (no framework/persistence deps)
-  infrastructure/  Prisma repositories, auth adapters (implements the ports)
-  ui/              Presentational React components (Tailwind)
-  app/             Next.js App Router: pages + route handlers (thin entry layer)
+```text
+Hospital publica un hueco → Artista propone una actividad →
+Hospital aprueba → se publica un Evento → consulta pública
 ```
 
-`domain/` and `application/` must stay framework-free; this is enforced via
-an ESLint boundary rule in `eslint.config.mjs`. See ADR D5 in
-`openspec/changes/bootstrap-vivetutiempo-platform/design.md` for why
-Next.js's required `src/app` folder sits alongside this structure.
+Este repositorio es el entregable de un Trabajo de Fin de Máster (TFM) sobre
+desarrollo de software asistido por IA, desarrollo guiado por especificaciones,
+arquitectura hexagonal y seguridad por diseño. No procesa historias clínicas ni
+pretende sustituir sistemas sanitarios: se limita a la coordinación de
+actividades culturales.
 
-## Getting started
+> Estado honesto: el núcleo de dominio, aplicación e infraestructura está
+> avanzado, pero el MVP completo aún requiere rutas HTTP, interfaz, datos de
+> demostración, E2E, despliegue y evidencia de CI. Consultá el
+> [informe de readiness](docs/tfm-readiness-report.md) para el estado detallado.
 
-### Prerequisites
+## Stack tecnológico
 
-- Node.js 20+
-- Docker (for local PostgreSQL)
+| Tecnología | Uso | Motivo |
+| --- | --- | --- |
+| Next.js (App Router) + TypeScript | Monolito web y capa de entrega | Mantiene tipado y una única base de código para interfaz y API. |
+| React + Tailwind CSS | Interfaz | Componentes y estilos de la aplicación web. |
+| PostgreSQL + Prisma | Persistencia | PostgreSQL aporta transacciones y bloqueos; Prisma implementa los adaptadores de persistencia. |
+| Vitest | Pruebas unitarias e integración | Separa reglas de dominio/casos de uso de las pruebas reales contra PostgreSQL. |
+| Playwright | Smoke y E2E | Verifica el flujo desplegado cuando las pantallas y rutas estén disponibles. |
+| Docker Compose | PostgreSQL local | Entorno local reproducible y aislado. |
+| Vercel + PostgreSQL gestionada | Despliegue objetivo | Reduce complejidad operativa para el alcance del TFM. |
 
-### Install
+La justificación de estas decisiones está desarrollada en la
+[memoria técnica](docs/memoria-tfm-borrador.md) y en el
+[diseño del cambio](openspec/changes/bootstrap-vivetutiempo-platform/design.md).
+
+## Arquitectura
+
+Vivetutiempo es un monolito modular organizado con arquitectura hexagonal:
+
+```text
+src/app + src/ui       Entrada Next.js y presentación
+          ↓
+src/application        Casos de uso, DTOs y puertos
+          ↓
+src/domain             Entidades, transiciones e invariantes puros
+          ↑
+src/infrastructure     Adaptadores Prisma, sesiones, hash, CSRF y reloj
+```
+
+- `domain` no depende de Next.js, Prisma, HTTP ni infraestructura.
+- `application` coordina reglas de negocio a través de puertos.
+- `infrastructure` implementa puertos concretos, como Prisma y sesiones.
+- `app` y `ui` son la frontera de entrega; las rutas y pantallas del flujo
+  completo siguen pendientes.
+
+Las decisiones arquitectónicas y ADRs están en
+[design.md](openspec/changes/bootstrap-vivetutiempo-platform/design.md).
+
+## Estructura del proyecto
+
+```text
+.
+├── docs/                         # Memoria, seguridad, readiness y despliegue
+├── e2e/                          # Smoke/E2E de Playwright
+├── openspec/                     # Propuesta, especificaciones, diseño, tareas y reviews
+├── prisma/
+│   ├── migrations/               # Migraciones PostgreSQL versionadas
+│   └── schema.prisma             # Modelo Prisma
+├── src/
+│   ├── app/                      # App Router de Next.js (capa de entrada)
+│   ├── domain/                   # Modelo de dominio independiente de frameworks
+│   ├── application/              # Casos de uso, puertos y errores de aplicación
+│   ├── infrastructure/           # Adaptadores de persistencia y seguridad
+│   └── ui/                       # Componentes presentacionales reutilizables
+├── tests/
+│   ├── unit/                     # Dominio, aplicación, infraestructura y límites
+│   └── integration/              # PostgreSQL, migraciones, sesiones y carreras
+├── .github/workflows/ci.yml      # Validación continua con PostgreSQL
+├── docker-compose.yml            # PostgreSQL local
+└── package.json                  # Scripts y dependencias
+```
+
+## Funcionalidades y hoja de ruta
+
+| Bloque | Alcance | Estado |
+| --- | --- | --- |
+| 1. Núcleo de coordinación | Perfiles, validación, Slots, Proposals, decisión del Hospital, Eventos y consulta pública. | **En progreso.** Dominio, aplicación, migraciones y adaptadores están presentes; rutas, UI, seed, E2E y despliegue siguen pendientes. |
+| 2. Valoración | Valoración de Eventos completados por pacientes/familiares, una por cuenta y Evento. | **Planificado.** |
+| 3. Mecenazgo simulado | Campañas de apoyo detrás de un puerto `PaymentGateway` y un adaptador falso; no procesa pagos reales. | **Planificado / en rama separada.** |
+
+### Reglas de negocio principales del Bloque 1
+
+- Un Hospital o Artista se registra con un perfil `pending`; un Admin lo aprueba
+  o rechaza.
+- Sólo los perfiles activos pueden publicar Slots o enviar Proposals.
+- Un Slot puede recibir varias Proposals, pero sólo el Hospital propietario
+  decide sobre él.
+- Al aprobar una Proposal, el Slot pasa a `filled`, la Proposal seleccionada
+  pasa a `accepted`, las rivales pendientes se rechazan y se crea un Evento
+  `published`.
+- La proyección pública está diseñada como una lista de campos permitidos:
+  título, descripción, fecha/hora, duración y nombre público del Artista. No
+  debe exponer ubicación exacta, mensajes privados, correos ni identificadores
+  internos.
+
+Las especificaciones verificables están en
+[openspec/changes/bootstrap-vivetutiempo-platform/specs](openspec/changes/bootstrap-vivetutiempo-platform/specs/).
+
+## Instalación y ejecución local
+
+### Requisitos
+
+- Node.js 22.x
+- Docker Desktop o un PostgreSQL local accesible
+
+### 1. Instalar dependencias y configurar el entorno
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 ```
 
-### Run local PostgreSQL
+Reemplazá los valores de ejemplo por valores locales seguros. Nunca subas `.env`
+ni secretos al repositorio.
 
-```bash
-docker compose up -d
-```
-
-Postgres has a healthcheck (`pg_isready`), so `docker compose` reports the
-container as reproducibly ready — no more racing a not-yet-accepting-
-connections database on a fresh start. To wait for it explicitly (e.g. in a
-setup script) before running migrations/seeds:
+### 2. Arrancar PostgreSQL local
 
 ```bash
 docker compose up -d --wait
-# or, to poll manually:
 docker compose exec postgres pg_isready -U vivetutiempo -d vivetutiempo
 ```
 
-### Generate the Prisma client / run migrations
+El Compose actual es sólo para desarrollo local y publica PostgreSQL en el
+puerto 5432. No lo uses como configuración de producción ni en redes no
+confiables.
+
+### 3. Generar Prisma y aplicar migraciones
 
 ```bash
 npm run prisma:generate
-# Migrations land in Phase 4 of this change:
-# npx prisma migrate dev
+npx prisma migrate deploy
 ```
 
-### Run the app
+Las migraciones se aplican en orden: esquema base y, después, índices únicos
+parciales para las invariantes de Proposals.
+
+### 4. Seed de demostración
+
+```bash
+# TBD: el seed todavía no está implementado.
+# El comando previsto se documentará aquí cuando exista prisma/seed.ts.
+```
+
+No cargues cuentas de demostración manuales en un entorno compartido. El seed
+final será idempotente y utilizará datos ficticios.
+
+### 5. Arrancar la aplicación
 
 ```bash
 npm run dev
 ```
 
-Visit http://localhost:3000.
+Abrí [http://localhost:3000](http://localhost:3000). En el estado actual, la
+página principal es un scaffold; el flujo multirol completo está pendiente de
+la Fase 5.
 
-### Run tests
+### 6. Ejecutar calidad y pruebas
 
 ```bash
-npm run test        # Vitest — unit + integration
-npm run test:e2e     # Playwright — end-to-end
+npm run lint
+npx tsc --noEmit
+npm test
+npm run test:e2e
 ```
 
-## Project structure
+Los tests de integración y carreras necesitan PostgreSQL real. Si Docker/WSL2
+no está disponible localmente, Vitest los marca como **skipped**, no como
+aprobados. La ejecución requerida de esas suites ocurre en GitHub Actions con
+un servicio PostgreSQL efímero. Ver [Testing y calidad](#testing-y-calidad).
 
-```
-prisma/            Prisma schema, migrations, seed script
-src/                Application source (see Architecture above)
-tests/unit/         Vitest unit tests (domain, application)
-tests/integration/  Vitest integration tests (Prisma-backed)
-e2e/                Playwright end-to-end tests
-openspec/           Spec-Driven Development artifacts for this change
-docker-compose.yml  Local PostgreSQL only
-```
+## Credenciales de prueba
 
-## Functionalities (Block 1: Core)
+**TBD.** Aún no existe `prisma/seed.ts`, por lo que no hay credenciales de
+demostración fijadas. Cuando el seed esté implementado, esta tabla se completará
+con datos ficticios y contraseñas exclusivas del entorno demo:
 
-> Filled in as each phase of `bootstrap-vivetutiempo-platform` lands.
+| Rol | Email | Contraseña | Estado esperado |
+| --- | --- | --- | --- |
+| Admin | TBD | TBD | Puede validar y desactivar perfiles. |
+| Hospital A | TBD | TBD | Activo; propietario de Slots demo. |
+| Hospital B | TBD | TBD | Caso pendiente o no propietario. |
+| Artista A | TBD | TBD | Activo; Proposal principal. |
+| Artista B | TBD | TBD | Activo; Proposal competidora. |
+| Paciente/Familiar | TBD | TBD | Rol de demostración/consulta. |
 
-- [ ] Hospital/Artist self-registration and Admin profile validation
-- [ ] Hospital agenda Slot publishing
-- [ ] Artist Proposal submission
-- [ ] Hospital Proposal approval/rejection (with auto-reject of rival
-      Proposals and automatic Event publication)
-- [ ] Public, anonymous browsing of published Events
+## Despliegue
 
-## Test credentials
+El objetivo es Vercel con PostgreSQL gestionada (Neon o Supabase). La URL de
+producción es: **TBD**.
 
-> To be filled in once the seed dataset (Phase 6) is implemented. All seed
-> passwords will be `VivetuTiempo2026!` (seed-only, non-production).
+El despliegue requiere variables de entorno, migración controlada,
+aprovisionamiento de datos demo, CI verde y una comprobación posterior. El
+procedimiento reproducible, el rollback y los controles de seguridad están en
+[docs/deployment.md](docs/deployment.md).
 
-| Role | Email | Notes |
-|---|---|---|
-| Admin | _pending_ | |
-| Hospital | _pending_ | active |
-| Hospital | _pending_ | pending validation |
-| Artist | _pending_ | active |
-| Artist | _pending_ | pending validation |
-| Patient | _pending_ | |
+No se debe declarar el despliegue como realizado hasta que exista una URL,
+migraciones aplicadas, seed ejecutado, CI verificable y smoke test del flujo
+completo para el mismo commit.
 
-## Deployment
+## Testing y calidad
 
-- **Live URL:** _pending (Phase 7)_
+El proyecto aplica TDD selectivo en las capas de dominio y aplicación, junto con
+revisiones adversariales documentadas en
+[openspec/changes/bootstrap-vivetutiempo-platform/reviews](openspec/changes/bootstrap-vivetutiempo-platform/reviews/).
 
-## TFM delivery materials
+| Capa | Qué valida | Estado de evidencia |
+| --- | --- | --- |
+| Unitarios de dominio | Estados, invariantes, propiedad, cascadas y errores de transición. | Suite implementada. |
+| Unitarios de aplicación | Roles, autorización, casos de uso, puertos y DTO público. | Suite implementada. |
+| Integración PostgreSQL | Migraciones, índices parciales, bloqueos, transacciones, sesiones y rate limiting. | Tests escritos; deben ejecutarse con PostgreSQL en CI. |
+| E2E / smoke | Flujo completo y consulta pública desplegada. | Smoke de scaffold disponible; flujo E2E completo pendiente. |
 
-- **Slides:** _pending_
-- **Video walkthrough:** _pending_
+La concurrencia no se presenta como probada sólo porque exista código o tests:
+su evidencia requiere que las pruebas de integración/carreras se ejecuten con
+PostgreSQL real en CI. Los riesgos y remediaciones abiertas están consolidados
+en [docs/tfm-readiness-report.md](docs/tfm-readiness-report.md).
 
-## Development notes
+## Seguridad
 
-Full spec, design decisions (ADRs), and task breakdown for the current
-change live under
-`openspec/changes/bootstrap-vivetutiempo-platform/`.
+El modelo de amenazas cubre control de acceso, sesiones, CSRF, validación de
+entrada, datos públicos, concurrencia, secretos y retención. Las sesiones de
+base de datos, argon2id, el rate limiter de PostgreSQL y la comprobación de
+origen canónico son controles implementados como adaptadores o contratos; las
+rutas HTTP que los aplican siguen pendientes.
+
+Antes de una exposición pública deben cerrarse las verificaciones de rutas,
+cookies, CSRF, pruebas reales de concurrencia, logging y políticas de retención.
+Ver [docs/security-threat-model.md](docs/security-threat-model.md) y el
+[informe de readiness](docs/tfm-readiness-report.md).
+
+## Enlaces de entrega del TFM
+
+| Entregable | Enlace |
+| --- | --- |
+| Repositorio público | TBD |
+| Despliegue de producción | TBD |
+| Slides / presentación | TBD |
+| Vídeo de demostración | TBD |
+| Memoria técnica | [docs/memoria-tfm-borrador.md](docs/memoria-tfm-borrador.md) |
+| Runbook de despliegue | [docs/deployment.md](docs/deployment.md) |
+| Modelo de amenazas | [docs/security-threat-model.md](docs/security-threat-model.md) |
+
+## Documentación de proyecto
+
+- [Propuesta](openspec/changes/bootstrap-vivetutiempo-platform/proposal.md)
+- [Diseño y ADRs](openspec/changes/bootstrap-vivetutiempo-platform/design.md)
+- [Especificaciones](openspec/changes/bootstrap-vivetutiempo-platform/specs/)
+- [Plan de tareas](openspec/changes/bootstrap-vivetutiempo-platform/tasks.md)
+- [Tracker de readiness y hallazgos](docs/tfm-readiness-report.md)
+- [Runbook de despliegue](docs/deployment.md)
