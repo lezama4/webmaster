@@ -1,31 +1,21 @@
-import { execFileSync } from "node:child_process";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getTestPrismaClient, isDatabaseAvailable } from "./support/db";
 
 /**
- * Task 4.3 (B3/N2 pr2-review): applies the base migration (`prisma migrate
- * deploy`, idempotent) against the configured database and asserts every
- * table/column/index the D8 schema additions require exists — including
- * `sessions`, `profiles.reviewRequestedAt`, and the `ProfileStatus`
- * enum's `DEACTIVATED` label. `prisma migrate deploy` against an
- * already-migrated database is a no-op that still proves the final state;
- * against a genuinely empty database (a fresh `docker-compose` volume) it
- * proves the migration applies cleanly from scratch, per the task's intent.
+ * Task 4.3 (B3/N2 pr2-review). ASSERTS the base migration's final state —
+ * it no longer APPLIES the migration itself (pr2b-M3 fix): the Vitest
+ * `globalSetup` (`./support/globalSetup.ts`) now runs `prisma migrate
+ * deploy` exactly once, before any integration file loads, so this file
+ * cannot silently double as the migration bootstrap for whichever other
+ * file happened to run alongside/after it under the old (parallel) file
+ * scheduling. This file only verifies that every table/column/index the
+ * D8 schema additions require exists — including `sessions`,
+ * `profiles.reviewRequestedAt`, and the `ProfileStatus` enum's
+ * `DEACTIVATED` label.
  */
 const dbAvailable = await isDatabaseAvailable();
 
 describe.skipIf(!dbAvailable)("base schema migration (4.3)", () => {
-  it("applies `prisma migrate deploy` cleanly", () => {
-    const repoRoot = path.resolve(__dirname, "..", "..");
-    expect(() =>
-      execFileSync("npx", ["prisma", "migrate", "deploy"], {
-        cwd: repoRoot,
-        stdio: "pipe",
-      }),
-    ).not.toThrow();
-  });
-
   it("creates the `sessions` table with the accountId lookup index (D8)", async () => {
     const client = getTestPrismaClient();
     const columns = await client.$queryRaw<{ column_name: string }[]>`

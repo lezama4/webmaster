@@ -90,7 +90,7 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
       resolveValid(sessionId: string): Promise<Session | null> {
         return this.inner.resolveValid(sessionId);
       }
-      touch(sessionId: string): Promise<void> {
+      touch(sessionId: string): Promise<boolean> {
         return this.inner.touch(sessionId);
       }
       revokeOne(sessionId: string): Promise<void> {

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { approveProposal } from "@application/use-cases/approveProposal";
 import { closeSlot } from "@application/use-cases/closeSlot";
 import { ConflictError } from "@application/errors";
+import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
+import { createDeferred, tick } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
   createArtistProfile,
@@ -12,59 +14,111 @@ import {
 import { actorFor, slotDeps } from "./support/wiring";
 
 /**
- * Task 4.13 (M2 pr2-review): `approveProposal` and `closeSlot` fired
- * concurrently against the SAME Slot. Real row-level locking serializes
- * them — whichever transaction's `SELECT ... FOR UPDATE` is granted first
- * commits its full outcome; the other observes the updated, locked Slot
- * and is denied with `ConflictError`. Exactly ONE coherent outcome must
- * persist, never a contradictory success from both.
+ * Task 4.13 (M2 pr2-review). pr2b-M5 strengthening: `approveProposal` and
+ * `closeSlot` now race via the `afterLock` barrier — the SAME mechanism
+ * the submit-vs-approve/submit-vs-close races already use — so each
+ * direction below PROVES the second call genuinely blocked on Postgres's
+ * row lock (not merely ran after the first completed). Both orderings are
+ * asserted for their full linearization result: final Slot/Proposal/Event
+ * rows, not just which promise settled how.
  */
 const dbAvailable = await isDatabaseAvailable();
 
-describe.skipIf(!dbAvailable)("race: approve vs close (4.13)", () => {
+describe.skipIf(!dbAvailable)("race: approve vs close (4.13, pr2b-M5)", () => {
   const client = getTestPrismaClient();
 
   beforeEach(async () => {
     await resetDatabase(client);
   });
 
-  it("commits exactly one coherent outcome", async () => {
+  async function setupOpenSlotWithProposal() {
     const { account: hospitalAccount, profile: hospital } = await createHospitalProfile(client);
     const { profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
     const proposal = await createSubmittedProposal(client, slot.id, artist.id);
-
     const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
-    const deps = slotDeps(client);
+    return { hospitalActor, slot, proposal };
+  }
 
-    const [approveResult, closeResult] = await Promise.allSettled([
-      approveProposal(hospitalActor, { slotId: slot.id, proposalId: proposal.id }, deps),
-      closeSlot(hospitalActor, { slotId: slot.id }, deps),
-    ]);
+  it("approve locks FIRST — commits accepted+published Event; close blocks then is denied", async () => {
+    const { hospitalActor, slot, proposal } = await setupOpenSlotWithProposal();
 
-    const outcomes = [approveResult, closeResult];
-    const fulfilled = outcomes.filter((r) => r.status === "fulfilled");
-    const rejected = outcomes.filter((r) => r.status === "rejected");
-    expect(fulfilled).toHaveLength(1);
-    expect(rejected).toHaveLength(1);
-    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
+    const approveHoldsLock = createDeferred<void>();
+    const approveLockAcquired = createDeferred<void>();
+    const approveUoW = new PrismaMatchingUnitOfWork(client, {
+      afterLock: async () => {
+        approveLockAcquired.resolve();
+        await approveHoldsLock.promise;
+      },
+    });
+
+    const approvePromise = approveProposal(
+      hospitalActor,
+      { slotId: slot.id, proposalId: proposal.id },
+      { ...slotDeps(client), matchingUnitOfWork: approveUoW },
+    );
+
+    await approveLockAcquired.promise;
+
+    const closePromise = closeSlot(hospitalActor, { slotId: slot.id }, slotDeps(client));
+
+    await tick();
+    approveHoldsLock.resolve();
+
+    const [approveResult, closeResult] = await Promise.allSettled([approvePromise, closePromise]);
+
+    expect(approveResult.status).toBe("fulfilled");
+    expect(closeResult.status).toBe("rejected");
+    expect((closeResult as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
 
     const finalSlot = await client.slot.findUniqueOrThrow({ where: { id: slot.id } });
-    // Coherent final state — either the approve won (filled) or the close
-    // won (closed), never both, never a third/contradictory status.
-    expect(["FILLED", "CLOSED"]).toContain(finalSlot.status);
+    expect(finalSlot.status).toBe("FILLED");
+    const finalProposal = await client.proposal.findUniqueOrThrow({ where: { id: proposal.id } });
+    expect(finalProposal.status).toBe("ACCEPTED");
+    const events = await client.event.findMany({ where: { slotId: slot.id } });
+    expect(events).toHaveLength(1);
+  });
 
-    const finalProposal = await client.proposal.findUniqueOrThrow({
-      where: { id: proposal.id },
+  it("close locks FIRST (the OTHER linearization) — commits closed+cascade-rejected; approve blocks then is denied", async () => {
+    const { hospitalActor, slot, proposal } = await setupOpenSlotWithProposal();
+
+    const closeHoldsLock = createDeferred<void>();
+    const closeLockAcquired = createDeferred<void>();
+    const closeUoW = new PrismaMatchingUnitOfWork(client, {
+      afterLock: async () => {
+        closeLockAcquired.resolve();
+        await closeHoldsLock.promise;
+      },
     });
-    if (finalSlot.status === "FILLED") {
-      expect(finalProposal.status).toBe("ACCEPTED");
-      const events = await client.event.findMany({ where: { slotId: slot.id } });
-      expect(events).toHaveLength(1);
-    } else {
-      expect(finalProposal.status).toBe("REJECTED"); // closeSlot's cascade.
-      const events = await client.event.findMany({ where: { slotId: slot.id } });
-      expect(events).toHaveLength(0);
-    }
+
+    const closePromise = closeSlot(
+      hospitalActor,
+      { slotId: slot.id },
+      { ...slotDeps(client), matchingUnitOfWork: closeUoW },
+    );
+
+    await closeLockAcquired.promise;
+
+    const approvePromise = approveProposal(
+      hospitalActor,
+      { slotId: slot.id, proposalId: proposal.id },
+      slotDeps(client),
+    );
+
+    await tick();
+    closeHoldsLock.resolve();
+
+    const [closeResult, approveResult] = await Promise.allSettled([closePromise, approvePromise]);
+
+    expect(closeResult.status).toBe("fulfilled");
+    expect(approveResult.status).toBe("rejected");
+    expect((approveResult as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
+
+    const finalSlot = await client.slot.findUniqueOrThrow({ where: { id: slot.id } });
+    expect(finalSlot.status).toBe("CLOSED");
+    const finalProposal = await client.proposal.findUniqueOrThrow({ where: { id: proposal.id } });
+    expect(finalProposal.status).toBe("REJECTED"); // closeSlot's cascade.
+    const events = await client.event.findMany({ where: { slotId: slot.id } });
+    expect(events).toHaveLength(0);
   });
 });

@@ -62,27 +62,43 @@ export class SequentialIdGenerator implements IdGenerator {
   }
 }
 
-/** Reversible "hash" — good enough to assert hashing is actually used. */
+/**
+ * Reversible "hash" — good enough to assert hashing is actually used.
+ * `needsRehash` treats a `legacy:`-prefixed value as a stand-in for a
+ * pre-pr2b-M2 hash whose parameters are below the current baseline, so
+ * tests can exercise the upgrade-on-login path without real Argon2id.
+ */
 export class FakePasswordHasher implements PasswordHasher {
   async hash(plaintext: string): Promise<string> {
     return `hashed:${plaintext}`;
   }
   async verify(plaintext: string, passwordHash: string): Promise<boolean> {
-    return passwordHash === `hashed:${plaintext}`;
+    return (
+      passwordHash === `hashed:${plaintext}` ||
+      passwordHash === `legacy:${plaintext}`
+    );
+  }
+  needsRehash(passwordHash: string): boolean {
+    return passwordHash.startsWith("legacy:");
   }
 }
 
+/**
+ * pr2b-B1: mirrors the real adapter's collapsed `consumeAttempt` +
+ * `recordSuccess` contract — no separate isAllowed/recordFailure split.
+ * `attempts` records every `consumeAttempt` call (allowed or not), so
+ * existing "denies and records" assertions read the same signal the old
+ * `failures` array gave, just against the single unified entry point.
+ */
 export class FakeLoginRateLimiter implements LoginRateLimiter {
-  readonly failures: LoginAttemptKey[] = [];
+  readonly attempts: LoginAttemptKey[] = [];
   readonly successes: LoginAttemptKey[] = [];
   /** Keys currently denied — tests flip this to simulate a lockout. */
   blockedEmails = new Set<string>();
 
-  async isAllowed(key: LoginAttemptKey): Promise<boolean> {
+  async consumeAttempt(key: LoginAttemptKey): Promise<boolean> {
+    this.attempts.push(key);
     return !this.blockedEmails.has(key.email);
-  }
-  async recordFailure(key: LoginAttemptKey): Promise<void> {
-    this.failures.push(key);
   }
   async recordSuccess(key: LoginAttemptKey): Promise<void> {
     this.successes.push(key);
@@ -234,14 +250,24 @@ export class FakeSessionPort implements SessionPort {
     if (now - session.lastActiveAt.getTime() >= SESSION_IDLE_EXPIRY_MS) return null;
     return session;
   }
-  async touch(sessionId: string): Promise<void> {
+  async touch(sessionId: string): Promise<boolean> {
+    // pr2b-M1: mirrors the real adapter's guard — conditional on BOTH
+    // absolute AND idle validity, never absolute expiry alone.
     const session = this.sessions.get(sessionId);
-    if (session) {
-      this.sessions.set(sessionId, {
-        ...session,
-        lastActiveAt: this.clock.now(),
-      });
+    if (!session) return false;
+    const now = this.clock.now().getTime();
+    const absoluteExpired = now >= session.absoluteExpiresAt.getTime();
+    const idleExpired =
+      now - session.lastActiveAt.getTime() >= SESSION_IDLE_EXPIRY_MS;
+    if (absoluteExpired || idleExpired) {
+      this.sessions.delete(sessionId);
+      return false;
     }
+    this.sessions.set(sessionId, {
+      ...session,
+      lastActiveAt: this.clock.now(),
+    });
+    return true;
   }
   async revokeOne(sessionId: string): Promise<void> {
     this.sessions.delete(sessionId);

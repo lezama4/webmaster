@@ -92,7 +92,13 @@ export async function login(
 ): Promise<LoginResult> {
   const attemptKey = { email: credentials.email, ipHash: context.ipHash };
 
-  const allowed = await deps.rateLimiter.isAllowed(attemptKey);
+  // pr2b-B1: ONE atomic call — it ALWAYS records this attempt against the
+  // rolling window (increment-or-reset) and returns whether the limit is
+  // now crossed, in the SAME database operation. This replaces the former
+  // isAllowed()-then-later-recordFailure() split, which let a concurrent
+  // burst all observe "allowed" before any of them had recorded a failure,
+  // and whose separate write could lose counts under real concurrency.
+  const allowed = await deps.rateLimiter.consumeAttempt(attemptKey);
   if (!allowed) {
     // Denied BEFORE verifying credentials — no session issued, no oracle.
     throw new UnauthenticatedError(GENERIC_LOGIN_DENIAL);
@@ -101,12 +107,12 @@ export async function login(
   const record = await deps.accounts.findByEmail(credentials.email);
   if (!record) {
     // pr2a-M2: burn the SAME verification cost as a wrong-password denial
-    // on a known account — no account-existence timing oracle.
+    // on a known account — no account-existence timing oracle. The
+    // attempt was already recorded by consumeAttempt above.
     await deps.passwordHasher.verify(
       credentials.password,
       await getDummyHash(deps.passwordHasher),
     );
-    await deps.rateLimiter.recordFailure(attemptKey);
     throw new UnauthenticatedError(GENERIC_LOGIN_DENIAL);
   }
 
@@ -115,8 +121,17 @@ export async function login(
     record.passwordHash,
   );
   if (!validCredentials) {
-    await deps.rateLimiter.recordFailure(attemptKey);
     throw new UnauthenticatedError(GENERIC_LOGIN_DENIAL);
+  }
+
+  if (deps.passwordHasher.needsRehash(record.passwordHash)) {
+    // pr2b-M2 (upgrade-on-login): re-hash at the current baseline and
+    // persist it — no forced password reset, no dedicated migration.
+    const upgradedHash = await deps.passwordHasher.hash(credentials.password);
+    await deps.accounts.save({
+      account: record.account,
+      passwordHash: upgradedHash,
+    });
   }
 
   const session = await deps.profileUnitOfWork.withLockedProfile(

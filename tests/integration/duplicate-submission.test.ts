@@ -1,54 +1,123 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { submitProposal } from "@application/use-cases/submitProposal";
 import { ConflictError } from "@application/errors";
+import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
+import { createDeferred, tick } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import { createArtistProfile, createHospitalProfile, createOpenSlot } from "./support/fixtures";
 import { actorFor, slotDeps } from "./support/wiring";
 
 /**
- * Task 4.16 (M2 DECISION, pr2-review): two concurrent `submitProposal`
- * calls by the SAME Artist against the SAME open Slot. The Slot row lock
- * (D4) fully serializes them — the second re-reads the live Proposal set
- * (now including the first's insert) and its own duplicate guard denies
- * it with `ConflictError` BEFORE any insert is attempted, never surfacing
- * a raw Postgres unique-constraint error to the caller. The partial
- * unique index (`proposals_submitted_per_slot_artist`, B1) is exercised as
- * pure belt-and-braces here — the lock-first guard is what actually
- * prevents the race.
+ * Task 4.16 (M2 DECISION, pr2-review). pr2b-M5 strengthening: two
+ * concurrent `submitProposal` calls by the SAME Artist against the SAME
+ * open Slot now race via the `afterLock` barrier — forcing the SECOND
+ * call's own `SELECT ... FOR UPDATE` to genuinely block on Postgres until
+ * the FIRST commits, rather than relying on ordinary Node scheduling to
+ * happen to serialize two `Promise.allSettled` calls the same way. Both
+ * "first attempt"/"second attempt" labels below are forced deterministic
+ * by the barrier — the OTHER labelling is symmetric (either message could
+ * be "first" to lock; the guard's behaviour does not depend on which).
  */
 const dbAvailable = await isDatabaseAvailable();
 
-describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16)", () => {
+describe.skipIf(!dbAvailable)("race: duplicate same-Artist submission (4.16, pr2b-M5)", () => {
   const client = getTestPrismaClient();
 
   beforeEach(async () => {
     await resetDatabase(client);
   });
 
-  it("persists exactly one submitted Proposal and denies the second attempt", async () => {
+  it("persists exactly the FIRST-locked submission and denies the late-arriving one with ConflictError, never a raw DB error", async () => {
     const { profile: hospital } = await createHospitalProfile(client);
     const { profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
-
     const artistActor = actorFor(artist, "artist-account-unused", "artist");
-    const deps = slotDeps(client);
 
-    const [first, second] = await Promise.allSettled([
-      submitProposal(artistActor, { slotId: slot.id, message: "First attempt" }, deps),
-      submitProposal(artistActor, { slotId: slot.id, message: "Second attempt" }, deps),
-    ]);
+    const firstHoldsLock = createDeferred<void>();
+    const firstLockAcquired = createDeferred<void>();
+    const firstUoW = new PrismaMatchingUnitOfWork(client, {
+      afterLock: async () => {
+        firstLockAcquired.resolve();
+        await firstHoldsLock.promise;
+      },
+    });
 
-    const outcomes = [first, second];
-    const fulfilled = outcomes.filter((r) => r.status === "fulfilled");
-    const rejected = outcomes.filter((r) => r.status === "rejected");
-    expect(fulfilled).toHaveLength(1);
-    expect(rejected).toHaveLength(1);
-    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
+    const firstPromise = submitProposal(
+      artistActor,
+      { slotId: slot.id, message: "First attempt (locked first, by construction)" },
+      { ...slotDeps(client), matchingUnitOfWork: firstUoW },
+    );
+
+    await firstLockAcquired.promise; // the first submit now holds the row lock.
+
+    const secondPromise = submitProposal(
+      artistActor,
+      { slotId: slot.id, message: "Second attempt (arrives while locked)" },
+      slotDeps(client),
+    );
+
+    await tick(); // let the second submit's SELECT ... FOR UPDATE actually reach Postgres and block.
+    firstHoldsLock.resolve(); // release the first — it commits.
+
+    const [firstResult, secondResult] = await Promise.allSettled([firstPromise, secondPromise]);
+
+    expect(firstResult.status).toBe("fulfilled");
+    expect(secondResult.status).toBe("rejected");
+    expect((secondResult as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
 
     const proposals = await client.proposal.findMany({
       where: { slotId: slot.id, artistProfileId: artist.id },
     });
     expect(proposals).toHaveLength(1);
     expect(proposals[0]!.status).toBe("SUBMITTED");
+    expect(proposals[0]!.message).toBe("First attempt (locked first, by construction)");
+  });
+
+  it("is symmetric: whichever of the two calls the caller happens to construct the barrier around still wins deterministically", async () => {
+    const { profile: hospital } = await createHospitalProfile(client);
+    const { profile: artist } = await createArtistProfile(client);
+    const slot = await createOpenSlot(client, hospital.id);
+    const artistActor = actorFor(artist, "artist-account-unused", "artist");
+
+    // Same mechanism, roles swapped relative to the test above — proves
+    // the guard's outcome depends on LOCK ORDER, not on argument order or
+    // any other incidental JS-level scheduling detail.
+    const secondHoldsLock = createDeferred<void>();
+    const secondLockAcquired = createDeferred<void>();
+    const secondUoW = new PrismaMatchingUnitOfWork(client, {
+      afterLock: async () => {
+        secondLockAcquired.resolve();
+        await secondHoldsLock.promise;
+      },
+    });
+
+    const secondPromise = submitProposal(
+      artistActor,
+      { slotId: slot.id, message: "Locked first this time" },
+      { ...slotDeps(client), matchingUnitOfWork: secondUoW },
+    );
+
+    await secondLockAcquired.promise;
+
+    const firstPromise = submitProposal(
+      artistActor,
+      { slotId: slot.id, message: "Arrives while locked, this time" },
+      slotDeps(client),
+    );
+
+    await tick();
+    secondHoldsLock.resolve();
+
+    const [secondResult, firstResult] = await Promise.allSettled([secondPromise, firstPromise]);
+
+    expect(secondResult.status).toBe("fulfilled");
+    expect(firstResult.status).toBe("rejected");
+    expect((firstResult as PromiseRejectedResult).reason).toBeInstanceOf(ConflictError);
+
+    const proposals = await client.proposal.findMany({
+      where: { slotId: slot.id, artistProfileId: artist.id },
+    });
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]!.message).toBe("Locked first this time");
   });
 });

@@ -91,7 +91,7 @@ describe("login", () => {
     await expect(
       login({ email: "artist.clara@vtt.test", password: "wrong" }, deps),
     ).rejects.toBeInstanceOf(UnauthenticatedError);
-    expect(deps.rateLimiter.failures).toHaveLength(1);
+    expect(deps.rateLimiter.attempts).toHaveLength(1);
     expect(deps.sessions.sessionsForAccount(account.id)).toHaveLength(0);
   });
 
@@ -251,7 +251,37 @@ describe("login", () => {
 
     expect(unknownEmailVerifyCalls).toBe(1);
     expect(wrongPasswordVerifyCalls).toBe(1);
-    expect(deps.rateLimiter.failures).toHaveLength(2);
+    expect(deps.rateLimiter.attempts).toHaveLength(2);
+  });
+
+  it("pr2b-M2: upgrades a weaker-parameter password hash on successful login (upgrade-on-login)", async () => {
+    const deps = makeDeps();
+    const account = anAccount("artist", { email: "artist.clara@vtt.test" });
+    await deps.accounts.save({ account, passwordHash: "legacy:S3cure!pass" });
+    const profile = aProfile("artist", "active", { accountId: account.id });
+    await deps.profiles.save(profile);
+
+    const result = await login(
+      { email: "artist.clara@vtt.test", password: "S3cure!pass" },
+      deps,
+    );
+
+    expect(result.account.id).toBe(account.id);
+    const upgraded = await deps.accounts.findByEmail("artist.clara@vtt.test");
+    expect(upgraded!.passwordHash).toBe("hashed:S3cure!pass");
+  });
+
+  it("pr2b-M2: does NOT re-hash a password already at the current baseline", async () => {
+    const deps = makeDeps();
+    const hashSpy = vi.spyOn(deps.passwordHasher, "hash");
+    await seedArtist(deps, "active");
+
+    await login(
+      { email: "artist.clara@vtt.test", password: "S3cure!pass" },
+      deps,
+    );
+
+    expect(hashSpy).not.toHaveBeenCalled();
   });
 });
 

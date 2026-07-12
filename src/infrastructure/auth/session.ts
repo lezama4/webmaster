@@ -88,15 +88,36 @@ export function createPrismaSessionPort(
       return toSession(sessionId, row);
     },
 
-    async touch(sessionId: string): Promise<void> {
+    async touch(sessionId: string): Promise<boolean> {
+      // pr2b-M1 fix: the guard now requires BOTH absolute AND idle
+      // validity — the previous version only checked `absoluteExpiresAt`,
+      // so a caller that touched an idle-expired-but-not-absolute-expired
+      // session (e.g. touching before resolving, or resolving just before
+      // the idle threshold and touching after it) could reset
+      // `lastActiveAt` and revive an otherwise-dead session.
       const now = clock.now();
-      await client.session.updateMany({
+      const tokenHash = hashToken(sessionId);
+      const idleThreshold = new Date(now.getTime() - SESSION_IDLE_TTL_MS);
+
+      const { count } = await client.session.updateMany({
         where: {
-          tokenHash: hashToken(sessionId),
+          tokenHash,
           absoluteExpiresAt: { gt: now },
+          lastActiveAt: { gt: idleThreshold },
         },
         data: { lastActiveAt: now },
       });
+
+      if (count === 0) {
+        // A zero-row update means: not found, absolute-expired, or
+        // idle-expired. In every case the caller MUST treat this as
+        // unauthenticated (never assume the row is still safely inert) —
+        // and a stale row (found but expired by either clock) is deleted
+        // here so it can never be revived by a later touch/resolveValid.
+        await client.session.deleteMany({ where: { tokenHash } });
+        return false;
+      }
+      return true;
     },
 
     async revokeOne(sessionId: string): Promise<void> {

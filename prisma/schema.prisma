@@ -84,11 +84,17 @@ model Session {
 }
 
 // Login-rate-limiter rolling window (ADR D7, M4 pr2-review). `key` is a
-// SHA-256 hash of the scoped identifier (account email or truncated IP) —
-// no raw email/IP is ever stored here. Retention/cleanup policy: rows whose
-// window has fully lapsed are purged opportunistically on every isAllowed
-// check and deleted on successful login — expired windows are never
-// retained indefinitely.
+// server-keyed HMAC-SHA256 of the scoped identifier (account email or
+// truncated/hashed IP) — never a bare hash (pr2b-N2: a bare SHA-256 of a
+// low-entropy email is dictionary-attackable from a leaked table; the HMAC
+// secret is server-only and rotating it invalidates every existing key).
+// Retention/cleanup: `consumeAttempt` (pr2b-B1) is ONE atomic
+// INSERT ... ON CONFLICT ... DO UPDATE per key — a lapsed window is reset
+// IN PLACE (failureCount -> 1, windowStartedAt -> now) by that same
+// statement rather than deleted-then-reinserted (which would reintroduce a
+// two-step race). `recordSuccess` deletes the row outright on a
+// successful login. See `src/infrastructure/auth/loginRateLimiter.ts` for
+// the full rotation/retention rationale.
 model LoginAttemptWindow {
   key             String   @id
   failureCount    Int      @default(0)
