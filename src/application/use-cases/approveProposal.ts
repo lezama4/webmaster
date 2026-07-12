@@ -5,7 +5,6 @@ import { ConflictError, ForbiddenError, NotFoundError } from "@application/error
 import type { Actor } from "@application/Actor";
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type { MatchingUnitOfWork } from "@application/ports/MatchingUnitOfWork";
-import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertActiveProfile, assertOwnsSlot, assertRole } from "./shared/guards";
 
 export interface ApproveProposalInput {
@@ -14,7 +13,6 @@ export interface ApproveProposalInput {
 }
 
 export interface ApproveProposalDeps {
-  readonly profileUnitOfWork: ProfileUnitOfWork;
   readonly matchingUnitOfWork: MatchingUnitOfWork;
   readonly idGenerator: IdGenerator;
   readonly clock: Clock;
@@ -22,14 +20,16 @@ export interface ApproveProposalDeps {
 
 /**
  * Owner-Hospital-only Proposal approval, committed exclusively through
- * `MatchingUnitOfWork.withLockedSlot` (D4/B2, M1). Ownership, live status,
- * and Proposal/Slot linkage (M6) are re-checked against the LOCKED, live
- * data before the pure `domain.acceptProposal` cascade runs.
+ * `MatchingUnitOfWork.withLockedSlot` (D4/B2, M1, unified per
+ * recheck-pr2a-verify-M2). Ownership, live status, and Proposal/Slot
+ * linkage (M6) are re-checked against the LOCKED, live data before the pure
+ * `domain.acceptProposal` cascade runs.
  *
- * pr2a-M1/N1: the acting Hospital's LIVE Profile status AND type are
- * re-checked via `ProfileUnitOfWork.withLockedProfile` FROM WITHIN the
- * Slot-lock callback (documented lock order: Slot first, Profile nested —
- * see `submitProposal` for the deadlock-safety rationale).
+ * recheck-pr2a-verify-M2: the acting Hospital's LIVE Profile status AND
+ * type are re-checked against `actorProfile`, read by `withLockedSlot`
+ * itself INSIDE the SAME transaction that also locks the Slot and persists
+ * the mutation — not a separate `ProfileUnitOfWork` transaction that could
+ * commit and release the Account lock before this one persists.
  */
 export async function approveProposal(
   actor: Actor,
@@ -38,48 +38,49 @@ export async function approveProposal(
 ): Promise<AcceptProposalOutcome> {
   assertRole(actor, "hospital");
 
-  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, async (lockedSlot, proposals) => {
-    const activeProfile = await deps.profileUnitOfWork.withLockedProfile(
-      actor.accountId,
-      (ctx) => assertActiveProfile(ctx.profile, "hospital"),
-    );
+  return deps.matchingUnitOfWork.withLockedSlot(
+    input.slotId,
+    actor.accountId,
+    async (lockedSlot, proposals, actorProfile) => {
+      const activeProfile = assertActiveProfile(actorProfile, "hospital");
 
-    assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
+      assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
 
-    const target = proposals.find((p) => p.id === input.proposalId);
-    if (!target || target.slotId !== lockedSlot.id) {
-      throw new NotFoundError(
-        `Proposal '${input.proposalId}' does not belong to slot '${input.slotId}'`,
-      );
-    }
-
-    let outcome: AcceptProposalOutcome;
-    try {
-      outcome = acceptProposal({
-        slot: lockedSlot,
-        proposals,
-        proposalId: input.proposalId,
-        eventId: deps.idGenerator.next(),
-        clock: deps.clock,
-        actingHospitalProfileId: activeProfile.id,
-      });
-    } catch (error) {
-      if (error instanceof InvalidTransitionError) {
-        throw new ConflictError(error.message);
+      const target = proposals.find((p) => p.id === input.proposalId);
+      if (!target || target.slotId !== lockedSlot.id) {
+        throw new NotFoundError(
+          `Proposal '${input.proposalId}' does not belong to slot '${input.slotId}'`,
+        );
       }
-      if (error instanceof NotSlotOwnerError) {
-        throw new ForbiddenError(error.message);
-      }
-      throw error;
-    }
 
-    return {
-      mutation: {
-        slot: outcome.slot,
-        proposals: [outcome.acceptedProposal, ...outcome.rejectedProposals],
-        event: outcome.event,
-      },
-      result: outcome,
-    };
-  });
+      let outcome: AcceptProposalOutcome;
+      try {
+        outcome = acceptProposal({
+          slot: lockedSlot,
+          proposals,
+          proposalId: input.proposalId,
+          eventId: deps.idGenerator.next(),
+          clock: deps.clock,
+          actingHospitalProfileId: activeProfile.id,
+        });
+      } catch (error) {
+        if (error instanceof InvalidTransitionError) {
+          throw new ConflictError(error.message);
+        }
+        if (error instanceof NotSlotOwnerError) {
+          throw new ForbiddenError(error.message);
+        }
+        throw error;
+      }
+
+      return {
+        mutation: {
+          slot: outcome.slot,
+          proposals: [outcome.acceptedProposal, ...outcome.rejectedProposals],
+          event: outcome.event,
+        },
+        result: outcome,
+      };
+    },
+  );
 }

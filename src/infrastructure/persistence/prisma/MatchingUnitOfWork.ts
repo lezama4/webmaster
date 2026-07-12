@@ -8,8 +8,10 @@ import {
   eventStatusToPrisma,
   proposalStatusToPrisma,
   slotStatusToPrisma,
+  toDomainProfile,
   toDomainProposal,
   toDomainSlot,
+  type ProfileRow,
   type ProposalRow,
   type SlotRow,
 } from "./mappers";
@@ -18,28 +20,39 @@ import {
  * Test-only instrumentation. Production callers never pass hooks — the
  * default is a no-op — but integration tests use `afterLock` to force a
  * deterministic interleaving between two concurrent transactions targeting
- * the same Slot row (barrier-based race tests, tasks 4.10-4.17). This is
- * NOT part of the `MatchingUnitOfWork` port contract; it is an
- * implementation detail of this one adapter.
+ * the same Slot row (barrier-based race tests, tasks 4.10-4.17, and the
+ * Slot-vs-deactivation race, recheck-pr2a-verify-M2). This is NOT part of
+ * the `MatchingUnitOfWork` port contract; it is an implementation detail of
+ * this one adapter.
  */
 export interface MatchingUnitOfWorkHooks {
-  /** Awaited AFTER the row lock is acquired and the live Slot+Proposal set is loaded, but BEFORE `work` runs and BEFORE the mutation is persisted. */
+  /** Awaited AFTER the Slot row lock, the Account row lock, and the live Slot+Proposal+Profile reads are all done, but BEFORE `work` runs and BEFORE the mutation is persisted. */
   readonly afterLock?: (slotId: string) => Promise<void> | void;
 }
 
 const PROPOSAL_UNIQUE_VIOLATION = "P2002";
 
 /**
- * Lock-first `MatchingUnitOfWork` (ADR D4, B2/M1 pr2-review). In ONE
- * transaction: (1) `SELECT ... FOR UPDATE` on the Slot row FIRST — before
- * any decision-informing read; (2) load the live Slot + full Proposal set
- * INSIDE that lock; (3) invoke `work` with the locked, live data; (4)
- * persist whatever `work` returns before commit. A missing Slot rejects
- * with `NotFoundError`. A guard failure inside `work` (thrown
- * synchronously) aborts the transaction — nothing is persisted. A partial-
- * unique-index violation that slips past the application-layer duplicate
- * guard (belt-and-braces, B1) is translated to `ConflictError`, never a raw
+ * Lock-first, single-transaction `MatchingUnitOfWork` (ADR D4, B2/M1
+ * pr2-review, unified per recheck-pr2a-verify-M2). In ONE transaction:
+ * (1) `SELECT ... FOR UPDATE` on the Slot row FIRST — before any
+ * decision-informing read; (2) load the live Slot + full Proposal set
+ * INSIDE that lock; (3) `SELECT ... FOR UPDATE` on the actor's Account row
+ * — global lock order Slot-then-Account, documented on the port — and load
+ * the actor's live Profile inside the SAME transaction; (4) invoke `work`
+ * with the locked, live Slot/Proposal/Profile data; (5) persist whatever
+ * `work` returns before commit. A missing Slot rejects with
+ * `NotFoundError`. A guard failure inside `work` (thrown synchronously)
+ * aborts the transaction — nothing is persisted, and the Account lock is
+ * released on rollback along with the Slot lock. A partial-unique-index
+ * violation that slips past the application-layer duplicate guard
+ * (belt-and-braces, B1) is translated to `ConflictError`, never a raw
  * Postgres error.
+ *
+ * Because the Account lock and Profile read happen in the SAME transaction
+ * that later persists the Slot mutation, a concurrent Admin deactivation
+ * targeting the same Account cannot commit in between: it blocks on the
+ * Account row lock until this transaction commits (or rolls back).
  */
 export class PrismaMatchingUnitOfWork implements MatchingUnitOfWork {
   constructor(
@@ -49,6 +62,7 @@ export class PrismaMatchingUnitOfWork implements MatchingUnitOfWork {
 
   async withLockedSlot<T>(
     slotId: string,
+    actorAccountId: string,
     work: LockedSlotWork<T>,
   ): Promise<T> {
     return this.prisma.$transaction(
@@ -69,15 +83,26 @@ export class PrismaMatchingUnitOfWork implements MatchingUnitOfWork {
         const lockedSlot = toDomainSlot(slotRow);
         const proposals = proposalRows.map(toDomainProposal);
 
+        // (3) Lock the actor's Account SECOND — global lock order documented
+        // on the port (Slot first, then Account) — and load its live
+        // Profile, still inside THIS SAME transaction (recheck-pr2a-
+        // verify-M2): authorization and persistence now commit atomically.
+        await tx.$queryRaw(
+          Prisma.sql`SELECT "id" FROM "accounts" WHERE "id" = ${actorAccountId} FOR UPDATE`,
+        );
+        const profileRows = await tx.$queryRaw<ProfileRow[]>(
+          Prisma.sql`SELECT * FROM "profiles" WHERE "accountId" = ${actorAccountId}`,
+        );
+        const profileRow = profileRows[0] ?? null;
+        const actorProfile = profileRow ? toDomainProfile(profileRow) : null;
+
         await this.hooks.afterLock?.(slotId);
 
-        // (3) Invoke the decision callback on the LOCKED, live snapshot.
-        // `work` MAY be async (pr2a-M1 — the application layer now nests a
-        // live Profile-status recheck via `ProfileUnitOfWork` inside this
-        // very callback), so it MUST be awaited here.
-        const outcome = await work(lockedSlot, proposals);
+        // (4) Invoke the decision callback on the LOCKED, live snapshot.
+        // `work` MAY be async, so it MUST be awaited here.
+        const outcome = await work(lockedSlot, proposals, actorProfile);
 
-        // (4) Persist the returned mutation, still inside the same
+        // (5) Persist the returned mutation, still inside the same
         // transaction, before commit.
         try {
           if (outcome.mutation.slot) {

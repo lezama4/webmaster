@@ -285,16 +285,19 @@ export class FakeSessionPort implements SessionPort {
 }
 
 /**
- * Lock-first fake (ADR D4/B2): serializes every `withLockedSlot` call, reads
- * the LIVE Slot + complete Proposal set from the backing stores INSIDE the
- * critical section (so a call enqueued behind another observes the first
- * one's committed writes — the race-relevant ordering), persists the
- * returned mutation before releasing, and persists NOTHING when `work`
- * throws.
+ * Lock-first fake (ADR D4/B2, unified per recheck-pr2a-verify-M2): serializes
+ * every `withLockedSlot` call, reads the LIVE Slot + complete Proposal set
+ * from the backing stores INSIDE the critical section (so a call enqueued
+ * behind another observes the first one's committed writes — the
+ * race-relevant ordering), persists the returned mutation before releasing,
+ * and persists NOTHING when `work` throws.
  *
- * `work` may now be ASYNC (pr2a-M1): a Slot-mutating use case re-checks the
- * acting Profile's LIVE status via `ProfileUnitOfWork.withLockedProfile`
- * FROM WITHIN this callback, not before the Slot lock is taken.
+ * recheck-pr2a-verify-M2: ALSO reads the acting Account's LIVE Profile
+ * (from the SAME `profiles` store, looked up by `actorAccountId`) INSIDE
+ * the same critical section that later persists the mutation, and passes it
+ * as `work`'s 3rd argument — simulating the real Prisma adapter's atomic
+ * Account-lock-plus-Profile-read, so this fake no longer needs a separate
+ * `ProfileUnitOfWork` call to authorize a Slot-mutating use case.
  *
  * pr2a-M4: the PERSIST phase (writing the returned mutation) is now
  * snapshot/rollback-protected — a failure partway through persisting
@@ -313,15 +316,22 @@ export class FakeMatchingUnitOfWork implements MatchingUnitOfWork {
     private readonly slots: InMemorySlotRepository,
     private readonly proposals: InMemoryProposalRepository,
     private readonly events: InMemoryEventRepository,
+    private readonly profiles: InMemoryProfileRepository,
   ) {}
 
-  withLockedSlot<T>(slotId: string, work: LockedSlotWork<T>): Promise<T> {
+  withLockedSlot<T>(
+    slotId: string,
+    actorAccountId: string,
+    work: LockedSlotWork<T>,
+  ): Promise<T> {
     const run = this.queue.then(async () => {
       this.lockLog.push(slotId);
       const slot = await this.slots.findById(slotId); // LIVE read inside the lock
       if (!slot) throw new NotFoundError(`Slot '${slotId}' does not exist`);
       const proposals = await this.proposals.listBySlotId(slotId);
-      const { mutation, result } = await work(slot, proposals);
+      // Atomic Account-lock-plus-Profile-read simulation (recheck-pr2a-verify-M2).
+      const actorProfile = await this.profiles.findByAccountId(actorAccountId);
+      const { mutation, result } = await work(slot, proposals, actorProfile);
 
       const slotsSnapshot = this.slots.snapshot();
       const proposalsSnapshot = this.proposals.snapshot();

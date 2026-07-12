@@ -2,7 +2,6 @@ import { rejectProposal as rejectProposalTransition, type Proposal } from "@doma
 import { ConflictError, NotFoundError } from "@application/errors";
 import type { Actor } from "@application/Actor";
 import type { MatchingUnitOfWork } from "@application/ports/MatchingUnitOfWork";
-import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertActiveProfile, assertOwnsSlot, assertRole } from "./shared/guards";
 
 export interface RejectProposalInput {
@@ -11,7 +10,6 @@ export interface RejectProposalInput {
 }
 
 export interface RejectProposalDeps {
-  readonly profileUnitOfWork: ProfileUnitOfWork;
   readonly matchingUnitOfWork: MatchingUnitOfWork;
 }
 
@@ -23,9 +21,10 @@ export interface RejectProposalDeps {
  * or a concurrent approve/close on the same Slot committed first) aborts
  * with `ConflictError`, never a silent no-op.
  *
- * pr2a-M1/N1: the acting Hospital's LIVE Profile status AND type are
- * re-checked via `ProfileUnitOfWork.withLockedProfile` FROM WITHIN the
- * Slot-lock callback (documented lock order: Slot first, Profile nested —
+ * recheck-pr2a-verify-M2: the acting Hospital's LIVE Profile status AND
+ * type are re-checked against `actorProfile`, read by `withLockedSlot`
+ * itself INSIDE the SAME transaction that also locks the Slot and persists
+ * the mutation (documented global lock order: Slot first, then Account —
  * see `submitProposal` for the deadlock-safety rationale).
  */
 export async function rejectProposal(
@@ -35,28 +34,29 @@ export async function rejectProposal(
 ): Promise<Proposal> {
   assertRole(actor, "hospital");
 
-  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, async (lockedSlot, proposals) => {
-    const activeProfile = await deps.profileUnitOfWork.withLockedProfile(
-      actor.accountId,
-      (ctx) => assertActiveProfile(ctx.profile, "hospital"),
-    );
+  return deps.matchingUnitOfWork.withLockedSlot(
+    input.slotId,
+    actor.accountId,
+    async (lockedSlot, proposals, actorProfile) => {
+      const activeProfile = assertActiveProfile(actorProfile, "hospital");
 
-    assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
+      assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
 
-    const target = proposals.find((p) => p.id === input.proposalId);
-    if (!target || target.slotId !== lockedSlot.id) {
-      throw new NotFoundError(
-        `Proposal '${input.proposalId}' does not belong to slot '${input.slotId}'`,
-      );
-    }
+      const target = proposals.find((p) => p.id === input.proposalId);
+      if (!target || target.slotId !== lockedSlot.id) {
+        throw new NotFoundError(
+          `Proposal '${input.proposalId}' does not belong to slot '${input.slotId}'`,
+        );
+      }
 
-    if (target.status !== "submitted") {
-      throw new ConflictError(
-        `Proposal '${target.id}' is already '${target.status}' — cannot reject`,
-      );
-    }
+      if (target.status !== "submitted") {
+        throw new ConflictError(
+          `Proposal '${target.id}' is already '${target.status}' — cannot reject`,
+        );
+      }
 
-    const rejected = rejectProposalTransition(target);
-    return { mutation: { proposals: [rejected] }, result: rejected };
-  });
+      const rejected = rejectProposalTransition(target);
+      return { mutation: { proposals: [rejected] }, result: rejected };
+    },
+  );
 }

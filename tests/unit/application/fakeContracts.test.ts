@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { approveProposal } from "@application/use-cases/approveProposal";
 import {
   FakeMatchingUnitOfWork,
-  FakeProfileUnitOfWork,
   FakeSessionPort,
   InMemoryEventRepository,
   InMemoryProfileRepository,
@@ -88,10 +87,8 @@ describe("FakeMatchingUnitOfWork contract (pr2a-M4): the PERSIST phase rolls bac
       }
     }
     const events = new ThrowingEventRepository();
-    const matchingUnitOfWork = new FakeMatchingUnitOfWork(slots, proposals, events);
     const profiles = new InMemoryProfileRepository();
-    const sessions = new FakeSessionPort();
-    const profileUnitOfWork = new FakeProfileUnitOfWork(profiles, sessions);
+    const matchingUnitOfWork = new FakeMatchingUnitOfWork(slots, proposals, events, profiles);
 
     const account = anAccount("hospital");
     const hospitalProfile = aProfile("hospital", "active", { accountId: account.id });
@@ -109,7 +106,6 @@ describe("FakeMatchingUnitOfWork contract (pr2a-M4): the PERSIST phase rolls bac
         actor,
         { slotId: slot.id, proposalId: target.id },
         {
-          profileUnitOfWork,
           matchingUnitOfWork,
           idGenerator: new SequentialIdGenerator("event"),
           clock: { now: () => new Date("2026-07-10T12:00:00Z") },

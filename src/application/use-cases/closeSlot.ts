@@ -4,7 +4,6 @@ import type { Clock } from "@domain/shared/Clock";
 import { ConflictError, ForbiddenError } from "@application/errors";
 import type { Actor } from "@application/Actor";
 import type { MatchingUnitOfWork } from "@application/ports/MatchingUnitOfWork";
-import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertActiveProfile, assertOwnsSlot, assertRole } from "./shared/guards";
 
 export interface CloseSlotInput {
@@ -12,7 +11,6 @@ export interface CloseSlotInput {
 }
 
 export interface CloseSlotDeps {
-  readonly profileUnitOfWork: ProfileUnitOfWork;
   readonly matchingUnitOfWork: MatchingUnitOfWork;
   readonly clock: Clock;
 }
@@ -24,9 +22,10 @@ export interface CloseSlotDeps {
  * `closed` AND cascade-rejects every outstanding `submitted` Proposal in
  * one atomic operation.
  *
- * pr2a-M1/N1: the acting Hospital's LIVE Profile status AND type are
- * re-checked via `ProfileUnitOfWork.withLockedProfile` FROM WITHIN the
- * Slot-lock callback (documented lock order: Slot first, Profile nested —
+ * recheck-pr2a-verify-M2: the acting Hospital's LIVE Profile status AND
+ * type are re-checked against `actorProfile`, read by `withLockedSlot`
+ * itself INSIDE the SAME transaction that also locks the Slot and persists
+ * the mutation (documented global lock order: Slot first, then Account —
  * see `submitProposal` for the deadlock-safety rationale).
  */
 export async function closeSlot(
@@ -36,38 +35,39 @@ export async function closeSlot(
 ): Promise<CloseSlotOutcome> {
   assertRole(actor, "hospital");
 
-  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, async (lockedSlot, proposals) => {
-    const activeProfile = await deps.profileUnitOfWork.withLockedProfile(
-      actor.accountId,
-      (ctx) => assertActiveProfile(ctx.profile, "hospital"),
-    );
+  return deps.matchingUnitOfWork.withLockedSlot(
+    input.slotId,
+    actor.accountId,
+    async (lockedSlot, proposals, actorProfile) => {
+      const activeProfile = assertActiveProfile(actorProfile, "hospital");
 
-    assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
+      assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
 
-    let outcome: CloseSlotOutcome;
-    try {
-      outcome = closeSlotOperation({
-        slot: lockedSlot,
-        proposals,
-        clock: deps.clock,
-        actingHospitalProfileId: activeProfile.id,
-      });
-    } catch (error) {
-      if (error instanceof InvalidTransitionError) {
-        throw new ConflictError(error.message);
+      let outcome: CloseSlotOutcome;
+      try {
+        outcome = closeSlotOperation({
+          slot: lockedSlot,
+          proposals,
+          clock: deps.clock,
+          actingHospitalProfileId: activeProfile.id,
+        });
+      } catch (error) {
+        if (error instanceof InvalidTransitionError) {
+          throw new ConflictError(error.message);
+        }
+        if (error instanceof NotSlotOwnerError) {
+          throw new ForbiddenError(error.message);
+        }
+        throw error;
       }
-      if (error instanceof NotSlotOwnerError) {
-        throw new ForbiddenError(error.message);
-      }
-      throw error;
-    }
 
-    return {
-      mutation: {
-        slot: outcome.slot,
-        proposals: outcome.rejectedProposals,
-      },
-      result: outcome,
-    };
-  });
+      return {
+        mutation: {
+          slot: outcome.slot,
+          proposals: outcome.rejectedProposals,
+        },
+        result: outcome,
+      };
+    },
+  );
 }
