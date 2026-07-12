@@ -371,6 +371,8 @@ export class FakeProfileUnitOfWork implements ProfileUnitOfWork {
     private readonly sessionPort: FakeSessionPort,
     /** Optional wrapper (e.g. failure injector) exposed to `work` as ctx.sessions. */
     private readonly sessionsForWork: SessionPort = sessionPort,
+    /** Transaction-scoped Slot store used by publishSlot. */
+    private readonly slots: InMemorySlotRepository = new InMemorySlotRepository(),
   ) {}
 
   withLockedProfile<T>(
@@ -380,16 +382,19 @@ export class FakeProfileUnitOfWork implements ProfileUnitOfWork {
     const run = this.queue.then(async () => {
       const profileSnapshot = this.profiles.snapshot();
       const sessionSnapshot = new Map(this.sessionPort.sessions);
+      const slotsSnapshot = this.slots.snapshot();
       try {
         const profile = await this.profiles.findByAccountId(accountId);
         return await work({
           profile,
           saveProfile: (p: Profile) => this.profiles.save(p),
           sessions: this.sessionsForWork,
+          slots: this.slots,
         });
       } catch (error) {
         this.profiles.restore(profileSnapshot); // atomic rollback
         this.sessionPort.sessions = sessionSnapshot;
+        this.slots.restore(slotsSnapshot);
         throw error;
       }
     });

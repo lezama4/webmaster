@@ -44,7 +44,7 @@ function makeSlotDeps() {
     slots,
     proposals,
     matchingUnitOfWork: new FakeMatchingUnitOfWork(slots, proposals, events, profiles),
-    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
+    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions, sessions, slots),
     idGenerator: new SequentialIdGenerator("x"),
     clock: fixedClock,
   };

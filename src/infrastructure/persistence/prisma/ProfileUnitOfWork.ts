@@ -6,6 +6,7 @@ import type {
 } from "@application/ports/ProfileUnitOfWork";
 import { profileStatusToPrisma, toDomainProfile, type ProfileRow } from "./mappers";
 import { createPrismaSessionPort } from "../../auth/session";
+import { PrismaSlotRepository } from "./SlotRepository";
 
 /** Test-only instrumentation, mirrors `MatchingUnitOfWorkHooks` (not part of the port contract). */
 export interface ProfileUnitOfWorkHooks {
@@ -60,9 +61,11 @@ export class PrismaProfileUnitOfWork implements ProfileUnitOfWork {
             });
           },
           sessions: createPrismaSessionPort(tx),
+          slots: new PrismaSlotRepository(tx),
         };
 
-        // (3)+(4) `work` transitions status / issues-or-revokes sessions;
+        // (3)+(4) `work` transitions status, issues/revokes sessions, or
+        // publishes a Slot through the transaction-scoped repositories;
         // everything it does through `ctx` commits atomically with this
         // transaction.
         return work(ctx);

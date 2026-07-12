@@ -3,7 +3,6 @@ import type { Clock } from "@domain/shared/Clock";
 import type { Actor } from "@application/Actor";
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
-import type { SlotRepository } from "@application/ports/SlotRepository";
 import { assertActiveProfile, assertRole } from "./shared/guards";
 
 export interface PublishSlotInput {
@@ -16,7 +15,6 @@ export interface PublishSlotInput {
 
 export interface PublishSlotDeps {
   readonly profileUnitOfWork: ProfileUnitOfWork;
-  readonly slots: SlotRepository;
   readonly idGenerator: IdGenerator;
   readonly clock: Clock;
 }
@@ -28,21 +26,14 @@ export interface PublishSlotDeps {
  * bounds) are enforced by `createSlot` and propagate as
  * `DomainValidationError`.
  *
- * pr2a-M1: the live-status check and the Slot creation both happen INSIDE
- * `ProfileUnitOfWork.withLockedProfile(actor.accountId, ...)` — never a
- * plain pre-lock read followed later by an unguarded `slots.save`. A
- * concurrent Admin deactivation targeting the SAME Account shares this
- * port's queue/row-lock and therefore cannot commit in the gap between this
- * use case's read and its write: either the deactivation's transaction
- * commits first (this call then observes `deactivated` and is denied) or
- * this call's entire check-and-create runs first while the deactivation is
- * blocked on the same lock. Documented lock order: Slot-mutating use cases
- * take the Slot lock BEFORE nesting the Profile lock (see
- * `submitProposal`/`approveProposal`/`rejectProposal`/`closeSlot`);
- * `publishSlot` has no existing Slot row to lock, so it takes the Profile
- * lock alone. No operation in this codebase acquires the Profile lock and
- * subsequently attempts to acquire a Slot lock, so these two orders never
- * nest into each other and no deadlock cycle exists.
+ * The live-status check and Slot persistence share ONE
+ * `ProfileUnitOfWork.withLockedProfile(actor.accountId, ...)` transaction.
+ * `ctx.slots` is transaction-scoped, so an Admin deactivation targeting the
+ * same Account cannot commit after authorization but before the Slot write:
+ * either deactivation commits first and this use case observes `deactivated`,
+ * or publication commits first while deactivation waits on the Account lock.
+ * `publishSlot` has no pre-existing Slot to lock, so it uses the Account lock
+ * alone and never creates a reverse Account-then-Slot lock cycle.
  */
 export async function publishSlot(
   actor: Actor,
@@ -67,7 +58,7 @@ export async function publishSlot(
       deps.clock,
     );
 
-    await deps.slots.save(slot);
+    await ctx.slots.save(slot);
     return slot;
   });
 }

@@ -18,11 +18,12 @@ import { actorFor, aProfile, anAccount } from "./support/builders";
 function makeDeps() {
   const profiles = new InMemoryProfileRepository();
   const sessions = new FakeSessionPort();
+  const slots = new InMemorySlotRepository();
   return {
     profiles,
     sessions,
-    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
-    slots: new InMemorySlotRepository(),
+    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions, sessions, slots),
+    slots,
     idGenerator: new SequentialIdGenerator("slot"),
     clock: fixedClock,
   };
@@ -46,7 +47,7 @@ async function seedHospital(
   return { account, profile, actor: actorFor(account, profile) };
 }
 
-describe("publishSlot (active-Hospital gate, live-checked INSIDE the Profile lock — pr2a-M1)", () => {
+describe("publishSlot (active-Hospital gate, atomically persisted through the Profile lock)", () => {
   it("publishes an 'open' Slot owned by the active Hospital", async () => {
     const deps = makeDeps();
     const { profile, actor } = await seedHospital(deps, "active");

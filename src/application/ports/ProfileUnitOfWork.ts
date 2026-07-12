@@ -1,4 +1,5 @@
 import type { Profile } from "@domain/profile/Profile";
+import type { SlotRepository } from "@application/ports/SlotRepository";
 import type { SessionPort } from "./SessionPort";
 
 /**
@@ -16,6 +17,12 @@ export interface LockedProfileContext {
    * atomic unit — a failure between the two steps leaves no partial state.
    */
   readonly sessions: SessionPort;
+  /**
+   * Transaction-scoped Slot persistence. A Hospital authorization check and
+   * its Slot publication commit (or roll back) in the same Account-locked
+   * transaction, so deactivation cannot land between them.
+   */
+  readonly slots: SlotRepository;
 }
 
 export type LockedProfileWork<T> = (
@@ -23,12 +30,13 @@ export type LockedProfileWork<T> = (
 ) => Promise<T> | T;
 
 /**
- * Lock-first Profile/session coordination port (M3, pr2-review, ADR D7 —
- * mirrors `MatchingUnitOfWork.withLockedSlot`). The adapter MUST lock the
- * Profile/Account row FIRST, load the live Profile inside that lock, then
- * run `work` and commit its effects atomically. Used by `deactivateProfile`,
- * `validateProfile`, and `login` — so a login racing a concurrent
- * deactivation observes the committed transition and is denied.
+ * Lock-first Profile/session/Slot coordination port (M3, pr2-review, ADR D7
+ * — mirrors `MatchingUnitOfWork.withLockedSlot`). The adapter MUST lock the
+ * Profile/Account row FIRST, load the live Profile inside that lock, then run
+ * `work` and commit its Profile, Session, and Slot effects atomically. Used by
+ * `deactivateProfile`, `validateProfile`, `login`, and `publishSlot` — so a
+ * concurrent deactivation cannot land between authorization and a protected
+ * side effect.
  */
 export interface ProfileUnitOfWork {
   withLockedProfile<T>(
