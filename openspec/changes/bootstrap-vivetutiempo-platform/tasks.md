@@ -131,8 +131,8 @@ Chain strategy: pending
 
 ## Phase 5: UI / Route Handlers
 
-- [ ] 5.1 `POST /api/auth/register` (Hospital/Artist self-registration): `src/app/api/auth/register/route.ts`.
-- [ ] 5.2 `POST /api/auth/login`, `POST /api/auth/logout` route handlers.
+- [x] 5.1 `POST /api/auth/register` (Hospital/Artist self-registration): `src/app/api/auth/register/route.ts`.
+- [x] 5.2 `POST /api/auth/login`, `POST /api/auth/logout` route handlers.
 - [ ] 5.3 Admin profile validation: `POST /api/admin/profiles/[id]/approve|reject` + `src/app/admin/profiles/page.tsx` (empty-state per spec).
 - [ ] 5.4 Hospital slot publish: `POST /api/slots` + `src/app/hospital/slots/page.tsx`.
 - [ ] 5.5 Artist proposal submit: `POST /api/slots/[id]/proposals` + `src/app/artist/slots/page.tsx`.
@@ -143,9 +143,19 @@ Chain strategy: pending
 - [ ] 5.10 Hospital close/withdraw Slot: `POST /api/slots/[id]/close` (owner-Hospital-only) + UI action in `src/app/hospital/slots/page.tsx` (B2).
 - [ ] 5.11 Admin deactivate profile: `POST /api/admin/profiles/[id]/deactivate` + UI action in `src/app/admin/profiles/page.tsx` (M3).
 - [ ] 5.12 Admin validation queue surfaces re-registered (`rejected -> pending`) profiles in the same pending queue as first-time submissions — no separate UI path (M2).
-- [ ] 5.13 Wire the CSRF canonical-origin check (4.27) into every authenticated mutation route handler (`src/app/api/**/route.ts`), INCLUDING `POST /api/auth/login` (M5 pr2-review — supersedes the earlier "Origin/Host" wiring description).
+- [ ] 5.13 Wire the CSRF canonical-origin check (4.27) into every authenticated mutation route handler (`src/app/api/**/route.ts`), INCLUDING `POST /api/auth/login` (M5 pr2-review — supersedes the earlier "Origin/Host" wiring description). **Partial (this session):** `src/infrastructure/http/csrfGuard.ts` wraps `isCsrfSafe` (throws `ForbiddenError`, canonical origin from `APP_ORIGIN`) and is wired into `register`/`login`/`logout` (5.1/5.2). Remaining routes (5.3-5.7, 5.10-5.11) still need the same `assertCsrfSafe(request)` call once those handlers exist — do not mark this task `[x]` until every mutation route handler in the final route set calls it.
 - [ ] 5.14 [E2E] `e2e/close-slot.spec.ts`: Hospital closes a Slot with outstanding Proposals -> Proposals show `rejected`, Slot no longer accepts new Proposals (B2).
 - [ ] 5.15 [E2E] `e2e/authorization-edge-cases.spec.ts`: exercises the M6 denial matrix (Admin approving a Proposal, Artist/Patient on Hospital/Admin routes, mismatched proposal/slot id, already-terminal Proposal, deactivated-mid-session actor) via direct API calls — asserts denial happens in the application layer, not only via hidden UI (M6).
+
+**Delivery-boundary foundation + auth API vertical (this session, PR 3 slice 1 — tasks 5.1/5.2 + partial 5.13):** built the Phase 5 foundation shared by every future route handler and implemented the auth vertical on top of it.
+- `src/infrastructure/composition/container.ts` — composition root: singleton `PrismaClient` (`globalThis` cache, survives Next.js dev HMR) + `registrationDeps()`/`loginDeps()`/`logoutDeps()` builders mirroring `tests/integration/support/wiring.ts`'s pattern, reusing the EXISTING Prisma adapters (`PrismaAccountRepository`, `PrismaRegistrationUnitOfWork`, `PrismaProfileUnitOfWork`, `PrismaLoginRateLimiter`, `Argon2PasswordHasher`, `createPrismaSessionPort`) — no adapter was reimplemented.
+- `src/infrastructure/http/httpErrors.ts` — `toErrorResponse(error)`: `UnauthenticatedError`→401, `ForbiddenError`→403, `NotFoundError`→404, `ConflictError`→409, any `DomainError` (incl. `DomainValidationError`)→422, anything else→500 generic. Body is always `{ error: string }`, never the caught error's message/stack.
+- `src/infrastructure/http/csrfGuard.ts` — `assertCsrfSafe(request)`: wraps the existing pure `isCsrfSafe` (unchanged), reads the canonical origin from a NEW env var `APP_ORIGIN` (documented in `.env.example`; no prior env var existed for this — flagged, not silently invented), throws `ForbiddenError` (not `csrf.ts`'s own `CsrfRejectedError`) so `toErrorResponse` maps it uniformly.
+- `src/infrastructure/http/sessionCookie.ts` — `SESSION_COOKIE = "vtt_session"`; `setSessionCookie`/`clearSessionCookie` (httpOnly, `secure` in production only, `sameSite: "lax"`, `path: "/"`); `getSessionToken()`; `getCurrentActor()` (resolveValid → touch, per pr2b-M1's `false` = unauthenticated contract → clears cookie on either null/false → loads Account+Profile → builds `Actor`).
+- `src/app/api/auth/{register,logout}/route.ts`, `src/app/api/auth/login/route.ts` — thin CSRF→parse→use-case→response handlers per task 5.1/5.2. `login`'s success body carries ONLY `{ role }` (no token, no user-existence oracle); `login`'s `ipHash` is derived from `x-forwarded-for` (hashed+truncated, D7) — flagged: trustworthy on Vercel, spoofable without a verified reverse-proxy elsewhere, degrades only the IP-scoped half of the rate limit, never CSRF/auth.
+- Verified: `npx prisma generate` OK; `npx tsc --noEmit` 0 errors; `npm run lint` 0 problems; `npm run test` → 269 passed, 55 skipped (Postgres unreachable locally, same pre-existing cause as Phase 4).
+- 5.13 is left `[ ]` (not fully done) — only `register`/`login`/`logout` are CSRF-wired so far; the remaining mutation routes (5.3-5.7, 5.10-5.11) don't exist yet in this slice.
+- Deviation flagged (no code impact): `design.md`'s File Changes table says route handlers get "Zod validation at boundary"; `zod` is not yet a dependency and no prior route handler exists to set the convention. This slice does minimal manual coercion (`String(body.field ?? "")`) and relies on `registerProfile`/domain validation (`DomainValidationError`→422) for real invariant checks — a dedicated request-schema layer is deferred to whichever PR 3 slice adds the remaining routes, so the decision (add `zod` vs. keep manual coercion) is made once, not per-route.
 
 ## Phase 6: Seed Dataset
 
