@@ -1,156 +1,57 @@
-# Vivetutiempo Deployment Runbook
+# Vivetutiempo deployment runbook
 
-## Purpose and current release gate
+This runbook defines the controlled deployment of the Block 1 MVP on Vercel
+and managed PostgreSQL. It is a release procedure, not evidence that a
+production deployment has already occurred.
 
-This runbook describes the target deployment of the Block 1 Core on Vercel and
-managed PostgreSQL (Neon or Supabase). It is deliberately split into commands
-that are usable now and steps that become executable only after the pending HTTP,
-UI, seed, and authentication integration work is completed.
+**Production URL: TBD.** Record the final HTTPS URL, deployment ID, exact commit
+SHA, migration output, CI run URL, and smoke/E2E evidence when deployment is
+actually completed.
 
-**Do not expose the application publicly as an authenticated MVP yet.** The
-current repository has migrations and infrastructure adapters, but no API route
-handlers, cookie wiring, authenticated UI, seed script, demo credentials, or
-complete E2E flow. The readiness report also records an unresolved application/
-rate-limiter contract mismatch. Treat this document as a reproducible release
-procedure and as the completion checklist for those prerequisites—not as evidence
-that a production deployment has occurred.
+## 1. Release prerequisites
 
-## 1. Prerequisites
+- The exact release commit has a green GitHub Actions run.
+- A PostgreSQL 16-compatible managed database is provisioned with TLS enabled
+  (for example, Neon or Supabase).
+- A verified backup or point-in-time restore checkpoint exists before applying
+  migrations or seed data.
+- Production, Preview, and local environments use separate databases and
+  independent secrets.
+- The final public HTTPS origin is known before enabling authenticated
+  mutations. Do not decide this after deployment: it is the canonical value
+  used by the CSRF guard.
 
-- Node.js **22.x** and npm. This matches the GitHub Actions runtime.
-- A Vercel account and access to the target Vercel project.
-- A managed PostgreSQL 16-compatible database (Neon or Supabase), in the region
-  closest to the Vercel deployment.
-- A GitHub repository connected to Vercel. Protect the production branch and
-  require the CI workflow to pass before merge.
-- Provider credentials with two scopes:
-  - an application database user with only the privileges needed at runtime;
-  - a migration user/connection used only by the controlled migration step.
-- A production domain, for example `https://app.example.org`, selected before
-  enabling authenticated mutations. CSRF must compare requests with this one
-  canonical origin, never with the request `Host` header.
-- A password manager or secret manager for production values. Do not put
-  production URLs or secrets in `.env`, commits, screenshots, logs, or the TFM
-  video.
+Run schema migrations and the initial seed from a controlled release terminal
+or CI job, not as an implicit side effect of a Vercel build. The database user
+used for the runtime should have only application privileges; use a separate,
+controlled migration connection where the provider permits it.
 
-## 2. Environment variables
+## 2. Production environment variables
 
-### 2.1 Required server-side variables
+Configure these values in **Vercel -> Project -> Settings -> Environment
+Variables**. They are server-side only: never prefix them with `NEXT_PUBLIC_`,
+commit them, or put them in the TFM video.
 
-Configure these in **Vercel → Project → Settings → Environment Variables** for
-Production and Preview as appropriate. Mark every secret as server-only; do not
-prefix secrets with `NEXT_PUBLIC_`.
+| Variable | Required | Production value and purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL connection URL used by `prisma/schema.prisma`. Use the provider's TLS-required URL, for example `postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require`. |
+| `SESSION_SECRET` | Yes | Independent random value of at least 32 bytes. The current database-backed sessions use opaque CSPRNG tokens and store only token hashes; this variable is the fallback HMAC key for the login rate limiter, not a JWT signing key. |
+| `RATE_LIMIT_HMAC_SECRET` | Yes | Independent random value of at least 32 bytes. The login rate limiter HMACs email/IP scoped keys with it. Setting it explicitly avoids relying on `SESSION_SECRET` as the fallback. Rotating it resets recognition of existing limiter rows. |
+| `APP_ORIGIN` | Yes | The exact public origin, such as `https://vivetutiempo.example`. It must be scheme + host + optional port only: no path, no alternate hostname, and no confusion between `www` and non-`www`. |
 
-| Variable | Required | Example shape | Use and handling |
-| --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | `postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require` | The only database variable currently read by `prisma/schema.prisma`. Use the provider connection string supported by Prisma and require TLS. Use a migration-capable connection when running `prisma migrate deploy`. |
-| `SESSION_SECRET` | Yes before authentication is enabled | 32+ random bytes encoded as base64url/hex | Present in `.env.example`; it is the current fallback HMAC key for rate-limit records. Keep it stable while sessions/rate-limit data must remain valid. Rotate through a documented incident procedure. |
-| `RATE_LIMIT_HMAC_SECRET` | Recommended; required if `SESSION_SECRET` is not set | independent 32+ random bytes | Preferred HMAC key for Postgres login-rate-limit keys. The adapter falls back to `SESSION_SECRET`, but a separate key isolates rotation. Rotation resets recognisability of old limiter rows; schedule it during low traffic and clean obsolete rows. |
-| `CANONICAL_ORIGIN` | Required before routes are enabled | `https://app.example.org` | **Target delivery-layer contract.** The current CSRF helper accepts an origin argument but no route reads this variable yet. Route wiring must read and validate this value at startup, then pass it to every unsafe-method check, including login. |
-| `NODE_ENV` | Vercel-managed | `production` | Do not override unless Vercel support requires it. |
+`APP_ORIGIN` is security-critical. `src/infrastructure/http/csrfGuard.ts` reads
+this exact variable and compares it with `Origin`, or `Referer` as a fallback,
+for every unsafe request. An empty, malformed, or mismatched value fails
+closed with a denial. Never derive it from an incoming `Host` header.
 
-Generate secrets locally without printing them into shell history or committing
-them, for example with a password manager or a CSPRNG tool. Store the generated
-value directly in Vercel; never use `change-me-in-local-env` from `.env.example`.
+For Preview deployments, configure a separate Preview database, separate
+secrets, and the exact Preview URL as `APP_ORIGIN`. Do not point a Preview build
+at production data.
 
-### 2.2 Environment separation
+## 3. Provision and migrate the database
 
-- **Production:** production database, production canonical origin, unique
-  secrets.
-- **Preview:** separate preview database/schema and unique secrets. Do not point
-  previews at production data.
-- **Local:** `.env` is ignored by Git. Use Docker PostgreSQL only for disposable
-  local data.
-- **CI:** GitHub Actions currently provides an ephemeral PostgreSQL service and
-  a workflow-local `DATABASE_URL`. It must not receive production secrets.
-
-The current Prisma schema has only `DATABASE_URL`. If the chosen provider needs
-different pooled runtime and direct migration URLs, add and review explicit
-Prisma support for a second variable before using it; do not assume an unused
-`DIRECT_URL` will have any effect.
-
-## 3. Local development and verification
-
-### 3.1 Start local PostgreSQL
-
-1. Copy `.env.example` to `.env` and replace the placeholder secret for any
-   authentication/rate-limit work.
-2. Start the disposable local database:
-
-   ```bash
-   docker compose up -d --wait
-   ```
-
-3. Confirm the health check:
-
-   ```bash
-   docker compose exec postgres pg_isready -U vivetutiempo -d vivetutiempo
-   ```
-
-The committed Compose file currently publishes PostgreSQL on port 5432. Use it
-only on a trusted development machine; restrict it to `127.0.0.1` before use on
-a shared network.
-
-### 3.2 Prepare the database and run the application
-
-```bash
-npm ci
-npm run prisma:generate
-npx prisma migrate deploy
-npm run dev
-```
-
-Open `http://localhost:3000`. At the present repository state this only proves
-the scaffold page can start; it does not prove the Block 1 user flow.
-
-### 3.3 Seed data
-
-There is currently **no** `prisma/seed.ts`, no `prisma.seed` package setting,
-and no `db:seed` script. Do not invent demo accounts manually in production.
-After Phase 6 adds an idempotent reviewed seed, document its exact command here
-(normally `npx prisma db seed` or the reviewed `npm run db:seed` wrapper) and
-run it once against the intended environment.
-
-The seed must create only fictional data and the roles/flows promised in the
-README: Admin, active/pending Hospital, active/pending Artist, Patient, five
-coherent Slots, and two distinct Event origins. Record seed credentials in the
-README only after the seed exists.
-
-### 3.4 Run checks and tests
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm test
-npm run test:e2e
-```
-
-Do not interpret a green local `npm test` as full database evidence when Docker
-or PostgreSQL is unavailable. The integration project guards itself and reports
-its real-PostgreSQL suites as **skipped**, rather than passing. Those tests cover
-migrations, row locks, partial indexes, session persistence, rate limiting, and
-race conditions; GitHub Actions is the required execution environment when local
-virtualisation is unavailable.
-
-## 4. Safe production migration and demo-data provisioning
-
-### 4.1 Pre-migration checklist
-
-- The exact commit passed CI, including TypeScript, lint, unit tests, and the
-  real PostgreSQL integration/race suite.
-- The rate-limiter port/adapter contract and all release-blocking findings in
-  `docs/tfm-readiness-report.md` are closed or formally accepted with an
-  explicit non-production scope.
-- A managed-PostgreSQL backup or point-in-time restore checkpoint exists and the
-  restore owner/time objective is known.
-- `DATABASE_URL` points to the intended database and requires TLS.
-- No other migration is running. Schedule a brief maintenance window if the
-  provider/database size makes index work material.
-
-### 4.2 Apply migrations
-
-Run from a controlled CI/release environment with the production migration
-connection available as `DATABASE_URL`:
+From a controlled environment with `DATABASE_URL` set to the intended managed
+database:
 
 ```bash
 npm ci
@@ -158,181 +59,135 @@ npm run prisma:generate
 npx prisma migrate deploy
 ```
 
-`prisma migrate deploy` applies committed migrations in directory order. In this
-repository that means:
+`prisma migrate deploy` applies the committed migration history in order. Do
+not use `prisma migrate dev` in production, modify applied migration SQL, or
+manually replay partial-index statements. Capture the command output and the
+applied migration names in the release record.
 
-1. `20260711000000_init`: base schema, enums, lifecycle fields, sessions, and
-   rate-limit table;
-2. `20260711000001_partial_unique_indexes`: PostgreSQL partial unique indexes
-   over `proposals` for one accepted proposal per Slot and one submitted proposal
-   per Artist/Slot.
+After a successful migration, verify that the application database contains the
+Profile lifecycle schema, session and login-rate-limit tables, and the partial
+unique indexes that protect accepted and submitted Proposals.
 
-Do not use `prisma migrate dev` in production. Do not manually reorder, edit, or
-replay the migration SQL. Capture the command result, migration names, timestamp,
-database environment, and release commit in the release record.
+## 4. Seed the fictional demo dataset once
 
-### 4.3 Verify migration before application traffic
+After migration, execute:
 
-- Confirm `prisma migrate deploy` completed successfully.
-- Run the reviewed migration/catalog integration checks against an isolated
-  non-production database first.
-- Verify that the deployed schema contains `DEACTIVATED`,
-  `reviewRequestedAt`, session tables/indexes, and both partial indexes.
-- Only then permit the Vercel build/release to receive production traffic.
+```bash
+npm run db:seed
+```
 
-### 4.4 Seed the demonstration dataset
+The seed is idempotent and uses stable identifiers, so rerunning the same
+reviewed seed updates its own fictional demo records rather than creating
+duplicates. It creates seven accounts, five Slots, and two Events. It is for an
+isolated TFM/demo database only; do not seed a database that contains real
+hospital, artist, or patient-related data.
 
-This step is **blocked until the seed implementation exists**. Once it does:
+Verify the seed before deployment:
 
-1. Review that it is idempotent and uses only fictional records.
-2. Take/confirm the pre-seed restore point.
-3. Run the documented seed command once with the production demo database URL.
-4. Verify the resulting account count, role states, Slot/Proposal/Event state
-   matrix, and public projection manually.
-5. Store the non-production/demo credentials in the README and TFM handout, not
-   in source code or browser screenshots containing real data.
+- seven accounts: Admin, two Hospitals, three Artists, and one Patient/Family
+  account;
+- S1 open with two competing Proposals;
+- S2 filled with an accepted Proposal and a published Event;
+- S3 open without Proposals;
+- S4 closed with a cascade-rejected Proposal;
+- S5 filled with an accepted Proposal and a completed Event.
 
-## 5. Deploy on Vercel
+The fictional credentials are maintained in [README.md](../README.md#seed-credentials).
 
-### 5.1 Project configuration
+## 5. Deploy the application on Vercel
 
-1. Import the GitHub repository into Vercel.
-2. Select the repository root as the project root; Vercel detects Next.js.
-3. Configure Node.js **22.x** in the project build settings.
-4. Add the production variables from Section 2.
-5. Add the final custom domain and configure DNS with the provider. Set
-   `CANONICAL_ORIGIN` exactly to the final HTTPS origin—no path, no trailing
-   alternate hostname.
-6. Keep Preview deployments on isolated databases and preview origins.
+1. Import the GitHub repository into Vercel and select the repository root.
+   Vercel detects the Next.js application.
+2. Use Node.js 22.x, matching the project and CI runtime.
+3. Configure the four production variables from Section 2 and verify that
+   `APP_ORIGIN` matches the final HTTPS URL exactly.
+4. Configure the production domain and DNS. If the public hostname changes,
+   update `APP_ORIGIN` before enabling unsafe requests.
+5. Trigger the production deployment for the commit already migrated and
+   seeded. Inspect build logs for Prisma generation and environment failures.
+6. Record the resulting Vercel deployment ID, URL, commit SHA, and timestamp.
 
-### 5.2 Build and release sequence
+A successful build does not prove authorization, CSRF, concurrency, or public
+data minimization. Those require the checks below.
 
-Use this order for every production release:
+## 6. Post-deployment verification
 
-1. CI succeeds on the exact commit.
-2. Apply production migrations through the controlled step in Section 4.
-3. Seed only if this is the first demo release or the reviewed seed changed.
-4. Trigger/approve the Vercel production deployment.
-5. Inspect Vercel build logs for dependency, Prisma generation, and environment
-   failures. A successful build is not an authentication, CSRF, migration, or
-   concurrency guarantee.
-6. Open the HTTPS URL and record the release URL, Vercel deployment ID, commit,
-   and time in the release/TFM evidence log.
+Use an incognito browser for public checks and retain the results as TFM
+evidence.
 
-Do not make production migrations an unreviewed side effect of a Vercel build.
-The migration must be observable, repeatable, and run with the least privilege
-needed for schema changes.
+1. Log in as the seeded Admin. Confirm that the pending Hospital and Artist
+   can be validated and that deactivation invalidates their sessions.
+2. Log in as the active Hospital, publish a future Slot, and confirm it appears
+   on the Hospital board.
+3. Log in as an active Artist and submit a Proposal. Optionally submit a second
+   Proposal for the same Slot using the other active Artist.
+4. As the owning Hospital, approve one Proposal. Confirm the Slot is filled,
+   the selected Proposal is accepted, any submitted rival is rejected, and the
+   Event is published.
+5. Without a session, browse published Events and inspect the response. It may
+   contain title, description, date/time, duration, and Artist display name;
+   it must not expose location, Proposal message, emails, or internal IDs.
+6. Confirm logout revokes the current session and that an expired/revoked
+   session cannot perform a mutation.
+7. Send an unsafe cross-origin request and confirm it is rejected. Confirm a
+   same-origin authenticated mutation succeeds with the configured
+   `APP_ORIGIN`.
 
-## 6. GitHub Actions CI
+Run the deployed Playwright suite without starting a local server:
 
-The workflow in `.github/workflows/ci.yml` runs on `main` and `feat/**` pushes
-and on pull requests. It provisions PostgreSQL 16, then performs:
+```bash
+PLAYWRIGHT_BASE_URL="https://your-production-url.example" npm run test:e2e
+```
 
-1. `npm ci`;
-2. Prisma client generation;
-3. `npx prisma migrate deploy`;
-4. lint;
-5. TypeScript typecheck;
-6. `npm test`.
+Do not call the deployment complete until the command result, browser smoke
+results, and CI run correspond to the same commit and URL.
 
-The workflow supplies an ephemeral `DATABASE_URL` for the PostgreSQL service.
-The Vitest integration project is configured serially and uses global migration
-setup, so its PostgreSQL suites execute there when the workflow is green. This
-is the evidence path for the lock/race tests that skip locally when Docker
-Desktop/WSL2 virtualisation is disabled.
+## 7. CI and TFM evidence
 
-Before treating CI as a release gate, confirm the workflow run for the exact
-release commit actually executed (not skipped) the integration project. Keep a
-link/screenshot with the commit SHA in the TFM evidence folder.
+The versioned GitHub Actions workflow provisions PostgreSQL 16, generates
+Prisma Client, applies migrations, and runs lint, typecheck, and `npm run test`.
+Vitest isolates the integration project, serializes its files, and applies
+migrations before integration test files load. Consequently, the lock-first,
+session, partial-index, and concurrency tests execute against real PostgreSQL
+in CI rather than a mock.
 
-## 7. Post-deploy smoke test and acceptance checklist
+The Playwright configuration supports a deployed target through
+`PLAYWRIGHT_BASE_URL`. However, the currently versioned workflow does not yet
+invoke `npm run test:e2e`. Add that explicit CI step and retain a green run
+before claiming E2E-in-CI evidence in the TFM defence. This limitation is
+documented deliberately to avoid overstating the evidence.
 
-Run this only after routes, UI, cookie handling, CSRF wiring, and the seed are
-implemented. Use a private/incognito browser for the public step.
+Retain:
 
-1. Log in as the demo Admin; activate the pending Hospital and Artist.
-2. Log in as the active Hospital; publish one future Slot.
-3. Log in as an active Artist; submit a Proposal. Optionally submit a competing
-   Proposal using the second Artist.
-4. Log in again as the owning Hospital; approve one Proposal.
-5. Verify that the Slot is filled, the chosen Proposal is accepted, competitors
-   are rejected, and a published Event exists.
-6. Without a session, browse the public Events page/API.
-7. Inspect the public response and confirm it contains only title, description,
-   scheduled time, duration, and artist display name—never location, proposal
-   message, email, or internal identifiers.
-8. Attempt a cross-origin unsafe request and verify CSRF rejection. Verify a
-   same-origin authenticated mutation succeeds.
-9. Verify logout invalidates its session; deactivate/reject a profile and verify
-   all its sessions are invalidated.
-10. Record results, environment, URL, release commit, test accounts used, and
-    any failure/rollback decision.
+- the protected CI run URL for the release SHA;
+- migration output and provider restore-point identifier;
+- the Vercel deployment URL/ID;
+- seed command output without secrets;
+- deployed smoke/E2E results and the public no-leak inspection;
+- accepted residual risks, if any, in the threat model/readiness evidence.
 
-Release only when every item succeeds and the CI integration suite is green for
-the same commit.
+## 8. Rollback and recovery
 
-## 8. Rollback and incident response
+### Application rollback
 
-### 8.1 Application rollback
+1. Stop further promotion and preserve Vercel and CI logs.
+2. Redeploy the last known-good Vercel deployment.
+3. Re-run the public and authenticated smoke checks against the restored URL.
+4. Record the affected commit, rollback deployment ID, impact, and decision.
 
-1. Stop further promotion and preserve Vercel/CI logs.
-2. In Vercel, promote/redeploy the last known-good production deployment.
-3. Verify the public health/smoke checks against the restored deployment.
-4. Record the incident, affected release, rollback deployment ID, and user/data
-   impact. Do not erase relevant security logs.
+### Database rollback
 
-### 8.2 Database rollback
+Prisma migrations are not automatically reversible. Prefer a reviewed,
+forward-only corrective migration when it is safer than restoration. If a
+restore is necessary:
 
-Prisma migrations are not automatically reversible. Do **not** delete migration
-records or run ad-hoc destructive SQL to “undo” a release.
-
-1. First assess whether a forward-only corrective migration is safer.
-2. If data/schema restoration is necessary, use the managed provider’s tested
-   point-in-time restore/backup procedure to a new database instance.
-3. Validate schema/data integrity and the application against that restored
-   instance before changing `DATABASE_URL`.
-4. Rotate database credentials and affected application secrets if compromise is
+1. Restore the managed PostgreSQL backup or point-in-time checkpoint to a new
+   database instance according to the provider's documented process.
+2. Validate the schema, seed state, and application against that instance.
+3. Change `DATABASE_URL` only after validation, then redeploy the matching
+   known-good application version.
+4. Rotate database credentials and application secrets if compromise is
    suspected.
-5. Document the recovery point, data-loss window, verification results, and
-   final production connection change.
 
-### 8.3 Known blockers and pending evidence
-
-- PostgreSQL concurrency/integration tests have not yet been evidenced by a
-  reviewed CI run for the release commit.
-- The complete race matrix and both login/deactivation orderings remain open.
-- The current application rate-limiter port and Prisma adapter must be made
-  compatible before deployment.
-- Route handlers, CSRF enforcement, cookies, request validation, UI, seeds,
-  E2E chain, live URL, and final smoke evidence are still pending.
-- Aggregate validation, Profile/Proposal bounds, clock validation, timestamp
-  defensiveness, limiter retention, and operational logging/retention policies
-  remain open in the readiness tracker.
-
-## 9. Test credentials for README and TFM delivery
-
-There are no credentials today because the seed has not been implemented. Once
-the reviewed seed exists, add a table to `README.md` and the delivery notes with
-only fictional credentials:
-
-| Role | Email | Password | Expected state |
-| --- | --- | --- | --- |
-| Admin | Seed-defined | Seed-defined | Can validate/deactivate profiles |
-| Hospital A | Seed-defined | Seed-defined | Active; owns demo Slots |
-| Hospital B | Seed-defined | Seed-defined | Pending or non-owning negative case |
-| Artist A | Seed-defined | Seed-defined | Active; primary Proposal |
-| Artist B | Seed-defined | Seed-defined | Active; competing Proposal |
-| Patient | Seed-defined | Seed-defined | Block 1 public browsing/demo role |
-
-The current README proposes `VivetuTiempo2026!` as a **seed-only,
-non-production** password. Confirm the final seed policy before publishing it.
-Never reuse these credentials outside the isolated TFM demo environment.
-
-## Evidence to retain for the defence
-
-- Exact release commit and protected CI run URL.
-- Migration output and provider restore-point identifier.
-- Vercel deployment URL/ID and production domain.
-- Seed command/output (without secrets) and demo-account table.
-- Post-deploy smoke/E2E output, including the public no-leak inspection.
-- Updated threat model and readiness tracker, with any accepted residual risks.
+Never delete Prisma migration records or run ad-hoc destructive SQL merely to
+make a deployment look reverted.
