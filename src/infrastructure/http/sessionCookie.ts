@@ -89,3 +89,37 @@ export async function getCurrentActor(): Promise<Actor | null> {
     profileStatus: profile?.status,
   };
 }
+
+/**
+ * Read-only actor resolution for Server Component RENDER contexts, where
+ * mutating the cookie store is forbidden (Next.js only permits cookie writes
+ * in Server Actions / Route Handlers). Resolves the session WITHOUT clearing
+ * the cookie and WITHOUT `touch` (no writes to the cookie side): reads the
+ * cookie, validates via `resolveValid`, and returns the `Actor` or `null`.
+ *
+ * An invalid/expired cookie simply yields `null` here (the page can redirect
+ * to /login); the stale cookie is cleared by the next MUTATING request, which
+ * goes through `getCurrentActor`. Page views deliberately do NOT extend the
+ * idle window — only actions (POST routes) do, via `getCurrentActor`'s touch.
+ * `profileStatus` is a snapshot for display/gating hints only; every mutation
+ * still re-checks live status inside its transaction (M6).
+ */
+export async function getCurrentActorReadOnly(): Promise<Actor | null> {
+  const token = await getSessionToken();
+  if (!token) return null;
+
+  const session = await sessionPort().resolveValid(token);
+  if (!session) return null;
+
+  const account = await accountRepository().findById(session.accountId);
+  if (!account) return null;
+
+  const profile = await profileRepository().findByAccountId(account.id);
+
+  return {
+    accountId: account.id,
+    role: account.role,
+    profileId: profile?.id,
+    profileStatus: profile?.status,
+  };
+}

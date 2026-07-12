@@ -13,6 +13,7 @@ import type { PublishSlotDeps } from "@application/use-cases/publishSlot";
 import type { ListPublishedEventsDeps } from "@application/use-cases/listPublishedEvents";
 import type { ListPendingProfilesDeps } from "@application/use-cases/listPendingProfiles";
 import type { ListHospitalSlotsDeps } from "@application/use-cases/listHospitalSlots";
+import type { ListOpenSlotsDeps } from "@application/use-cases/listOpenSlots";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaRegistrationUnitOfWork } from "@infrastructure/persistence/prisma/RegistrationUnitOfWork";
@@ -21,6 +22,7 @@ import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/Mat
 import { PrismaPublicEventProjectionQuery } from "@infrastructure/persistence/prisma/PublicEventProjectionQuery";
 import { PrismaPendingProfileQuery } from "@infrastructure/persistence/prisma/PendingProfileQuery";
 import { PrismaHospitalSlotBoardQuery } from "@infrastructure/persistence/prisma/HospitalSlotBoardQuery";
+import { PrismaOpenSlotListingQuery } from "@infrastructure/persistence/prisma/OpenSlotListingQuery";
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
@@ -162,5 +164,14 @@ export function hospitalSlotBoardDeps(): ListHospitalSlotsDeps {
   return {
     profiles: new PrismaProfileRepository(prismaClient),
     hospitalSlotBoardQuery: new PrismaHospitalSlotBoardQuery(prismaClient),
+  };
+}
+
+/** `listOpenSlots` deps — Artist-facing open-Slot listing (5.5). */
+export function openSlotsDeps(): ListOpenSlotsDeps {
+  return {
+    profiles: new PrismaProfileRepository(prismaClient),
+    openSlotListingQuery: new PrismaOpenSlotListingQuery(prismaClient),
+    clock: new SystemClock(),
   };
 }
