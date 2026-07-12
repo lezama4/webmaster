@@ -15,12 +15,13 @@ export function createDeferred<T = void>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-/** Tables whose lock-first adapters are exercised by the integration race suite. */
-export type LockWaitTable = "slots" | "accounts";
+/** Lock targets whose adapters are exercised by the integration race suite. */
+export type LockWaitTable = "slots" | "accounts" | "advisory";
 
 /**
  * Waits for observable PostgreSQL evidence that a second transaction is
- * blocked on the lock-first `SELECT ... FOR UPDATE` for `table`. This is not
+ * blocked on the lock-first `SELECT ... FOR UPDATE` (or registration advisory
+ * lock) for `table`. This is not
  * a timing delay: the first transaction MUST NOT be released until this query
  * observes `wait_event_type = 'Lock'` in `pg_stat_activity` for the second
  * operation. The deadline merely fails a broken test rather than hanging CI.
@@ -31,7 +32,10 @@ export async function waitForPostgresLockWait(
   timeoutMs = 10_000,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  const queryFragment = table === "slots" ? 'FROM "slots"' : 'FROM "accounts"';
+  const queryPattern =
+    table === "advisory"
+      ? "%pg_advisory_xact_lock%"
+      : `%${table === "slots" ? 'FROM "slots"' : 'FROM "accounts"'}%FOR UPDATE%`;
 
   while (Date.now() < deadline) {
     const rows = await client.$queryRaw<{ readonly waiting: boolean }[]>`
@@ -41,7 +45,7 @@ export async function waitForPostgresLockWait(
         WHERE datname = current_database()
           AND state = 'active'
           AND wait_event_type = 'Lock'
-          AND query LIKE ${`%${queryFragment}%FOR UPDATE%`}
+          AND query LIKE ${queryPattern}
       ) AS "waiting"
     `;
     if (rows[0]?.waiting) return;
@@ -51,7 +55,7 @@ export async function waitForPostgresLockWait(
   }
 
   throw new Error(
-    `Timed out waiting for a blocked SELECT ... FOR UPDATE on '${table}'. ` +
+      `Timed out waiting for a blocked registration/matching lock on '${table}'. ` +
       "The race was not established, so the test must not release its first transaction.",
   );
 }
