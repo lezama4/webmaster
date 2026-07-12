@@ -39,8 +39,16 @@ import type {
 import type { ProposalRepository } from "@application/ports/ProposalRepository";
 import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
+import type {
+  RegistrationWork,
+  RegistrationUnitOfWork,
+} from "@application/ports/RegistrationUnitOfWork";
 import type { Session, SessionPort } from "@application/ports/SessionPort";
 import type { SlotRepository } from "@application/ports/SlotRepository";
+import type {
+  OpenSlotListingItem,
+  OpenSlotListingQuery,
+} from "@application/ports/OpenSlotListingQuery";
 
 export const NOW = new Date("2026-07-10T12:00:00Z");
 
@@ -96,6 +104,13 @@ export class InMemoryAccountRepository implements AccountRepository {
   async save(record: AccountRecord): Promise<void> {
     this.records.set(record.account.id, record);
   }
+  /** Snapshot/restore (pr2a-M5): lets a unit-of-work fake roll back atomically on failure. */
+  snapshot(): Map<string, AccountRecord> {
+    return new Map(this.records);
+  }
+  restore(snapshot: Map<string, AccountRecord>): void {
+    this.records = snapshot;
+  }
 }
 
 export class InMemoryProfileRepository implements ProfileRepository {
@@ -133,6 +148,13 @@ export class InMemorySlotRepository implements SlotRepository {
   async save(slot: Slot): Promise<void> {
     this.slots.set(slot.id, slot);
   }
+  /** Snapshot/restore (pr2a-M4): lets `FakeMatchingUnitOfWork` roll back the persist phase atomically on a mid-write failure. */
+  snapshot(): Map<string, Slot> {
+    return new Map(this.slots);
+  }
+  restore(snapshot: Map<string, Slot>): void {
+    this.slots = snapshot;
+  }
 }
 
 export class InMemoryProposalRepository implements ProposalRepository {
@@ -146,6 +168,12 @@ export class InMemoryProposalRepository implements ProposalRepository {
   }
   async save(proposal: Proposal): Promise<void> {
     this.proposals.set(proposal.id, proposal);
+  }
+  snapshot(): Map<string, Proposal> {
+    return new Map(this.proposals);
+  }
+  restore(snapshot: Map<string, Proposal>): void {
+    this.proposals = snapshot;
   }
 }
 
@@ -161,8 +189,26 @@ export class InMemoryEventRepository implements EventRepository {
   all(): readonly Event[] {
     return [...this.events.values()];
   }
+  snapshot(): Map<string, Event> {
+    return new Map(this.events);
+  }
+  restore(snapshot: Map<string, Event>): void {
+    this.events = snapshot;
+  }
 }
 
+/** Idle-expiry window (D7): 30 minutes since `lastActiveAt`. */
+export const SESSION_IDLE_EXPIRY_MS = 30 * 60 * 1000;
+/** Absolute-expiry window (D7): 12 hours since `createdAt`. */
+export const SESSION_ABSOLUTE_EXPIRY_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * `SessionPort` fake (pr2a-M4): unlike the earlier version, `resolveValid`
+ * NOW ENFORCES both the absolute and the idle expiry the port contract
+ * promises — a stored row past either deadline resolves to `null`, exactly
+ * like the real Postgres adapter's contract (D7). `touch` resets the idle
+ * clock, which `resolveValid` honors.
+ */
 export class FakeSessionPort implements SessionPort {
   sessions = new Map<string, Session>();
   private counter = 0;
@@ -175,13 +221,18 @@ export class FakeSessionPort implements SessionPort {
       accountId,
       createdAt: now,
       lastActiveAt: now,
-      absoluteExpiresAt: new Date(now.getTime() + 12 * 60 * 60 * 1000),
+      absoluteExpiresAt: new Date(now.getTime() + SESSION_ABSOLUTE_EXPIRY_MS),
     };
     this.sessions.set(session.id, session);
     return session;
   }
   async resolveValid(sessionId: string): Promise<Session | null> {
-    return this.sessions.get(sessionId) ?? null;
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+    const now = this.clock.now().getTime();
+    if (now >= session.absoluteExpiresAt.getTime()) return null;
+    if (now - session.lastActiveAt.getTime() >= SESSION_IDLE_EXPIRY_MS) return null;
+    return session;
   }
   async touch(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
@@ -214,6 +265,18 @@ export class FakeSessionPort implements SessionPort {
  * one's committed writes — the race-relevant ordering), persists the
  * returned mutation before releasing, and persists NOTHING when `work`
  * throws.
+ *
+ * `work` may now be ASYNC (pr2a-M1): a Slot-mutating use case re-checks the
+ * acting Profile's LIVE status via `ProfileUnitOfWork.withLockedProfile`
+ * FROM WITHIN this callback, not before the Slot lock is taken.
+ *
+ * pr2a-M4: the PERSIST phase (writing the returned mutation) is now
+ * snapshot/rollback-protected — a failure partway through persisting
+ * (Slot saved, then a Proposal or the Event save throws) restores every
+ * backing store to its pre-persist state, mirroring the real Postgres
+ * transaction's all-or-nothing commit. Unlike a `work` throw (which
+ * persists nothing because nothing has been written yet), this covers a
+ * failure DURING the write sequence itself.
  */
 export class FakeMatchingUnitOfWork implements MatchingUnitOfWork {
   private queue: Promise<unknown> = Promise.resolve();
@@ -232,12 +295,25 @@ export class FakeMatchingUnitOfWork implements MatchingUnitOfWork {
       const slot = await this.slots.findById(slotId); // LIVE read inside the lock
       if (!slot) throw new NotFoundError(`Slot '${slotId}' does not exist`);
       const proposals = await this.proposals.listBySlotId(slotId);
-      const { mutation, result } = work(slot, proposals);
-      if (mutation.slot) await this.slots.save(mutation.slot);
-      for (const proposal of mutation.proposals ?? []) {
-        await this.proposals.save(proposal);
+      const { mutation, result } = await work(slot, proposals);
+
+      const slotsSnapshot = this.slots.snapshot();
+      const proposalsSnapshot = this.proposals.snapshot();
+      const eventsSnapshot = this.events.snapshot();
+      try {
+        if (mutation.slot) await this.slots.save(mutation.slot);
+        for (const proposal of mutation.proposals ?? []) {
+          await this.proposals.save(proposal);
+        }
+        if (mutation.event) await this.events.save(mutation.event);
+      } catch (error) {
+        // pr2a-M4: roll back the WHOLE persist phase, not just the write
+        // that failed — no partial mutation survives.
+        this.slots.restore(slotsSnapshot);
+        this.proposals.restore(proposalsSnapshot);
+        this.events.restore(eventsSnapshot);
+        throw error;
       }
-      if (mutation.event) await this.events.save(mutation.event);
       return result;
     });
     this.queue = run.catch(() => undefined); // keep serving after a failure
@@ -292,5 +368,68 @@ export class FakePublicEventProjectionQuery
   constructor(private readonly items: readonly PublicEventProjection[]) {}
   async listPublished(): Promise<readonly PublicEventProjection[]> {
     return this.items;
+  }
+}
+
+/**
+ * Lock-first registration fake (pr2a-M5): serializes every
+ * `withLockedRegistration` call on the SAME queue keyed by nothing but call
+ * order (mirrors the other unit-of-work fakes — one "transaction" at a
+ * time), reads the LIVE Account/Profile for the email INSIDE the critical
+ * section, and rolls BOTH stores back atomically when `work` throws —
+ * closing the pr2a-M5 gap where an Account could be saved and a subsequent
+ * Profile save could fail, leaving an orphan Account.
+ */
+export class FakeRegistrationUnitOfWork implements RegistrationUnitOfWork {
+  private queue: Promise<unknown> = Promise.resolve();
+
+  constructor(
+    private readonly accounts: InMemoryAccountRepository,
+    private readonly profiles: InMemoryProfileRepository,
+  ) {}
+
+  withLockedRegistration<T>(
+    email: string,
+    work: RegistrationWork<T>,
+  ): Promise<T> {
+    const run = this.queue.then(async () => {
+      const accountsSnapshot = this.accounts.snapshot();
+      const profilesSnapshot = this.profiles.snapshot();
+      try {
+        const record = await this.accounts.findByEmail(email);
+        const existing = record
+          ? {
+              account: record.account,
+              passwordHash: record.passwordHash,
+              profile: await this.profiles.findByAccountId(record.account.id),
+            }
+          : null;
+
+        return await work({
+          existing,
+          createAccountAndProfile: async (account, passwordHash, profile) => {
+            await this.accounts.save({ account, passwordHash });
+            await this.profiles.save(profile);
+          },
+          saveProfile: async (profile: Profile) => {
+            await this.profiles.save(profile);
+          },
+        });
+      } catch (error) {
+        this.accounts.restore(accountsSnapshot);
+        this.profiles.restore(profilesSnapshot);
+        throw error;
+      }
+    });
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+}
+
+/** In-memory `OpenSlotListingQuery` fake (pr2a-N3). */
+export class FakeOpenSlotListingQuery implements OpenSlotListingQuery {
+  constructor(private readonly items: readonly OpenSlotListingItem[]) {}
+  async listOpenUpcoming(now: Date): Promise<readonly OpenSlotListingItem[]> {
+    return this.items.filter((item) => item.scheduledAt.getTime() > now.getTime());
   }
 }

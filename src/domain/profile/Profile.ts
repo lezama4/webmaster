@@ -39,11 +39,10 @@ export type Profile = {
   readonly reviewRequestedAt?: Date;
 } & { readonly [PROFILE_BRAND]: "Profile" };
 
-// TODO(B1, deferred to PR2/Phase 4): `prisma/schema.prisma` does not yet have
-// a `DEACTIVATED` enum value nor a durable `reviewRequestedAt`/review-history
-// representation, so a Prisma-backed repository cannot persist either fact
-// this type already models. Tracked as the review's BLOCKER finding B1 —
-// fix the schema/migration before building the persistence adapter, not here.
+// `prisma/schema.prisma` carries `ProfileStatus.DEACTIVATED` and
+// `Profile.reviewRequestedAt` (D8/B3, PR 2b) — the persistence adapter
+// (`src/infrastructure/persistence/prisma/ProfileRepository.ts`) maps both
+// fields; no further schema work is pending for this type.
 
 export interface CreateProfileInput {
   readonly id: string;

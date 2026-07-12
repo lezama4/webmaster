@@ -72,7 +72,10 @@ export class PrismaMatchingUnitOfWork implements MatchingUnitOfWork {
         await this.hooks.afterLock?.(slotId);
 
         // (3) Invoke the decision callback on the LOCKED, live snapshot.
-        const outcome = work(lockedSlot, proposals);
+        // `work` MAY be async (pr2a-M1 — the application layer now nests a
+        // live Profile-status recheck via `ProfileUnitOfWork` inside this
+        // very callback), so it MUST be awaited here.
+        const outcome = await work(lockedSlot, proposals);
 
         // (4) Persist the returned mutation, still inside the same
         // transaction, before commit.

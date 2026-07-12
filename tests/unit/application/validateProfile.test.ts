@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { InvalidTransitionError } from "@domain/errors";
+import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import { ForbiddenError, NotFoundError } from "@application/errors";
 import { validateProfile } from "@application/use-cases/validateProfile";
 import type { Session, SessionPort } from "@application/ports/SessionPort";
@@ -152,5 +152,25 @@ describe("validateProfile (Admin validation queue decision)", () => {
     await expect(
       validateProfile(admin, { profileId: active.id, decision: "approve" }, deps),
     ).rejects.toBeInstanceOf(InvalidTransitionError);
+  });
+
+  it("FAILS CLOSED on a decision that is neither 'approve' nor 'reject' (pr2a-N2) — never falls through to reject", async () => {
+    const deps = makeDeps();
+    const pending = aProfile("hospital", "pending", { accountId: "acct-n2" });
+    await deps.profiles.save(pending);
+
+    await expect(
+      validateProfile(
+        admin,
+        // Simulates a caller that bypasses the TS union (e.g. a malformed
+        // JSON body reaching the use case before route-level Zod validation
+        // exists) — the use case itself MUST NOT interpret this as "reject".
+        { profileId: pending.id, decision: "delete-everything" as never },
+        deps,
+      ),
+    ).rejects.toBeInstanceOf(DomainValidationError);
+
+    // No irreversible state change occurred — the Profile is still pending.
+    expect((await deps.profiles.findById(pending.id))?.status).toBe("pending");
   });
 });

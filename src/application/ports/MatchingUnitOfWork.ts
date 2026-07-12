@@ -25,13 +25,19 @@ export interface LockedSlotOutcome<T> {
  * The decision callback. It receives the LIVE Slot and its COMPLETE Proposal
  * set, both read INSIDE the lock — never a pre-lock snapshot — and MUST
  * recompute every authorization/status guard and the pure domain operation
- * from that locked data (B2/M1, pr2-review, ADR D4). Throwing aborts the
- * transaction: nothing is persisted.
+ * from that locked data (B2/M1, pr2-review, ADR D4). Throwing (or rejecting)
+ * aborts the transaction: nothing is persisted.
+ *
+ * MAY be async (pr2a-M1): a Slot-mutating use case re-checks the acting
+ * Profile's LIVE status via `ProfileUnitOfWork.withLockedProfile` FROM
+ * WITHIN this callback — inside the SAME transaction that commits the Slot
+ * decision — rather than from a separate pre-lock read that a concurrent
+ * Admin deactivation/rejection could race.
  */
 export type LockedSlotWork<T> = (
   lockedSlot: Slot,
   proposals: readonly Proposal[],
-) => LockedSlotOutcome<T>;
+) => LockedSlotOutcome<T> | Promise<LockedSlotOutcome<T>>;
 
 /**
  * Lock-first coordination port (ADR D4, redesigned per review B2). In ONE

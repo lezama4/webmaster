@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { DomainValidationError } from "@domain/errors";
 import { ForbiddenError } from "@application/errors";
 import { publishSlot } from "@application/use-cases/publishSlot";
+import { deactivateProfile } from "@application/use-cases/deactivateProfile";
 import {
   fixedClock,
+  FakeProfileUnitOfWork,
+  FakeSessionPort,
   InMemoryProfileRepository,
   InMemorySlotRepository,
   NOW,
@@ -13,8 +16,12 @@ import {
 import { actorFor, aProfile, anAccount } from "./support/builders";
 
 function makeDeps() {
+  const profiles = new InMemoryProfileRepository();
+  const sessions = new FakeSessionPort();
   return {
-    profiles: new InMemoryProfileRepository(),
+    profiles,
+    sessions,
+    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
     slots: new InMemorySlotRepository(),
     idGenerator: new SequentialIdGenerator("slot"),
     clock: fixedClock,
@@ -39,7 +46,7 @@ async function seedHospital(
   return { account, profile, actor: actorFor(account, profile) };
 }
 
-describe("publishSlot (active-Hospital gate)", () => {
+describe("publishSlot (active-Hospital gate, live-checked INSIDE the Profile lock — pr2a-M1)", () => {
   it("publishes an 'open' Slot owned by the active Hospital", async () => {
     const deps = makeDeps();
     const { profile, actor } = await seedHospital(deps, "active");
@@ -80,6 +87,18 @@ describe("publishSlot (active-Hospital gate)", () => {
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
+  it("denies an Actor whose Account role is 'hospital' but whose live Profile TYPE is 'artist' (pr2a-N1)", async () => {
+    const deps = makeDeps();
+    const account = anAccount("hospital");
+    // Corrupted/imported-data scenario: role says Hospital, live Profile is an Artist Profile.
+    const mismatchedProfile = aProfile("artist", "active", { accountId: account.id });
+    await deps.profiles.save(mismatchedProfile);
+
+    await expect(
+      publishSlot(actorFor(account, mismatchedProfile), slotInput, deps),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
   it("propagates the domain invariant for a past scheduledAt", async () => {
     const deps = makeDeps();
     const { actor } = await seedHospital(deps, "active");
@@ -91,5 +110,28 @@ describe("publishSlot (active-Hospital gate)", () => {
         deps,
       ),
     ).rejects.toBeInstanceOf(DomainValidationError);
+  });
+
+  it("pr2a-M1: denies publishing when deactivation committed before the live check — no Slot is created", async () => {
+    const deps = makeDeps();
+    const { profile, actor } = await seedHospital(deps, "active");
+    const admin = actorFor(anAccount("admin"));
+
+    // Starting a Promise first does not establish lock order: deactivation
+    // performs an initial Profile lookup before it can enqueue its locked
+    // work, while publishSlot immediately acquires the Profile lock. Commit
+    // deactivation first so this test proves the intended security property:
+    // the use case reads the LIVE Profile in the lock rather than trusting
+    // the actor's stale 'active' snapshot.
+    await expect(
+      deactivateProfile(admin, { profileId: profile.id }, deps),
+    ).resolves.toMatchObject({ status: "deactivated" });
+
+    await expect(publishSlot(actor, slotInput, deps)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+
+    // No orphan Slot was created for the now-deactivated Hospital.
+    expect((await deps.slots.listOpen()).length).toBe(0);
   });
 });

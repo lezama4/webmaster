@@ -1,20 +1,45 @@
 import { describe, expect, it } from "vitest";
 
-import { fillSlot } from "@domain/slot/Slot";
 import { ForbiddenError } from "@application/errors";
 import { listOpenSlots } from "@application/use-cases/listOpenSlots";
+import type {
+  OpenSlotListingItem,
+  OpenSlotListingQuery,
+} from "@application/ports/OpenSlotListingQuery";
 import {
   fixedClock,
+  FakeOpenSlotListingQuery,
   InMemoryProfileRepository,
-  InMemorySlotRepository,
   NOW,
 } from "./support/fakes";
-import { actorFor, anAccount, anOpenSlot, aProfile } from "./support/builders";
+import { actorFor, anAccount, aProfile } from "./support/builders";
 
-function makeDeps() {
+function anOpenSlotListingItem(
+  overrides: Partial<OpenSlotListingItem> = {},
+): OpenSlotListingItem {
+  return {
+    id: overrides.id ?? "slot-1",
+    title: overrides.title ?? "Acoustic guitar afternoon",
+    description:
+      overrides.description ??
+      "A relaxed acoustic session for the pediatric ward.",
+    scheduledAt: overrides.scheduledAt ?? new Date(NOW.getTime() + 60_000),
+    durationMinutes: overrides.durationMinutes ?? 60,
+    location: overrides.location ?? "Ward 3, Room 12",
+    hospitalName: overrides.hospitalName ?? "Hospital San Juan",
+  };
+}
+
+function makeDeps(
+  items: readonly OpenSlotListingItem[] = [],
+): {
+  readonly profiles: InMemoryProfileRepository;
+  readonly openSlotListingQuery: OpenSlotListingQuery;
+  readonly clock: typeof fixedClock;
+} {
   return {
     profiles: new InMemoryProfileRepository(),
-    slots: new InMemorySlotRepository(),
+    openSlotListingQuery: new FakeOpenSlotListingQuery(items),
     clock: fixedClock,
   };
 }
@@ -29,58 +54,29 @@ async function seedArtistActor(
   return actorFor(account, profile);
 }
 
-describe("listOpenSlots (active-Artist visibility, N2)", () => {
-  it("lists only 'open' Slots with a future scheduledAt, with the hospital's public name", async () => {
-    const deps = makeDeps();
-    const hospital = aProfile("hospital", "active", {
-      name: "Hospital San Juan",
-    });
-    await deps.profiles.save(hospital);
-
-    const openFuture = anOpenSlot({ hospitalProfileId: hospital.id });
-    const filled = fillSlot(anOpenSlot({ hospitalProfileId: hospital.id }));
-    // An open Slot created in the past relative to "now" is simulated by an
-    // open Slot whose scheduledAt equals NOW (not strictly in the future).
-    const openButPast = anOpenSlot({
-      hospitalProfileId: hospital.id,
-      scheduledAt: new Date(NOW.getTime() + 1),
-    });
-    await deps.slots.save(openFuture);
-    await deps.slots.save(filled);
-    await deps.slots.save(openButPast);
-
+describe("listOpenSlots (active-Artist visibility, N2, dedicated read-model port pr2a-N3)", () => {
+  it("returns the joined listing items supplied by the OpenSlotListingQuery port", async () => {
+    const item = anOpenSlotListingItem();
+    const deps = makeDeps([item]);
     const actor = await seedArtistActor(deps);
+
     const listing = await listOpenSlots(actor, deps);
 
-    const ids = listing.map((item) => item.id);
-    expect(ids).toContain(openFuture.id);
-    expect(ids).not.toContain(filled.id);
-
-    const item = listing.find((entry) => entry.id === openFuture.id)!;
-    expect(item.hospitalName).toBe("Hospital San Juan");
-    expect(item.title).toBe(openFuture.title);
-    expect(item.location).toBe(openFuture.location);
+    expect(listing).toEqual([item]);
   });
 
-  it("excludes an open Slot whose scheduledAt is not in the future anymore", async () => {
-    const deps = makeDeps();
-    const hospital = aProfile("hospital", "active");
-    await deps.profiles.save(hospital);
-    // Slot valid at creation (strictly future by 1ms) but no longer future
-    // when listed with a clock advanced past it.
-    const aboutToPass = anOpenSlot({
-      hospitalProfileId: hospital.id,
-      scheduledAt: new Date(NOW.getTime() + 1),
+  it("delegates the 'still in the future' filter to the port, passing the injected clock's `now`", async () => {
+    const pastItem = anOpenSlotListingItem({
+      id: "past-slot",
+      scheduledAt: new Date(NOW.getTime() - 1),
     });
-    await deps.slots.save(aboutToPass);
-
+    const futureItem = anOpenSlotListingItem({ id: "future-slot" });
+    const deps = makeDeps([pastItem, futureItem]);
     const actor = await seedArtistActor(deps);
-    const listing = await listOpenSlots(actor, {
-      ...deps,
-      clock: { now: () => new Date(NOW.getTime() + 10_000) },
-    });
 
-    expect(listing.map((item) => item.id)).not.toContain(aboutToPass.id);
+    const listing = await listOpenSlots(actor, deps);
+
+    expect(listing.map((item) => item.id)).toEqual(["future-slot"]);
   });
 
   it("denies a pending (inactive) Artist", async () => {
@@ -98,6 +94,40 @@ describe("listOpenSlots (active-Artist visibility, N2)", () => {
 
     await expect(listOpenSlots(patient, deps)).rejects.toBeInstanceOf(
       ForbiddenError,
+    );
+  });
+
+  it("denies an Actor whose Account role is 'artist' but whose live Profile TYPE is 'hospital' (pr2a-N1 defense-in-depth)", async () => {
+    const deps = makeDeps();
+    const account = anAccount("artist");
+    // Corrupted/imported-data scenario: the live Profile is a Hospital
+    // Profile despite the Account being role 'artist'.
+    const mismatchedProfile = aProfile("hospital", "active", {
+      accountId: account.id,
+    });
+    await deps.profiles.save(mismatchedProfile);
+    const actor = actorFor(account, mismatchedProfile);
+
+    await expect(listOpenSlots(actor, deps)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+  });
+
+  it("pr2a-N3: propagates a 'broken relation' failure from the port instead of masking it (fail fast, never a placeholder value)", async () => {
+    class FailingOpenSlotListingQuery implements OpenSlotListingQuery {
+      async listOpenUpcoming(): Promise<readonly OpenSlotListingItem[]> {
+        throw new Error("Slot 'slot-x' has no resolvable owning Hospital Profile");
+      }
+    }
+    const deps = {
+      profiles: new InMemoryProfileRepository(),
+      openSlotListingQuery: new FailingOpenSlotListingQuery(),
+      clock: fixedClock,
+    };
+    const actor = await seedArtistActor(deps);
+
+    await expect(listOpenSlots(actor, deps)).rejects.toThrow(
+      "no resolvable owning Hospital Profile",
     );
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { UnauthenticatedError } from "@application/errors";
 import { login } from "@application/use-cases/login";
@@ -158,7 +158,7 @@ describe("login", () => {
     expect(result.session.accountId).toBe(account.id);
   });
 
-  it("denies a login racing a concurrent Admin deactivation — the live check inside the SAME lock wins (M3)", async () => {
+  it("denies a login racing a concurrent Admin deactivation — the live check inside the SAME lock wins (M3, ordering A: deactivation commits first)", async () => {
     const deps = makeDeps();
     const { account, profile } = await seedArtist(deps, "active");
     const admin = actorFor(anAccount("admin"));
@@ -181,6 +181,77 @@ describe("login", () => {
     await expect(deactivation).resolves.toMatchObject({ status: "deactivated" });
     await expect(loginAttempt).rejects.toBeInstanceOf(UnauthenticatedError);
     expect(deps.sessions.sessionsForAccount(account.id)).toHaveLength(0);
+  });
+
+  it("pr2a-M3 (ordering B, the OTHER linearization): a login that fully commits BEFORE a subsequent deactivation may succeed, but the deactivation's revokeAllForAccount cascade revokes the session it just issued", async () => {
+    const deps = makeDeps();
+    const { account, profile } = await seedArtist(deps, "active");
+    const admin = actorFor(anAccount("admin"));
+
+    // Deliberately sequenced (not raced) to construct the OTHER ordering
+    // the M3 decision defines: login's entire withLockedProfile cycle
+    // (check + session issuance) commits FIRST, and only THEN does the
+    // deactivation run. Per the documented decision, login is allowed to
+    // succeed in this ordering — but the session it issued does not
+    // survive the deactivation that follows.
+    const result = await login(
+      { email: "artist.clara@vtt.test", password: "S3cure!pass" },
+      deps,
+    );
+    expect(result.session.accountId).toBe(account.id);
+    expect(deps.sessions.sessionsForAccount(account.id)).toHaveLength(1);
+
+    await expect(
+      deactivateProfile(admin, { profileId: profile.id }, deps),
+    ).resolves.toMatchObject({ status: "deactivated" });
+
+    // Observable result: login's OWN promise already resolved successfully
+    // (asserted above) — that outcome does not change retroactively. But
+    // the session it issued is now revoked by the deactivation's atomic
+    // cascade (D7/M3): the final, observable session store shows none.
+    expect(deps.sessions.sessionsForAccount(account.id)).toHaveLength(0);
+    expect(await deps.sessions.resolveValid(result.session.id)).toBeNull();
+  });
+
+  it("pr2a-M2: passes the client key (ipHash) from the login-attempt context to EVERY rate-limiter call", async () => {
+    const deps = makeDeps();
+    await seedArtist(deps, "active");
+    const context = { ipHash: "sha256-of-client-ip" };
+
+    await login(
+      { email: "artist.clara@vtt.test", password: "S3cure!pass" },
+      deps,
+      context,
+    );
+
+    expect(deps.rateLimiter.successes).toHaveLength(1);
+    expect(deps.rateLimiter.successes[0]).toMatchObject({
+      email: "artist.clara@vtt.test",
+      ipHash: "sha256-of-client-ip",
+    });
+  });
+
+  it("pr2a-M2: an unknown email performs the SAME password-verification work as a wrong-password denial on a known account (no timing oracle)", async () => {
+    const deps = makeDeps();
+    await seedArtist(deps, "active");
+    const verifySpy = vi.spyOn(deps.passwordHasher, "verify");
+
+    await login(
+      { email: "nobody@vtt.test", password: "S3cure!pass" },
+      deps,
+    ).catch(() => undefined);
+    const unknownEmailVerifyCalls = verifySpy.mock.calls.length;
+
+    verifySpy.mockClear();
+    await login(
+      { email: "artist.clara@vtt.test", password: "wrong-password" },
+      deps,
+    ).catch(() => undefined);
+    const wrongPasswordVerifyCalls = verifySpy.mock.calls.length;
+
+    expect(unknownEmailVerifyCalls).toBe(1);
+    expect(wrongPasswordVerifyCalls).toBe(1);
+    expect(deps.rateLimiter.failures).toHaveLength(2);
   });
 });
 

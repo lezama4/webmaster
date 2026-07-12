@@ -67,6 +67,49 @@ describe("listPublishedEvents (public, D6 allow-list via PublicEventProjectionQu
     }
   });
 
+  it("HOSTILE ADAPTER (pr2a-B1): rebuilds a fresh DTO — forbidden fields returned by the port are structurally ABSENT from the result, not just ignored by the type", async () => {
+    const hostileItem = {
+      ...aProjection(),
+      // A port implementation (buggy, compromised, or a future accidental
+      // `select`/`include` widening) could return these alongside the
+      // allow-listed fields. TypeScript's structural typing does not stop
+      // an object literal with EXTRA properties from being passed where
+      // `PublicEventProjection` is expected, and a plain pass-through would
+      // leak them straight into JSON.
+      location: "Ward 3, Room 12",
+      message: "This is a private message between Hospital and Artist.",
+      email: "artist.clara@vtt.test",
+      id: "event-secret-id",
+      slotId: "slot-secret-id",
+      proposalId: "proposal-secret-id",
+      artistProfileId: "profile-secret-id",
+      accountId: "account-secret-id",
+    } as unknown as PublicEventProjection;
+
+    const deps = {
+      publicEventProjectionQuery: new FakePublicEventProjectionQuery([
+        hostileItem,
+      ]),
+    };
+
+    const result = await listPublishedEvents(deps);
+
+    expect(result).toHaveLength(1);
+    const [item] = result;
+    expect(Object.keys(item).sort()).toEqual(ALLOW_LISTED_FIELDS);
+    expect(item).not.toHaveProperty("location");
+    expect(item).not.toHaveProperty("message");
+    expect(item).not.toHaveProperty("email");
+    expect(item).not.toHaveProperty("id");
+    expect(item).not.toHaveProperty("slotId");
+    expect(item).not.toHaveProperty("proposalId");
+    expect(item).not.toHaveProperty("artistProfileId");
+    expect(item).not.toHaveProperty("accountId");
+    // The allow-listed fields themselves must still be forwarded correctly.
+    expect(item.title).toBe(hostileItem.title);
+    expect(item.artistName).toBe(hostileItem.artistName);
+  });
+
   it("does not import or depend on anything beyond the PublicEventProjectionQuery port (no repository, no Prisma)", () => {
     // Structural/compile-time guarantee (M6): the module's only import besides
     // the DTO type is the port interface — verified by this file compiling

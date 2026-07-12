@@ -3,7 +3,7 @@ import { ConflictError } from "@application/errors";
 import type { Actor } from "@application/Actor";
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type { MatchingUnitOfWork } from "@application/ports/MatchingUnitOfWork";
-import type { ProfileRepository } from "@application/ports/ProfileRepository";
+import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertActiveProfile, assertRole } from "./shared/guards";
 
 export interface SubmitProposalInput {
@@ -12,7 +12,7 @@ export interface SubmitProposalInput {
 }
 
 export interface SubmitProposalDeps {
-  readonly profiles: ProfileRepository;
+  readonly profileUnitOfWork: ProfileUnitOfWork;
   readonly matchingUnitOfWork: MatchingUnitOfWork;
   readonly idGenerator: IdGenerator;
 }
@@ -22,6 +22,14 @@ export interface SubmitProposalDeps {
  * `MatchingUnitOfWork.withLockedSlot` (D4/B2/M2). The Slot row is locked
  * FIRST; the open-Slot guard and the same-Artist-duplicate guard are both
  * re-checked against the LIVE, locked Proposal set — never a pre-lock read.
+ *
+ * pr2a-M1/N1: the acting Artist's LIVE Profile status AND type are
+ * re-checked via `ProfileUnitOfWork.withLockedProfile` FROM WITHIN the
+ * Slot-lock callback — never before the Slot lock is taken. Documented lock
+ * order: Slot lock first, Profile lock nested inside it. This is safe from
+ * deadlock because no operation in this codebase acquires the Profile lock
+ * and subsequently attempts to acquire a Slot lock (Admin's
+ * deactivate/validate operations only ever lock a Profile).
  */
 export async function submitProposal(
   actor: Actor,
@@ -29,12 +37,13 @@ export async function submitProposal(
   deps: SubmitProposalDeps,
 ): Promise<Proposal> {
   assertRole(actor, "artist");
-  const profile = actor.profileId
-    ? await deps.profiles.findById(actor.profileId)
-    : null;
-  const activeProfile = assertActiveProfile(profile);
 
-  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, (lockedSlot, proposals) => {
+  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, async (lockedSlot, proposals) => {
+    const activeProfile = await deps.profileUnitOfWork.withLockedProfile(
+      actor.accountId,
+      (ctx) => assertActiveProfile(ctx.profile, "artist"),
+    );
+
     if (lockedSlot.status !== "open") {
       throw new ConflictError(`Slot '${lockedSlot.id}' is not open`);
     }

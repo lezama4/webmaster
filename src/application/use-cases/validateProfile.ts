@@ -1,4 +1,5 @@
 import { approveProfile, rejectProfile, type Profile } from "@domain/profile/Profile";
+import { DomainValidationError } from "@domain/errors";
 import { NotFoundError } from "@application/errors";
 import type { Actor } from "@application/Actor";
 import type { ProfileRepository } from "@application/ports/ProfileRepository";
@@ -29,6 +30,16 @@ export async function validateProfile(
   deps: ValidateProfileDeps,
 ): Promise<Profile> {
   assertRole(actor, "admin");
+
+  // pr2a-N2: fail CLOSED on any decision other than the two known values.
+  // Route-level validation should prevent this before it ever reaches here,
+  // but a malformed/unvalidated `decision` must raise a validation error,
+  // never silently fall through to the (irreversible) reject branch.
+  if (input.decision !== "approve" && input.decision !== "reject") {
+    throw new DomainValidationError(
+      `Invalid Profile validation decision '${String(input.decision)}'`,
+    );
+  }
 
   const existing = await deps.profiles.findById(input.profileId);
   if (!existing) {

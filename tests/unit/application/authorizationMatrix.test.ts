@@ -36,11 +36,15 @@ function makeSlotDeps() {
   const slots = new InMemorySlotRepository();
   const proposals = new InMemoryProposalRepository();
   const events = new InMemoryEventRepository();
+  const profiles = new InMemoryProfileRepository();
+  const sessions = new FakeSessionPort();
   return {
-    profiles: new InMemoryProfileRepository(),
+    profiles,
+    sessions,
     slots,
     proposals,
     matchingUnitOfWork: new FakeMatchingUnitOfWork(slots, proposals, events),
+    profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
     idGenerator: new SequentialIdGenerator("x"),
     clock: fixedClock,
   };

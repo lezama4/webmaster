@@ -5,7 +5,7 @@ import { ConflictError, ForbiddenError, NotFoundError } from "@application/error
 import type { Actor } from "@application/Actor";
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type { MatchingUnitOfWork } from "@application/ports/MatchingUnitOfWork";
-import type { ProfileRepository } from "@application/ports/ProfileRepository";
+import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertActiveProfile, assertOwnsSlot, assertRole } from "./shared/guards";
 
 export interface ApproveProposalInput {
@@ -14,7 +14,7 @@ export interface ApproveProposalInput {
 }
 
 export interface ApproveProposalDeps {
-  readonly profiles: ProfileRepository;
+  readonly profileUnitOfWork: ProfileUnitOfWork;
   readonly matchingUnitOfWork: MatchingUnitOfWork;
   readonly idGenerator: IdGenerator;
   readonly clock: Clock;
@@ -25,6 +25,11 @@ export interface ApproveProposalDeps {
  * `MatchingUnitOfWork.withLockedSlot` (D4/B2, M1). Ownership, live status,
  * and Proposal/Slot linkage (M6) are re-checked against the LOCKED, live
  * data before the pure `domain.acceptProposal` cascade runs.
+ *
+ * pr2a-M1/N1: the acting Hospital's LIVE Profile status AND type are
+ * re-checked via `ProfileUnitOfWork.withLockedProfile` FROM WITHIN the
+ * Slot-lock callback (documented lock order: Slot first, Profile nested —
+ * see `submitProposal` for the deadlock-safety rationale).
  */
 export async function approveProposal(
   actor: Actor,
@@ -32,12 +37,13 @@ export async function approveProposal(
   deps: ApproveProposalDeps,
 ): Promise<AcceptProposalOutcome> {
   assertRole(actor, "hospital");
-  const profile = actor.profileId
-    ? await deps.profiles.findById(actor.profileId)
-    : null;
-  const activeProfile = assertActiveProfile(profile);
 
-  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, (lockedSlot, proposals) => {
+  return deps.matchingUnitOfWork.withLockedSlot(input.slotId, async (lockedSlot, proposals) => {
+    const activeProfile = await deps.profileUnitOfWork.withLockedProfile(
+      actor.accountId,
+      (ctx) => assertActiveProfile(ctx.profile, "hospital"),
+    );
+
     assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
 
     const target = proposals.find((p) => p.id === input.proposalId);
