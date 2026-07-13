@@ -1,0 +1,180 @@
+import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+
+/**
+ * Shared E2E fixtures/helpers (tasks 5.9/5.14/5.15/6.2/6.4). Every helper
+ * here drives the real UI (`page.goto`/`fill`/`click`) so the browser sets
+ * the same-origin `Origin` header the CSRF guard (`csrfGuard.ts`, task 5.13)
+ * requires — no helper here bypasses that check.
+ */
+
+/** Matches `prisma/seed.ts`'s `SEED_PASSWORD` — the single password every seeded Account shares. */
+export const SEED_PASSWORD = "VivetuTiempo2026!";
+
+/**
+ * Seeded Account credentials (mirrors `prisma/seed.ts`'s `IDS.accounts` +
+ * literal emails). Intentionally NOT imported from `prisma/seed.ts` itself —
+ * that file's top-level `main().then(...)` executes a real seeding run as a
+ * side effect of import, which must never happen just by loading a spec.
+ */
+export const SEED_USERS = {
+  admin: { email: "admin@vtt.test", password: SEED_PASSWORD },
+  hospitalSanJuan: { email: "hospital.sanjuan@vtt.test", password: SEED_PASSWORD },
+  hospitalEsperanza: { email: "hospital.esperanza@vtt.test", password: SEED_PASSWORD },
+  artistClara: { email: "artist.clara@vtt.test", password: SEED_PASSWORD },
+  artistMateo: { email: "artist.mateo@vtt.test", password: SEED_PASSWORD },
+  artistLucia: { email: "artist.lucia@vtt.test", password: SEED_PASSWORD },
+  patientAna: { email: "patient.ana@vtt.test", password: SEED_PASSWORD },
+} as const;
+
+/**
+ * Seeded Slot/Proposal ids (mirrors `prisma/seed.ts`'s `IDS.slots` /
+ * `IDS.proposals`), duplicated here for the same reason as `SEED_USERS`.
+ */
+export const SEED_SLOT_IDS = {
+  s1OpenCompeting: "seed-slot-s1-open-competing-proposals",
+  s2FilledPublished: "seed-slot-s2-filled-published-event",
+  s3OpenEmpty: "seed-slot-s3-open-empty",
+  s4ClosedCascade: "seed-slot-s4-closed-cascade",
+  s5FilledCompleted: "seed-slot-s5-filled-completed-event",
+} as const;
+
+export const SEED_PROPOSAL_IDS = {
+  s1Clara: "seed-proposal-s1-clara-submitted",
+  s1Mateo: "seed-proposal-s1-mateo-submitted",
+  s2MateoAccepted: "seed-proposal-s2-mateo-accepted",
+  s4MateoCascadeRejected: "seed-proposal-s4-mateo-cascade-rejected",
+  s5ClaraAccepted: "seed-proposal-s5-clara-accepted",
+} as const;
+
+/** The one published seeded Event's Slot title (S2) — the only Event `GET /api/events` may ever return from the seed. */
+export const SEED_PUBLISHED_EVENT_TITLE = "Taller de acuarela";
+
+/** S5's Slot title — a `completed` (not `published`) Event that must NEVER appear in the public projection. */
+export const SEED_COMPLETED_EVENT_TITLE = "Concierto de cámara";
+
+/** Every seeded Slot's `location` — must never leak through the public projection (D6). */
+export const SEED_LOCATIONS = [
+  "Planta 2, sala de convivencia",
+  "Planta 1, aula cultural",
+  "Biblioteca hospitalaria",
+  "Pediatría, sala de familias",
+  "Salón de actos",
+] as const;
+
+/** A seeded Proposal `message` — must never leak through the public projection (D6). */
+export const SEED_PROPOSAL_MESSAGE_SAMPLE =
+  "Tengo experiencia facilitando talleres de acuarela en grupo.";
+
+/** A short, run-unique suffix for emails/titles so parallel/repeated runs never collide. */
+export function uniqueSuffix(): string {
+  return `${Date.now()}-${Math.floor(Math.random() * 100_000)}`;
+}
+
+/** Formats a `datetime-local` input value strictly in the future (Slot domain invariant, N2). */
+export function futureDatetimeLocal(daysFromNow: number): string {
+  const date = new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000);
+  const pad = (n: number): string => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * Opens a fresh browser context + page and logs in via the real `/login`
+ * form. A fresh context per actor keeps each role's session cookie isolated
+ * — no two actors in the same test ever share (or overwrite) a cookie jar.
+ */
+export async function loginAsNewSession(
+  browser: Browser,
+  credentials: { email: string; password: string },
+): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/login");
+  await page.locator("#email").fill(credentials.email);
+  await page.locator("#password").fill(credentials.password);
+  await page.getByRole("button", { name: /log in/i }).click();
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  return { context, page };
+}
+
+/** Registers a new Hospital/Artist profile via the real `/register` form. Leaves the profile `pending` — no session is created by registration. */
+export async function registerViaUi(
+  page: Page,
+  input: { role: "hospital" | "artist"; name: string; email: string; password: string },
+): Promise<void> {
+  await page.goto("/register");
+  await page.locator("#role").selectOption(input.role);
+  await page.locator("#name").fill(input.name);
+  await page.locator("#email").fill(input.email);
+  await page.locator("#password").fill(input.password);
+  await page.getByRole("button", { name: /create profile/i }).click();
+  await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
+}
+
+/** Approves a pending Profile (matched by its display name) from the Admin validation queue. `adminPage` must already be an authenticated admin session. */
+export async function approveProfileByName(adminPage: Page, displayName: string): Promise<void> {
+  await adminPage.goto("/admin/profiles");
+  const row = adminPage.locator("li").filter({ hasText: displayName });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "Approve" }).click();
+  await expect(row).toHaveCount(0);
+}
+
+/** Publishes a Slot via the real Hospital dashboard form. `hospitalPage` must already be an authenticated, approved Hospital session. */
+export async function publishSlotViaUi(
+  hospitalPage: Page,
+  input: {
+    title: string;
+    description: string;
+    scheduledAtLocal: string;
+    durationMinutes: number;
+    location: string;
+  },
+): Promise<void> {
+  await hospitalPage.goto("/hospital/slots");
+  await hospitalPage.locator("#title").fill(input.title);
+  await hospitalPage.locator("#description").fill(input.description);
+  await hospitalPage.locator("#scheduledAt").fill(input.scheduledAtLocal);
+  await hospitalPage.locator("#durationMinutes").fill(String(input.durationMinutes));
+  await hospitalPage.locator("#location").fill(input.location);
+  await hospitalPage.getByRole("button", { name: /publish slot/i }).click();
+  await expect(hospitalPage.locator("li").filter({ hasText: input.title })).toBeVisible();
+}
+
+/** Returns the outer Slot card `<li>` locator for a Slot, matched by its (unique) title. Works on both the Hospital board and the Artist open-slots listing. */
+export function slotCard(page: Page, slotTitle: string) {
+  return page.locator("li").filter({ hasText: slotTitle });
+}
+
+/** Submits a Proposal on an open Slot via the real Artist dashboard form. `artistPage` must already be an authenticated, approved Artist session. */
+export async function proposeActivityViaUi(
+  artistPage: Page,
+  slotTitle: string,
+  message: string,
+): Promise<void> {
+  await artistPage.goto("/artist/slots");
+  const card = slotCard(artistPage, slotTitle);
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Propose an activity" }).click();
+  await card.locator("textarea").fill(message);
+  await card.getByRole("button", { name: "Send proposal" }).click();
+  await expect(card.getByText("Proposal sent")).toBeVisible();
+}
+
+/** Approves one Proposal (matched by the artist's display name) on a Slot from the Hospital dashboard. `hospitalPage` must already be an authenticated, owning Hospital session. */
+export async function approveProposalViaUi(
+  hospitalPage: Page,
+  slotTitle: string,
+  artistDisplayName: string,
+): Promise<void> {
+  await hospitalPage.goto("/hospital/slots");
+  const card = slotCard(hospitalPage, slotTitle);
+  const proposalRow = card.locator("li").filter({ hasText: artistDisplayName });
+  await proposalRow.getByRole("button", { name: "Approve" }).click();
+}
+
+/** Closes an open Slot (owner-Hospital-only withdrawal, B2) from the Hospital dashboard. */
+export async function closeSlotViaUi(hospitalPage: Page, slotTitle: string): Promise<void> {
+  await hospitalPage.goto("/hospital/slots");
+  const card = slotCard(hospitalPage, slotTitle);
+  await card.getByRole("button", { name: "Close slot" }).click();
+}
