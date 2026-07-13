@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-// Smoke test proving the Playwright runner is wired up correctly
-// (Phase 1 scaffolding). The full demo-chain E2E lands in Phase 5
-// (task 5.9, e2e/demo-chain.spec.ts).
+// Smoke test proving the Playwright runner is wired up correctly and the
+// landing page renders. Asserts the redesigned hero headline (the brand name
+// "Vivetutiempo" now lives in the header nav as a link, not a heading).
 test("home page renders", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Vivetutiempo" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /fewer empty hours/i }),
+  ).toBeVisible();
 });
