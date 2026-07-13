@@ -23,9 +23,9 @@ perfiles, acceso por roles, Slots, Proposals competidoras, aprobación/rechazo,
 publicación automática de Eventos y consulta pública. Los Bloques 2 y 3 quedan
 planificados para valoraciones y mecenazgo simulado; no se procesan pagos reales.
 
-La URL de producción prevista es **TBD**. Solo se debe completar después de que
-el despliegue, la migración, el seed y la verificación posterior correspondan al
-mismo commit.
+La aplicación está desplegada en **https://webmaster-lemon.vercel.app**
+(Vercel + PostgreSQL gestionado en Neon), con el dataset de demostración
+cargado y verificado sobre el mismo commit publicado en `main`.
 
 ## Stack tecnológico
 
