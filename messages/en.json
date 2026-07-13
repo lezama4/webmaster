@@ -1,0 +1,61 @@
+{
+  "Layout": {
+    "nav": { "events": "Events", "login": "Log in", "register": "Register" },
+    "footer": { "description": "A non-profit initiative bringing live performances to patients during hospital stays. Free for hospitals, artists, and families." }
+  },
+  "LanguageSelector": { "label": "Language selector" },
+  "Home": {
+    "badge": "Non-profit · free for everyone involved",
+    "title": { "firstLine": "Fewer empty hours,", "secondLine": "more live moments." },
+    "description": "Long hospital stays are full of waiting. Vivetutiempo connects hospitals with artists so patients and their families get real performances — not a screen — during that time.",
+    "browseEvents": "Browse upcoming events", "registerProfile": "Register a hospital or profile",
+    "howItWorks": { "title": "How a moment comes together", "description": "Four people, one shared afternoon. Every step is reviewed before it reaches a patient." },
+    "steps": {
+      "01": { "role": "Hospitals", "text": "Open a slot in the ward's agenda — a date, a time, a place where patients could use some company." },
+      "02": { "role": "Artists", "text": "Browse open slots and propose an activity: music, storytelling, magic, a workshop." },
+      "03": { "role": "Coordinators", "text": "The hospital reviews proposals and confirms one. The moment becomes a scheduled event." },
+      "04": { "role": "Families", "text": "Patients and their families see what's coming up, and share how it went." }
+    }
+  },
+  "Events": {
+    "title": "Upcoming events", "description": "Live performances scheduled in participating hospitals. Times and artists are confirmed; exact locations are shared privately with each ward.",
+    "empty": { "title": "No events scheduled yet", "description": "As hospitals confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
+    "withArtist": "with", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }
+  },
+  "Login": {
+    "title": "Welcome back", "description": "Log in to coordinate or review events.", "email": "Email", "password": "Password", "submit": "Log in", "submitting": "Signing in…", "noAccount": "No account yet?", "register": "Register a hospital or artist",
+    "errors": { "invalidCredentials": "Invalid email or password.", "generic": "Something went wrong. Please try again." }
+  },
+  "Register": {
+    "title": "Register", "description": "Hospitals and artists join here. Every profile is reviewed before it can act.", "email": "Email", "password": "Password", "passwordHint": "At least 8 characters.", "submit": "Create profile", "submitting": "Submitting…", "alreadyRegistered": "Already registered?", "login": "Log in",
+    "role": { "label": "I am registering a", "hospital": "Hospital", "artist": "Artist" }, "name": { "hospital": "Hospital name", "artist": "Artist / stage name" },
+    "errors": { "duplicateEmail": "An account with that email already exists.", "failure": "Registration could not be completed. Check your details and try again.", "generic": "Something went wrong. Please try again." },
+    "success": { "title": "Request received", "description": "Your profile is pending review by a coordinator. You can log in once it has been approved.", "action": "Go to log in" }
+  },
+  "AdminProfiles": {
+    "title": "Profile validation queue", "description": "Review hospitals and artists waiting for approval. Profiles that register again after a rejection show up here too — same queue, no separate list.", "requested": "Requested {date}", "types": { "hospital": "Hospital", "artist": "Artist" },
+    "empty": { "title": "Nothing to review", "description": "New hospital and artist registrations will appear here as soon as they come in." }
+  },
+  "ProfileActions": { "approve": "Approve", "approving": "Approving…", "reject": "Reject", "rejecting": "Rejecting…", "error": "The action could not be completed.", "genericError": "Something went wrong. Please try again." },
+  "HospitalSlots": {
+    "title": "Your slots", "description": "Publish a moment for artists to propose an activity, then review the proposals you receive.", "noProposals": "No proposals yet.",
+    "empty": { "title": "No slots yet", "description": "Slots you publish will appear here along with the proposals artists send in." },
+    "slotStatus": { "open": "Open", "filled": "Filled", "closed": "Closed" }, "proposalStatus": { "submitted": "Pending review", "accepted": "Accepted", "rejected": "Rejected" }
+  },
+  "PublishSlot": {
+    "title": "Publish a slot", "description": "Open a moment in the ward's agenda for artists to propose an activity.", "submit": "Publish slot", "publishing": "Publishing…", "locationHint": "Visible to registered artists browsing this slot — never shown on the public events page.",
+    "fields": { "title": "Title", "description": "Description", "dateTime": "Date and time", "duration": "Duration (minutes)", "location": "Location" },
+    "errors": { "failure": "The slot could not be published. Check the details and try again.", "generic": "Something went wrong. Please try again." }
+  },
+  "ProposalActions": { "approve": "Approve", "approving": "Approving…", "reject": "Reject", "rejecting": "Rejecting…", "error": "The action could not be completed.", "genericError": "Something went wrong. Please try again." },
+  "CloseSlot": { "submit": "Close slot", "closing": "Closing…", "error": "The slot could not be closed.", "genericError": "Something went wrong. Please try again." },
+  "ArtistSlots": {
+    "title": "Open slots", "description": "Hospitals waiting for an artist to bring a moment to their patients. Propose an activity for any slot that fits you.", "at": "at",
+    "empty": { "title": "No open slots right now", "description": "Hospitals publish new slots regularly — check back soon for a moment that fits you." },
+    "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }
+  },
+  "ProposeActivity": {
+    "open": "Propose an activity", "label": "Your proposal", "hint": "What will you bring to this moment?", "submit": "Send proposal", "sending": "Sending…", "cancel": "Cancel", "sent": "Proposal sent — the hospital will review it.",
+    "errors": { "duplicate": "You already sent a proposal for this slot.", "failure": "The proposal could not be sent. Please try again.", "generic": "Something went wrong. Please try again." }
+  }
+}

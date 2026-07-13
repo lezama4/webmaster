@@ -2,46 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { secondaryButton } from "@ui/components/ui";
 
-/** Owner-Hospital-only Slot withdrawal (5.10, B2) — closes the Slot and cascade-rejects outstanding Proposals. */
 export function CloseSlotButton({ slotId }: { slotId: string }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const t = useTranslations("CloseSlot");
+  const router = useRouter(); const [pending, setPending] = useState(false); const [error, setError] = useState<string | null>(null);
   async function onClose() {
-    setError(null);
-    setPending(true);
+    setError(null); setPending(true);
     try {
-      const res = await fetch(`/api/slots/${slotId}/close`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error ?? "The slot could not be closed.");
-        return;
-      }
+      const res = await fetch(`/api/slots/${slotId}/close`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      if (!res.ok) { setError(t("error")); return; }
       router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    } catch { setError(t("genericError")); } finally { setPending(false); }
   }
-
-  return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
-      <button
-        type="button"
-        disabled={pending}
-        onClick={onClose}
-        className={secondaryButton}
-      >
-        {pending ? "Closing…" : "Close slot"}
-      </button>
-      {error ? <p className="text-xs text-primary">{error}</p> : null}
-    </div>
-  );
+  return <div className="flex flex-col items-start gap-2 sm:items-end"><button type="button" disabled={pending} onClick={onClose} className={secondaryButton}>{pending ? t("closing") : t("submit")}</button>{error ? <p className="text-xs text-primary">{error}</p> : null}</div>;
 }

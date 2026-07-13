@@ -12,6 +12,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL,
+    locale: "en-US",
     trace: "on-first-retry",
   },
   webServer: isDeployedTarget
