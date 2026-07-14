@@ -24,7 +24,7 @@ export default async function EventsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <header className="flex flex-col gap-3 pb-10">
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
         <p className="max-w-[52ch] text-muted">{t("description")}</p>
       </header>
 
@@ -33,7 +33,7 @@ export default async function EventsPage() {
       ) : (
         <ul className="grid gap-5 md:grid-cols-2">
           {events.map((event, index) => (
-            <li key={`${event.title}-${index}`} className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-6 shadow-[0_16px_40px_-28px_rgba(42,33,28,0.35)]">
+            <li key={`${event.title}-${index}`} className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md">
               <div className="flex items-center justify-between gap-4">
                 <span className="font-mono text-xs uppercase tracking-wide text-primary">{dateFormat.format(event.scheduledAt)}</span>
                 <span className="text-xs text-muted">{formatDuration(event.durationMinutes, t)}</span>

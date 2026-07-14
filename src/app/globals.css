@@ -1,38 +1,45 @@
 @import "tailwindcss";
 
 /*
- * Vivetutiempo design tokens — "warm & human" direction.
- * A desaturated terracotta/coral accent over warm sand neutrals: hopeful and
- * people-centered, while staying calm enough for hospitals and reviewers.
- * Single accent (saturation < 80%), warm greys throughout, no pure black.
+ * Vivetutiempo design tokens — "Sage clínico" direction.
+ * Sage-green primary over soft green-tinted neutrals, a warm amber accent, and
+ * a serif (Newsreader) heading voice paired with Geist for body/UI. Semantic
+ * state tokens (success/warning/danger) are kept separate from the brand
+ * accent. Light/dark is automatic via prefers-color-scheme (no manual toggle).
  */
 :root {
-  --background: #fbf7f3;
+  --background: #f5f6f1;
   --surface: #ffffff;
-  --surface-2: #f6efe8;
-  --foreground: #2a211c;
-  --muted: #7c6f66;
-  --border: #ece2d8;
-  --primary: #c85a3f;
-  --primary-hover: #b04c34;
-  --primary-foreground: #fdf3ee;
-  --accent: #d9a441;
-  --ring: #c85a3f;
+  --surface-2: #eceee3;
+  --foreground: #1d211c;
+  --muted: #6d766a;
+  --border: #dde1d3;
+  --primary: #3f6b4a;
+  --primary-hover: #2f5238;
+  --primary-foreground: #f5faf2;
+  --accent: #c98a4b;
+  --success: #3f6b4a;
+  --warning: #c98a4b;
+  --danger: #a8432f;
+  --ring: #c98a4b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1a1512;
-    --surface: #221b17;
-    --surface-2: #2b221c;
-    --foreground: #f0e9e3;
-    --muted: #a99a8e;
-    --border: #372c25;
-    --primary: #e07a5f;
-    --primary-hover: #ec8a70;
-    --primary-foreground: #241611;
-    --accent: #e2b25a;
-    --ring: #e07a5f;
+    --background: #0f1310;
+    --surface: #161c17;
+    --surface-2: #1c231d;
+    --foreground: #eef1ea;
+    --muted: #a3ada0;
+    --border: #263329;
+    --primary: #6fa87e;
+    --primary-hover: #8bbd97;
+    --primary-foreground: #0c1710;
+    --accent: #dba468;
+    --success: #6fa87e;
+    --warning: #dba468;
+    --danger: #d97b64;
+    --ring: #dba468;
   }
 }
 
@@ -47,14 +54,18 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --color-ring: var(--ring);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-newsreader), Georgia, serif;
 
-  --radius-xl: 1rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.8125rem;
   --radius-2xl: 1.25rem;
-  --radius-3xl: 1.75rem;
 }
 
 body {
@@ -63,7 +74,7 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Consistent focus ring for keyboard users across interactive elements. */
+/* Consistent, clearly-visible focus ring (accent) for keyboard users. */
 *:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;

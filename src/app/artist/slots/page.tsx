@@ -25,13 +25,13 @@ export default async function ArtistSlotsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
       <header className="flex flex-col gap-3 pb-10">
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
         <p className="max-w-[56ch] text-muted">{t("description")}</p>
       </header>
       {slots.length === 0 ? <EmptyState title={t("empty.title")} description={t("empty.description")} /> : (
         <ul className="flex flex-col gap-5">
           {slots.map((slot) => (
-            <li key={slot.id} className="flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6 shadow-[0_16px_40px_-28px_rgba(42,33,28,0.35)] sm:flex-row sm:items-start sm:justify-between">
+            <li key={slot.id} className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md sm:flex-row sm:items-start sm:justify-between">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3"><span className="font-mono text-xs uppercase tracking-wide text-primary">{dateFormat.format(slot.scheduledAt)}</span><span className="text-xs text-muted">{formatDuration(slot.durationMinutes, t)}</span></div>
                 <h2 className="text-xl font-semibold tracking-tight">{slot.title}</h2>

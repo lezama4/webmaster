@@ -1,0 +1,80 @@
+/* Vivetutiempo — dirección "Sage clínico" (1c)
+   Pegar dentro de src/app/globals.css, reemplazando los valores actuales
+   dentro de @theme inline y los bloques :root / .dark. */
+
+:root {
+  --color-background: #f5f6f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #eceee3;
+  --color-foreground: #1d211c;
+  --color-muted: #6d766a;
+  --color-border: #dde1d3;
+
+  --color-primary: #3f6b4a;
+  --color-primary-hover: #2f5238;
+  --color-primary-foreground: #f5faf2;
+
+  --color-accent: #c98a4b;
+
+  --color-success: var(--color-primary);
+  --color-warning: var(--color-accent);
+  --color-danger: #a8432f;
+
+  --font-heading: 'Newsreader', Georgia, serif;
+  --font-body: 'Geist', system-ui, sans-serif; /* sin cambios */
+
+  --radius-sm: 8px;
+  --radius-md: 13px;
+  --radius-lg: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+  --space-8: 56px;
+
+  --motion-fast: 150ms ease-out;
+  --motion-medium: 180ms ease-out;
+}
+
+.dark {
+  --color-background: #0f1310;
+  --color-surface: #161c17;
+  --color-surface-2: #1c231d;
+  --color-foreground: #eef1ea;
+  --color-muted: #a3ada0;
+  --color-border: #263329;
+
+  --color-primary: #6fa87e;
+  --color-primary-hover: #8bbd97;
+  --color-primary-foreground: #0c1710;
+
+  --color-accent: #dba468;
+
+  --color-success: var(--color-primary);
+  --color-warning: var(--color-accent);
+  --color-danger: #d97b64;
+}
+
+/* --- Tipografía (roles, para usar en clases Tailwind/utilities) ---
+   H1  34px/1.18  peso 500  font-heading
+   H2  26px/1.22  peso 500  font-heading
+   H3  19px/1.3   peso 600  font-body
+   Body 14.5px/1.55 peso 400 font-body
+   Caption/badge 11px peso 600 tracking .02–.03em font-body
+*/
+
+/* --- Motion sobrio ---
+   Hover botón/card:   background/shadow + translateY(-1px), 150ms ease-out
+   Card hover:         shadow-sm → shadow-md, 180ms
+   Foco visible:       outline 2px solid var(--color-accent); outline-offset: 2px;
+   Transición de ruta: fade 120ms, sin slide
+*/
+
+/* --- Import de fuente (añadir en <head> o vía next/font) ---
+   Newsreader: solo pesos 400/500/600, itálica 500 para el wordmark opcional.
+   https://fonts.google.com/specimen/Newsreader
+*/

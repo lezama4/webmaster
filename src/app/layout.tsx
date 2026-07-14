@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
@@ -9,6 +9,13 @@ import { LanguageSelector } from "./LanguageSelector";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 const geistMono = Geist_Mono({
@@ -50,7 +57,7 @@ function SiteHeader({ eventsLabel, loginLabel, registerLabel }: Record<"eventsLa
           <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {loginLabel}
           </Link>
-          <Link href="/register" className="rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-all hover:bg-primary-hover active:translate-y-px">
+          <Link href="/register" className="rounded-[13px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary-hover active:translate-y-px">
             {registerLabel}
           </Link>
           <LanguageSelector />
@@ -77,7 +84,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SiteHeader eventsLabel={t("nav.events")} loginLabel={t("nav.login")} registerLabel={t("nav.register")} />

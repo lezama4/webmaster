@@ -20,7 +20,7 @@ export function PublishSlotForm() {
     } catch { setError(t("errors.generic")); } finally { setPending(false); }
   }
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6 shadow-[0_16px_40px_-28px_rgba(42,33,28,0.35)]" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md" noValidate>
       <div className="flex flex-col gap-1"><h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2><p className="text-sm text-muted">{t("description")}</p></div>
       <Field label={t("fields.title")} htmlFor="title"><input id="title" name="title" type="text" required value={form.title} onChange={(e) => update("title", e.target.value)} className={inputClasses} /></Field>
       <Field label={t("fields.description")} htmlFor="description"><textarea id="description" name="description" required rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClasses} /></Field>
