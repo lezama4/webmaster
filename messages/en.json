@@ -1,7 +1,7 @@
 {
   "Layout": {
-    "nav": { "events": "Events", "login": "Log in", "register": "Register" },
-    "footer": { "description": "A non-profit initiative bringing live performances to patients during hospital stays. Free for hospitals, artists, and families." }
+    "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register" },
+    "footer": { "description": "A non-profit initiative bringing live performances to patients during hospital stays. Free for hospitals, artists, and families.", "help": "Help" }
   },
   "LanguageSelector": { "label": "Language selector" },
   "Home": {
@@ -9,12 +9,70 @@
     "title": { "firstLine": "Fewer empty hours,", "secondLine": "more live moments." },
     "description": "Long hospital stays are full of waiting. Vivetutiempo connects hospitals with artists so patients and their families get real performances — not a screen — during that time.",
     "browseEvents": "Browse upcoming events", "registerProfile": "Register a hospital or profile",
+    "ariaRating": "{rating} out of 5 stars",
+    "hero": { "imageAlt": "A cellist performs for a group of patients and family members in a hospital common room, with a person in a wheelchair among the audience." },
+    "mission": {
+      "eyebrow": "Why we exist",
+      "title": "One open slot in the schedule can be the best moment of the month.",
+      "description": "We don't replace treatment — we accompany it. We coordinate with each ward so music, theatre, or a workshop arrives without interrupting care, and so every performance means something to the person receiving it.",
+      "imageAlt": "An artist shows coloured paper cut-outs to a group of patients, a teenager, and a nurse gathered around a table covered in craft materials."
+    },
+    "trust": {
+      "eyebrow": "Institutional backing",
+      "title": "Every slot is opened by a hospital, not an anonymous platform.",
+      "description": "Ward coordinators review and confirm proposals before they reach a patient. That's how Vivetutiempo stays safe and clinically sound.",
+      "hospitalsLabel": "Participating hospitals",
+      "patronsLabel": "Patron organisations",
+      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
+      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
+      "disclaimer": "Illustrative set for this MVP phase: it includes hospitals from the demo database and example organisations, not confirmed patronage agreements."
+    },
+    "artists": {
+      "eyebrow": "Top-rated artists",
+      "title": "People already bringing their craft to the ward.",
+      "description": "Example profiles from the demo database, with the rating they'd receive after a completed event.",
+      "disclaimer": "Illustrative profiles and ratings for this MVP phase.",
+      "items": [
+        { "name": "Clara Romero", "role": "Cellist", "quote": "Playing for someone who hasn't left the ward in weeks changes what a concert means.", "rating": 5 },
+        { "name": "Mateo Díaz", "role": "Guitarist and songwriter", "quote": "When we sing together in the room, it stops being a hospital for a while.", "rating": 5 }
+      ]
+    },
+    "reviews": {
+      "eyebrow": "Voices from the ward",
+      "title": "What people who've already had a moment say.",
+      "imageAlt": "A choir performs for an audience of seated patients and family members, with two people in wheelchairs in the front row.",
+      "disclaimer": "Illustrative examples for this MVP phase; not verified reviews of real events.",
+      "items": [
+        { "quote": "After three weeks admitted, that concert was the first time my daughter really smiled.", "author": "Itziar Goikoetxea", "context": "Patient's mother, Hospital San Juan", "rating": 5 },
+        { "quote": "The workshop broke the routine of the corridor. For one afternoon, we didn't talk about test results or schedules.", "author": "Fernando Cabrera", "context": "Patient, Hospital Esperanza", "rating": 5 },
+        { "quote": "We published the slot on a Tuesday and had a confirmed artist by Thursday. Coordinating was that simple.", "author": "Dr. Marta Elizondo", "context": "Ward coordinator, Hospital San Juan", "rating": 5 }
+      ]
+    },
+    "closing": {
+      "title": "Ready to open the first slot, or propose the first moment?",
+      "description": "Hospitals and artists register in the same place. A coordinator reviews every profile before it can act.",
+      "primaryCta": "Register a hospital or profile",
+      "secondaryCta": "Browse upcoming events"
+    }
+  },
+  "Help": {
+    "eyebrow": "Help",
+    "title": "How Vivetutiempo works",
+    "intro": "A quick guide to the process, for hospitals, artists, and families.",
     "howItWorks": { "title": "How a moment comes together", "description": "Four people, one shared afternoon. Every step is reviewed before it reaches a patient." },
     "steps": {
       "01": { "role": "Hospitals", "text": "Open a slot in the ward's agenda — a date, a time, a place where patients could use some company." },
       "02": { "role": "Artists", "text": "Browse open slots and propose an activity: music, storytelling, magic, a workshop." },
       "03": { "role": "Coordinators", "text": "The hospital reviews proposals and confirms one. The moment becomes a scheduled event." },
       "04": { "role": "Families", "text": "Patients and their families see what's coming up, and share how it went." }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": [
+        { "question": "How are events and artists rated?", "answer": "In this MVP phase, Vivetutiempo doesn't calculate automatic event ratings. The star examples you see on the homepage are illustrative, not real data. Verified artist and event ratings are planned for a later phase." },
+        { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a hospital publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
+        { "question": "How is patient location protected?", "answer": "Vivetutiempo never publishes patient personal data. A slot shows only the hospital ward or room type; no patient's name, room number, or reason for admission ever appears on the platform." }
+      ]
     }
   },
   "Events": {

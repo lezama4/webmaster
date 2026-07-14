@@ -42,7 +42,12 @@ function BrandMark() {
   );
 }
 
-function SiteHeader({ eventsLabel, loginLabel, registerLabel }: Record<"eventsLabel" | "loginLabel" | "registerLabel", string>) {
+function SiteHeader({
+  eventsLabel,
+  helpLabel,
+  loginLabel,
+  registerLabel,
+}: Record<"eventsLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -53,6 +58,9 @@ function SiteHeader({ eventsLabel, loginLabel, registerLabel }: Record<"eventsLa
         <nav className="flex items-center gap-1 text-sm">
           <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {eventsLabel}
+          </Link>
+          <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
+            {helpLabel}
           </Link>
           <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {loginLabel}
@@ -67,12 +75,15 @@ function SiteHeader({ eventsLabel, loginLabel, registerLabel }: Record<"eventsLa
   );
 }
 
-function SiteFooter({ description }: { description: string }) {
+function SiteFooter({ description, helpLabel }: { description: string; helpLabel: string }) {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-8 text-sm text-muted sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:px-6">
         <p className="font-medium text-foreground">Vivetutiempo</p>
         <p>{description}</p>
+        <Link href="/ayuda" className="w-fit underline underline-offset-4 transition-colors hover:text-foreground">
+          {helpLabel}
+        </Link>
       </div>
     </footer>
   );
@@ -87,9 +98,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <SiteHeader eventsLabel={t("nav.events")} loginLabel={t("nav.login")} registerLabel={t("nav.register")} />
+          <SiteHeader
+            eventsLabel={t("nav.events")}
+            helpLabel={t("nav.help")}
+            loginLabel={t("nav.login")}
+            registerLabel={t("nav.register")}
+          />
           <main className="flex-1">{children}</main>
-          <SiteFooter description={t("footer.description")} />
+          <SiteFooter description={t("footer.description")} helpLabel={t("footer.help")} />
         </NextIntlClientProvider>
       </body>
     </html>

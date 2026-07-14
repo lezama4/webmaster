@@ -1,7 +1,69 @@
 {
-  "Layout": { "nav": { "events": "Ekitaldiak", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Ospitaleko egonaldietan pazienteei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena. Doakoa ospitaleentzat, artistentzat eta familientzat." } },
+  "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Ospitaleko egonaldietan pazienteei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena. Doakoa ospitaleentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
-  "Home": { "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Ordu huts gutxiago,", "secondLine": "zuzeneko une gehiago." }, "description": "Ospitaleko egonaldi luzeek itxarote asko dute. Vivetutiempok ospitaleak eta artistak lotzen ditu, pazienteek eta familiek denbora horretan benetako emanaldiak izan ditzaten —ez pantaila bat—.", "browseEvents": "Ikusi hurrengo ekitaldiak", "registerProfile": "Erregistratu ospitale edo profil bat", "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau pertsona, arratsalde partekatu bat. Urrats bakoitza berrikusten da paziente batengana iritsi aurretik." }, "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Koordinatzaileak", "text": "Ospitaleak proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } } },
+  "Home": {
+    "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Ordu huts gutxiago,", "secondLine": "zuzeneko une gehiago." }, "description": "Ospitaleko egonaldi luzeek itxarote asko dute. Vivetutiempok ospitaleak eta artistak lotzen ditu, pazienteek eta familiek denbora horretan benetako emanaldiak izan ditzaten —ez pantaila bat—.", "browseEvents": "Ikusi hurrengo ekitaldiak", "registerProfile": "Erregistratu ospitale edo profil bat",
+    "ariaRating": "{rating} / 5 izar",
+    "hero": { "imageAlt": "Biolontxelo-jotzaile batek ospitaleko areto komunean pazienteentzat eta senideentzat jotzen du, gurpil-aulkian dagoen pertsona bat entzuleen artean dela." },
+    "mission": {
+      "eyebrow": "Zergatik gaude hemen",
+      "title": "Agendako hutsune bat hilabeteko unerik onena izan daiteke.",
+      "description": "Ez dugu tratamendua ordezten: lagundu egiten dugu. Gela bakoitzarekin koordinatzen dugu musika, antzerkia edo tailer bat zainketa eten gabe iritsi dadin, eta jasotzen duenarentzat zentzua izan dezan.",
+      "imageAlt": "Artista batek kolorezko paper-mozketak erakusten dizkie pazienteen talde bati, nerabe bati eta erizain bati, eskulan-materialez betetako mahai baten inguruan."
+    },
+    "trust": {
+      "eyebrow": "Erakundeen babesa",
+      "title": "Hutsune bakoitza ospitale batek irekitzen du, ez plataforma anonimo batek.",
+      "description": "Gela bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte paziente batengana iritsi aurretik. Horrela mantentzen da Vivetutiempo segurua eta zentzu klinikoarekin.",
+      "hospitalsLabel": "Parte hartzen duten ospitaleak",
+      "patronsLabel": "Mezenas-erakundeak",
+      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
+      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
+      "disclaimer": "MVP fase honetarako adibide-multzoa: demo-datu-baseko ospitaleak eta adibide-erakundeak biltzen ditu, ez baieztatutako mezenasgo-akordioak."
+    },
+    "artists": {
+      "eyebrow": "Balorazio onena duten artistak",
+      "title": "Beren lana gelaraino eramaten ari diren pertsonak.",
+      "description": "Demo-datu-baseko adibide-profilak, ekitaldi bat amaitu ondoren jasoko luketen balorazioarekin.",
+      "disclaimer": "MVP fase honetarako adibide-profilak eta balorazioak.",
+      "items": [
+        { "name": "Clara Romero", "role": "Biolontxelo-jotzailea", "quote": "Aste batzuk gelatik atera gabe daraman norbaiti jotzeak kontzertuaren zentzua aldatzen du.", "rating": 5 },
+        { "name": "Mateo Díaz", "role": "Gitarra-jotzailea eta kantautorea", "quote": "Gelan elkarrekin abesten dugunean, une batez ospitalea izateari uzten dio.", "rating": 5 }
+      ]
+    },
+    "reviews": {
+      "eyebrow": "Gelatik datozen ahotsak",
+      "title": "Jada une bat bizi izan dutenek kontatzen dutena.",
+      "imageAlt": "Abesbatza batek eserita dauden pazienteen eta senideen entzuleen aurrean jotzen du, gurpil-aulkian dauden bi pertsona lehen lerroan direla.",
+      "disclaimer": "MVP fase honetarako adibideak; ez dira benetako ekitaldien balorazio egiaztatuak.",
+      "items": [
+        { "quote": "Hiru aste ingresatuta egon ondoren, kontzertu hura izan zen nire alaba benetan irribarre egin zuen lehen unea.", "author": "Itziar Goikoetxea", "context": "Pazientearen ama, Hospital San Juan", "rating": 5 },
+        { "quote": "Tailerrak korridoreko errutina hautsi zuen. Arratsalde batez, ez genuen analisiei edo ordutegiei buruz hitz egin.", "author": "Fernando Cabrera", "context": "Pazientea, Hospital Esperanza", "rating": 5 },
+        { "quote": "Hutsunea martitzen argitaratu genuen eta osteguneko artista baieztatua genuen jada. Koordinatzea horren erraza izan zen.", "author": "Marta Elizondo dra.", "context": "Gela-koordinatzailea, Hospital San Juan", "rating": 5 }
+      ]
+    },
+    "closing": {
+      "title": "Prest lehen hutsunea irekitzeko, edo lehen unea proposatzeko?",
+      "description": "Ospitaleak eta artistak leku berean erregistratzen dira. Koordinatzaile batek profil bakoitza berrikusten du jarduteko gai izan aurretik.",
+      "primaryCta": "Erregistratu ospitale edo profil bat",
+      "secondaryCta": "Ikusi hurrengo ekitaldiak"
+    }
+  },
+  "Help": {
+    "eyebrow": "Laguntza",
+    "title": "Nola funtzionatzen du Vivetutiempok",
+    "intro": "Prozesuaren gida labur bat, ospitale, artista eta familientzat.",
+    "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau pertsona, arratsalde partekatu bat. Urrats bakoitza berrikusten da paziente batengana iritsi aurretik." },
+    "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Koordinatzaileak", "text": "Ospitaleak proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
+    "faq": {
+      "title": "Maiz egiten diren galderak",
+      "items": [
+        { "question": "Nola baloratzen dira ekitaldiak eta artistak?", "answer": "MVP fase honetan, Vivetutiempok ez ditu ekitaldien balorazio automatikoak kalkulatzen. Hasierako orrian ikusten dituzun izar-adibideak ilustragarriak dira, ez benetako datuak. Artisten eta ekitaldien balorazio egiaztatuak fase geroago baterako aurreikusita daude." },
+        { "question": "Zer esan nahi dute hutsune baten adin-tarteek (audientzia)?", "answer": "Ospitale batek argitaratzen duen hutsune bakoitzak hurbilketa-adin-tarte bat adierazten du —adibidez, 0–5, 6–12, helduak edo adin guztiak— artistek bertaratuko diren pertsonentzat egokia den jarduera bat proposa dezaten." },
+        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Vivetutiempok ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune batek ospitaleko gela edo areto mota bakarrik erakusten du; ez da inoiz agertzen plataforman inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik." }
+      ]
+    }
+  },
   "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten ospitaleetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira solairu bakoitzarekin.", "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Ospitaleek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
   "Login": { "title": "Ongi etorri berriro", "description": "Hasi saioa ekitaldiak koordinatzeko edo berrikusteko.", "email": "Helbide elektronikoa", "password": "Pasahitza", "submit": "Hasi saioa", "submitting": "Saioa hasten…", "noAccount": "Ez duzu konturik?", "register": "Erregistratu ospitale edo artista bat", "errors": { "invalidCredentials": "Helbide elektronikoa edo pasahitza ez da zuzena.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
   "Register": { "title": "Eman izena", "description": "Ospitaleek eta artistek hemen egiten dute bat. Profil bakoitza berrikusten da jardun aurretik.", "email": "Helbide elektronikoa", "password": "Pasahitza", "passwordHint": "Gutxienez 8 karaktere.", "submit": "Sortu profila", "submitting": "Bidaltzen…", "alreadyRegistered": "Dagoeneko erregistratuta?", "login": "Hasi saioa", "role": { "label": "Hau erregistratzen ari naiz:", "hospital": "Ospitalea", "artist": "Artista" }, "name": { "hospital": "Ospitalearen izena", "artist": "Artista edo eszena-izena" }, "errors": { "duplicateEmail": "Dagoeneko badago helbide elektroniko hori duen kontu bat.", "failure": "Ezin izan da erregistroa osatu. Egiaztatu datuak eta saiatu berriro.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." }, "success": { "title": "Eskaera jaso da", "description": "Zure profila koordinatzaile baten berrikuspenaren zain dago. Onartu ondoren hasi ahal izango duzu saioa.", "action": "Joan saio-hasierara" } },

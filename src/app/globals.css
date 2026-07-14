@@ -22,6 +22,14 @@
   --warning: #c98a4b;
   --danger: #a8432f;
   --ring: #c98a4b;
+  /* Fixed dark overlay for legibility scrims on top of photographs (e.g. the
+     home hero), paired with a fixed light "on-scrim" text color. Neither is
+     redefined in the dark media query below — a real photo's tonal range
+     doesn't invert with the site's color scheme, so the scrim that darkens
+     it and the light text sitting on top of it must both stay constant in
+     light and dark mode. */
+  --scrim: #1d211c;
+  --on-scrim: #f5f6f1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,6 +66,8 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-ring: var(--ring);
+  --color-scrim: var(--scrim);
+  --color-on-scrim: var(--on-scrim);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

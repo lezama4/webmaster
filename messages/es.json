@@ -1,10 +1,68 @@
 {
-  "Layout": { "nav": { "events": "Eventos", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias." } },
+  "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
   "Home": {
     "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Menos horas vacías,", "secondLine": "más momentos en directo." }, "description": "Las largas estancias hospitalarias están llenas de espera. Vivetutiempo conecta hospitales con artistas para que pacientes y familias disfruten de actuaciones reales —no de una pantalla— durante ese tiempo.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
+    "ariaRating": "{rating} de 5 estrellas",
+    "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
+    "mission": {
+      "eyebrow": "Por qué existimos",
+      "title": "Un hueco en la agenda puede ser el mejor momento del mes.",
+      "description": "No sustituimos el tratamiento: lo acompañamos. Coordinamos con cada planta para que la música, el teatro o un taller lleguen sin interrumpir el cuidado, y para que cada actuación tenga sentido para quien la recibe.",
+      "imageAlt": "Un artista muestra recortes de papel de colores a un grupo de pacientes, un adolescente y una enfermera alrededor de una mesa cubierta de materiales de manualidades."
+    },
+    "trust": {
+      "eyebrow": "Respaldo institucional",
+      "title": "Cada hueco lo abre un hospital, no una plataforma anónima.",
+      "description": "Los coordinadores de cada planta revisan y confirman las propuestas antes de que lleguen a un paciente. Así es como Vivetutiempo se mantiene seguro y con sentido clínico.",
+      "hospitalsLabel": "Hospitales participantes",
+      "patronsLabel": "Organizaciones mecenas",
+      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
+      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
+      "disclaimer": "Conjunto ilustrativo para esta fase MVP: incluye hospitales de la base de datos de demostración y organizaciones de ejemplo, no acuerdos de mecenazgo confirmados."
+    },
+    "artists": {
+      "eyebrow": "Artistas destacados",
+      "title": "Personas que ya llevan su oficio a planta.",
+      "description": "Perfiles de ejemplo de la base de datos de demostración, con la valoración que recibirían tras un evento completado.",
+      "disclaimer": "Perfiles y valoraciones ilustrativos para esta fase MVP.",
+      "items": [
+        { "name": "Clara Romero", "role": "Violonchelista", "quote": "Tocar para alguien que lleva semanas sin salir de planta cambia el sentido del concierto.", "rating": 5 },
+        { "name": "Mateo Díaz", "role": "Guitarrista y cantautor", "quote": "Cuando cantamos juntos en la sala, deja de ser un hospital por un rato.", "rating": 5 }
+      ]
+    },
+    "reviews": {
+      "eyebrow": "Voces desde planta",
+      "title": "Lo que cuentan quienes ya vivieron un momento.",
+      "imageAlt": "Un coro actúa ante un público de pacientes y familiares sentados, con dos personas en silla de ruedas en primera fila.",
+      "disclaimer": "Ejemplos ilustrativos para esta fase MVP; no son reseñas verificadas de eventos reales.",
+      "items": [
+        { "quote": "Después de tres semanas ingresada, ese concierto fue el primer momento en que mi hija sonrió de verdad.", "author": "Itziar Goikoetxea", "context": "Madre de paciente, Hospital San Juan", "rating": 5 },
+        { "quote": "El taller rompió la rutina del pasillo. Por una tarde, no hablamos de análisis ni de horarios.", "author": "Fernando Cabrera", "context": "Paciente, Hospital Esperanza", "rating": 5 },
+        { "quote": "Publicamos el hueco un martes y el jueves ya teníamos artista confirmado. Coordinar fue así de simple.", "author": "Dra. Marta Elizondo", "context": "Coordinadora de planta, Hospital San Juan", "rating": 5 }
+      ]
+    },
+    "closing": {
+      "title": "¿Listo para abrir el primer hueco, o para proponer el primer momento?",
+      "description": "Hospitales y artistas se registran en el mismo lugar. Un coordinador revisa cada perfil antes de que pueda actuar.",
+      "primaryCta": "Registrar un hospital o perfil",
+      "secondaryCta": "Ver próximos eventos"
+    }
+  },
+  "Help": {
+    "eyebrow": "Ayuda",
+    "title": "Cómo funciona Vivetutiempo",
+    "intro": "Una guía rápida del proceso, pensada para hospitales, artistas y familias.",
     "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro personas, una tarde compartida. Cada paso se revisa antes de llegar a un paciente." },
-    "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Coordinadores", "text": "El hospital revisa las propuestas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } }
+    "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Coordinadores", "text": "El hospital revisa las propuestas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "items": [
+        { "question": "¿Cómo se valoran los eventos y los artistas?", "answer": "En esta fase MVP, Vivetutiempo no calcula valoraciones automáticas de eventos. Los ejemplos con estrellas que ves en la portada son ilustrativos, no datos reales. Registrar valoraciones verificadas de artistas y eventos está previsto para una fase posterior." },
+        { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un hospital indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
+        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Vivetutiempo nunca publica datos personales de pacientes. Un hueco muestra únicamente la planta o sala del hospital; el nombre, la habitación o el motivo de ingreso de cualquier paciente nunca aparecen en la plataforma." }
+      ]
+    }
   },
   "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en hospitales participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada planta.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los hospitales aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
   "Login": { "title": "Te damos la bienvenida", "description": "Iniciá sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tenés una cuenta?", "register": "Registrar un hospital o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
