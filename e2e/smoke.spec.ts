@@ -6,6 +6,6 @@ import { expect, test } from "@playwright/test";
 test("home page renders", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /fewer empty hours/i }),
+    page.getByRole("heading", { name: /keep life/i }),
   ).toBeVisible();
 });

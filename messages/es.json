@@ -2,7 +2,7 @@
   "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Menos horas vacías,", "secondLine": "más momentos en directo." }, "description": "Las largas estancias hospitalarias están llenas de espera. Vivetutiempo conecta hospitales con artistas para que pacientes y familias disfruten de actuaciones reales —no de una pantalla— durante ese tiempo.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Hacemos que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender, y por qué no, llorar, mientras disfrutan junto a sus seres queridos de momentos que no podrán olvidar.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {
