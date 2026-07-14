@@ -24,6 +24,7 @@ function slotInput(overrides: Partial<CreateSlotInput> = {}): CreateSlotInput {
     scheduledAt: new Date("2026-08-01T17:00:00Z"),
     durationMinutes: 60,
     location: "Ward 3, Room 12",
+    audience: "all_ages",
     ...overrides,
   };
 }
@@ -99,6 +100,7 @@ describe("Slot state machine", () => {
       expect(slot.title).toBe("Acoustic guitar afternoon");
       expect(slot.durationMinutes).toBe(60);
       expect(slot.location).toBe("Ward 3, Room 12");
+      expect(slot.audience).toBe("all_ages");
     });
 
     it("rejects a scheduledAt in the past", () => {
@@ -205,6 +207,30 @@ describe("Slot state machine", () => {
     });
   });
 
+  describe("createSlot audience (Phase 1 — age band)", () => {
+    it.each([
+      "all_ages",
+      "early_childhood",
+      "children",
+      "teens",
+      "adults",
+    ] as const)("accepts audience '%s'", (audience) => {
+      const slot = createSlot(slotInput({ audience }), fixedClock);
+
+      expect(slot.audience).toBe(audience);
+    });
+
+    it("rejects an invalid audience value", () => {
+      expect(() =>
+        createSlot(
+          // @ts-expect-error - deliberately invalid audience.
+          slotInput({ audience: "toddlers" }),
+          fixedClock,
+        ),
+      ).toThrow(DomainValidationError);
+    });
+  });
+
   describe("createSlot date safety (M3)", () => {
     it("rejects a non-finite scheduledAt (new Date(NaN))", () => {
       expect(() =>
@@ -247,6 +273,7 @@ describe("Slot state machine", () => {
         durationMinutes: 60,
         location: "Ward 3, Room 12",
         status: "filled",
+        audience: "all_ages",
       });
 
       expect(slot.status).toBe("filled");
@@ -263,9 +290,26 @@ describe("Slot state machine", () => {
         durationMinutes: 60,
         location: "Ward 3, Room 12",
         status: "closed",
+        audience: "all_ages",
       });
 
       expect(slot.status).toBe("closed");
+    });
+
+    it("rehydrates the persisted audience", () => {
+      const slot = rehydrateSlot({
+        id: "slot-1",
+        hospitalProfileId: "hospital-profile-1",
+        title: "Acoustic guitar afternoon",
+        description: "A relaxed acoustic session for the pediatric ward.",
+        scheduledAt: new Date("2020-01-01T00:00:00Z"),
+        durationMinutes: 60,
+        location: "Ward 3, Room 12",
+        status: "closed",
+        audience: "teens",
+      });
+
+      expect(slot.audience).toBe("teens");
     });
 
     it("does not leak the caller's Date reference (M3 applies to rehydration too)", () => {
@@ -281,6 +325,7 @@ describe("Slot state machine", () => {
         durationMinutes: 60,
         location: "Ward 3, Room 12",
         status: "closed",
+        audience: "all_ages",
       });
       input.setFullYear(1999);
 
@@ -299,6 +344,7 @@ describe("Slot state machine", () => {
           location: "Ward 3, Room 12",
           // @ts-expect-error - deliberately invalid persisted status.
           status: "cancelled",
+          audience: "all_ages",
         }),
       ).toThrow(DomainValidationError);
     });
@@ -314,6 +360,24 @@ describe("Slot state machine", () => {
           durationMinutes: 60,
           location: "Ward 3, Room 12",
           status: "open",
+          audience: "all_ages",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies rehydrating an invalid audience", () => {
+      expect(() =>
+        rehydrateSlot({
+          id: "slot-1",
+          hospitalProfileId: "hospital-profile-1",
+          title: "Acoustic guitar afternoon",
+          description: "A relaxed acoustic session for the pediatric ward.",
+          scheduledAt: new Date("2020-01-01T00:00:00Z"),
+          durationMinutes: 60,
+          location: "Ward 3, Room 12",
+          status: "open",
+          // @ts-expect-error - deliberately invalid persisted audience.
+          audience: "toddlers",
         }),
       ).toThrow(DomainValidationError);
     });

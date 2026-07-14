@@ -6,6 +6,7 @@ import { FakePublicEventProjectionQuery } from "./support/fakes";
 
 const ALLOW_LISTED_FIELDS = [
   "artistName",
+  "audience",
   "description",
   "durationMinutes",
   "scheduledAt",
@@ -21,6 +22,7 @@ function aProjection(
     scheduledAt: new Date("2026-08-01T17:00:00Z"),
     durationMinutes: 60,
     artistName: "Clara",
+    audience: "all_ages",
     ...overrides,
   };
 }

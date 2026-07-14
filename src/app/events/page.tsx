@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { listPublishedEvents } from "@application/use-cases/listPublishedEvents";
 import { publicDeps } from "@infrastructure/composition/container";
-import { EmptyState, secondaryButton } from "@ui/components/ui";
+import { audienceBadgeClasses, EmptyState, secondaryButton } from "@ui/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +14,10 @@ function formatDuration(minutes: number, t: Awaited<ReturnType<typeof getTransla
 }
 
 export default async function EventsPage() {
-  const [events, t, locale] = await Promise.all([
+  const [events, t, tAudience, locale] = await Promise.all([
     listPublishedEvents(publicDeps()),
     getTranslations("Events"),
+    getTranslations("Audience"),
     getLocale(),
   ]);
   const dateFormat = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -40,6 +41,7 @@ export default async function EventsPage() {
               </div>
               <h2 className="text-xl font-semibold tracking-tight">{event.title}</h2>
               <p className="text-muted">{event.description}</p>
+              <span className={audienceBadgeClasses}>{tAudience(event.audience)}</span>
               <p className="mt-auto text-sm"><span className="text-muted">{t("withArtist")} </span><span className="font-medium">{event.artistName}</span></p>
             </li>
           ))}

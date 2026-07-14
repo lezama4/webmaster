@@ -1,7 +1,7 @@
 import type { Slot } from "@domain/slot/Slot";
 import type { SlotRepository } from "@application/ports/SlotRepository";
 import type { PrismaClientOrTx } from "./client";
-import { slotStatusToPrisma, toDomainSlot } from "./mappers";
+import { audienceToPrisma, slotStatusToPrisma, toDomainSlot } from "./mappers";
 
 /** Prisma adapter for `SlotRepository` (Phase 4). Standalone reads only — Slot-mutating writes MUST go through `MatchingUnitOfWork.withLockedSlot` (ADR D4), never through `save` directly, outside of the seed script. */
 export class PrismaSlotRepository implements SlotRepository {
@@ -26,6 +26,7 @@ export class PrismaSlotRepository implements SlotRepository {
       durationMinutes: slot.durationMinutes,
       location: slot.location,
       status: slotStatusToPrisma(slot.status),
+      audience: audienceToPrisma(slot.audience),
     };
     await this.client.slot.upsert({
       where: { id: slot.id },

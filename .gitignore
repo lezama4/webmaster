@@ -44,3 +44,6 @@ next-env.d.ts
 /test-results/
 /blob-report/
 /e2e/.cache/
+
+# local git worktrees (never commit)
+.worktrees/

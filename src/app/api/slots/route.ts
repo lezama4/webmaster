@@ -1,3 +1,4 @@
+import type { Audience } from "@domain/slot/Slot";
 import { publishSlot } from "@application/use-cases/publishSlot";
 import { UnauthenticatedError } from "@application/errors";
 import { publishSlotDeps } from "@infrastructure/composition/container";
@@ -11,6 +12,7 @@ interface PublishSlotRequestBody {
   readonly scheduledAt?: unknown;
   readonly durationMinutes?: unknown;
   readonly location?: unknown;
+  readonly audience?: unknown;
 }
 
 function json(status: number, body: unknown): Response {
@@ -45,6 +47,10 @@ export async function POST(request: Request): Promise<Response> {
         scheduledAt: new Date(String(body.scheduledAt ?? "")),
         durationMinutes: Number(body.durationMinutes ?? 0),
         location: String(body.location ?? ""),
+        // `createSlot` (domain) validates this against the fixed Audience
+        // union and throws DomainValidationError on an invalid value — this
+        // handler never trusts the client-claimed value beyond that gate.
+        audience: String(body.audience ?? "all_ages") as Audience,
       },
       publishSlotDeps(),
     );

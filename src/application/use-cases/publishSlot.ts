@@ -1,4 +1,4 @@
-import { createSlot, type Slot } from "@domain/slot/Slot";
+import { createSlot, type Audience, type Slot } from "@domain/slot/Slot";
 import type { Clock } from "@domain/shared/Clock";
 import type { Actor } from "@application/Actor";
 import type { IdGenerator } from "@application/ports/IdGenerator";
@@ -11,6 +11,7 @@ export interface PublishSlotInput {
   readonly scheduledAt: Date;
   readonly durationMinutes: number;
   readonly location: string;
+  readonly audience: Audience;
 }
 
 export interface PublishSlotDeps {
@@ -54,6 +55,7 @@ export async function publishSlot(
         scheduledAt: input.scheduledAt,
         durationMinutes: input.durationMinutes,
         location: input.location,
+        audience: input.audience,
       },
       deps.clock,
     );

@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { listHospitalSlots } from "@application/use-cases/listHospitalSlots";
 import { hospitalSlotBoardDeps } from "@infrastructure/composition/container";
 import { getCurrentActorReadOnly } from "@infrastructure/http/sessionCookie";
-import { EmptyState } from "@ui/components/ui";
+import { audienceBadgeClasses, EmptyState } from "@ui/components/ui";
 import { PublishSlotForm } from "./PublishSlotForm";
 import { ProposalActions } from "./ProposalActions";
 import { CloseSlotButton } from "./CloseSlotButton";
@@ -28,7 +28,12 @@ export default async function HospitalSlotsPage() {
   const actor = await getCurrentActorReadOnly();
   if (!actor || actor.role !== "hospital") redirect("/login");
 
-  const [slots, t, locale] = await Promise.all([listHospitalSlots(actor, hospitalSlotBoardDeps()), getTranslations("HospitalSlots"), getLocale()]);
+  const [slots, t, tAudience, locale] = await Promise.all([
+    listHospitalSlots(actor, hospitalSlotBoardDeps()),
+    getTranslations("HospitalSlots"),
+    getTranslations("Audience"),
+    getLocale(),
+  ]);
   const dateFormat = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -47,7 +52,10 @@ export default async function HospitalSlotsPage() {
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-xs uppercase tracking-wide text-primary">{dateFormat.format(slot.scheduledAt)}</span>
                     <h2 className="text-xl font-semibold tracking-tight">{slot.title}</h2>
-                    <span className={`${STATUS_PILL_BASE} ${SLOT_STATUS_PILL_CLASSES[slot.status]}`}>{t(`slotStatus.${slot.status}`)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`${STATUS_PILL_BASE} ${SLOT_STATUS_PILL_CLASSES[slot.status]}`}>{t(`slotStatus.${slot.status}`)}</span>
+                      <span className={audienceBadgeClasses}>{tAudience(slot.audience)}</span>
+                    </div>
                   </div>
                   {slot.status === "open" ? <CloseSlotButton slotId={slot.slotId} /> : null}
                 </div>

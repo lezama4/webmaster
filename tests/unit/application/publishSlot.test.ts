@@ -35,6 +35,7 @@ const slotInput = {
   scheduledAt: new Date("2026-08-01T17:00:00Z"),
   durationMinutes: 60,
   location: "Ward 3, Room 12",
+  audience: "all_ages" as const,
 };
 
 async function seedHospital(
@@ -56,6 +57,7 @@ describe("publishSlot (active-Hospital gate, atomically persisted through the Pr
 
     expect(slot.status).toBe("open");
     expect(slot.hospitalProfileId).toBe(profile.id);
+    expect(slot.audience).toBe("all_ages");
     expect(await deps.slots.findById(slot.id)).not.toBeNull();
   });
 

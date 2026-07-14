@@ -12,6 +12,10 @@ export const secondaryButton =
 export const inputClasses =
   "w-full rounded-[8px] border border-border bg-surface px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted";
 
+/** Shared pill styling for a Slot/Event's audience (age band) badge (Phase 1). */
+export const audienceBadgeClasses =
+  "inline-flex items-center rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted";
+
 /** A labelled form control: label above, control (children) in the middle, hint or error below. Errors use the semantic danger token, not the brand accent. */
 export function Field({
   label,

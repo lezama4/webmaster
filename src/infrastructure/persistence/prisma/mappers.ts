@@ -1,5 +1,6 @@
 import type {
   AccountRole as PrismaAccountRole,
+  Audience as PrismaAudience,
   EventStatus as PrismaEventStatus,
   ProfileStatus as PrismaProfileStatus,
   ProfileType as PrismaProfileType,
@@ -13,7 +14,7 @@ import {
   type ProfileStatus,
   type ProfileType,
 } from "@domain/profile/Profile";
-import { rehydrateSlot, type Slot, type SlotStatus } from "@domain/slot/Slot";
+import { rehydrateSlot, type Audience, type Slot, type SlotStatus } from "@domain/slot/Slot";
 import { rehydrateProposal, type Proposal, type ProposalStatus } from "@domain/proposal/Proposal";
 import { rehydrateEvent, type Event, type EventStatus } from "@domain/event/Event";
 
@@ -68,6 +69,21 @@ const SLOT_STATUS_TO_PRISMA: Record<SlotStatus, PrismaSlotStatus> = {
   closed: "CLOSED",
 };
 
+const AUDIENCE_TO_DOMAIN: Record<PrismaAudience, Audience> = {
+  ALL_AGES: "all_ages",
+  EARLY_CHILDHOOD: "early_childhood",
+  CHILDREN: "children",
+  TEENS: "teens",
+  ADULTS: "adults",
+};
+const AUDIENCE_TO_PRISMA: Record<Audience, PrismaAudience> = {
+  all_ages: "ALL_AGES",
+  early_childhood: "EARLY_CHILDHOOD",
+  children: "CHILDREN",
+  teens: "TEENS",
+  adults: "ADULTS",
+};
+
 const PROPOSAL_STATUS_TO_DOMAIN: Record<PrismaProposalStatus, ProposalStatus> = {
   SUBMITTED: "submitted",
   ACCEPTED: "accepted",
@@ -109,6 +125,13 @@ export function slotStatusToPrisma(status: SlotStatus): PrismaSlotStatus {
   return SLOT_STATUS_TO_PRISMA[status];
 }
 
+export function toDomainAudience(audience: PrismaAudience): Audience {
+  return AUDIENCE_TO_DOMAIN[audience];
+}
+export function audienceToPrisma(audience: Audience): PrismaAudience {
+  return AUDIENCE_TO_PRISMA[audience];
+}
+
 export function proposalStatusToPrisma(status: ProposalStatus): PrismaProposalStatus {
   return PROPOSAL_STATUS_TO_PRISMA[status];
 }
@@ -142,6 +165,7 @@ export interface SlotRow {
   readonly durationMinutes: number;
   readonly location: string;
   readonly status: PrismaSlotStatus;
+  readonly audience: PrismaAudience;
 }
 
 export interface ProposalRow {
@@ -191,6 +215,7 @@ export function toDomainSlot(row: SlotRow): Slot {
     durationMinutes: row.durationMinutes,
     location: row.location,
     status: SLOT_STATUS_TO_DOMAIN[row.status],
+    audience: toDomainAudience(row.audience),
   });
 }
 

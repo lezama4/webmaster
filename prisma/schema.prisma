@@ -40,6 +40,16 @@ enum SlotStatus {
   CLOSED
 }
 
+// Hospital-set age band a Slot's activity targets (Phase 1 — audience).
+// Single-select, fixed set — filtering by this value comes in a later phase.
+enum Audience {
+  ALL_AGES
+  EARLY_CHILDHOOD
+  CHILDREN
+  TEENS
+  ADULTS
+}
+
 enum ProposalStatus {
   SUBMITTED
   ACCEPTED
@@ -136,6 +146,7 @@ model Slot {
   durationMinutes   Int
   location          String
   status            SlotStatus @default(OPEN)
+  audience          Audience @default(ALL_AGES)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

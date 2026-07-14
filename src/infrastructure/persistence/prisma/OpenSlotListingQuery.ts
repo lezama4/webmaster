@@ -3,6 +3,7 @@ import type {
   OpenSlotListingQuery,
 } from "@application/ports/OpenSlotListingQuery";
 import type { PrismaClientOrTx } from "./client";
+import { toDomainAudience } from "./mappers";
 
 /**
  * Artist-facing open-Slot listing adapter (N2/pr2a-N3). Joins Slot -> (owning
@@ -31,6 +32,7 @@ export class PrismaOpenSlotListingQuery implements OpenSlotListingQuery {
         scheduledAt: true,
         durationMinutes: true,
         location: true,
+        audience: true,
         hospitalProfile: {
           select: { name: true },
         },
@@ -52,6 +54,7 @@ export class PrismaOpenSlotListingQuery implements OpenSlotListingQuery {
         durationMinutes: row.durationMinutes,
         location: row.location,
         hospitalName: row.hospitalProfile.name,
+        audience: toDomainAudience(row.audience),
       };
     });
   }

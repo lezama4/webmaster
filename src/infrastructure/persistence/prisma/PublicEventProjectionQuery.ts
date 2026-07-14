@@ -1,6 +1,7 @@
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
 import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
 import type { PrismaClientOrTx } from "./client";
+import { toDomainAudience } from "./mappers";
 
 /**
  * The ONLY adapter permitted to join Event -> Slot -> Proposal -> (Artist)
@@ -26,6 +27,7 @@ export class PrismaPublicEventProjectionQuery
             description: true,
             scheduledAt: true,
             durationMinutes: true,
+            audience: true,
           },
         },
         proposal: {
@@ -44,6 +46,7 @@ export class PrismaPublicEventProjectionQuery
       scheduledAt: row.slot.scheduledAt,
       durationMinutes: row.slot.durationMinutes,
       artistName: row.proposal.artistProfile.name,
+      audience: toDomainAudience(row.slot.audience),
     }));
   }
 }

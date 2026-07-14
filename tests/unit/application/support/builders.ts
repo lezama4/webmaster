@@ -16,7 +16,7 @@ import {
   createProposal,
   type Proposal,
 } from "@domain/proposal/Proposal";
-import { createSlot, type Slot } from "@domain/slot/Slot";
+import { createSlot, type Audience, type Slot } from "@domain/slot/Slot";
 import type { Actor } from "@application/Actor";
 import { fixedClock } from "./fakes";
 
@@ -78,6 +78,7 @@ export function anOpenSlot(
     scheduledAt: Date;
     durationMinutes: number;
     location: string;
+    audience: Audience;
   }> = {},
 ): Slot {
   return createSlot(
@@ -91,6 +92,7 @@ export function anOpenSlot(
       scheduledAt: overrides.scheduledAt ?? new Date("2026-08-01T17:00:00Z"),
       durationMinutes: overrides.durationMinutes ?? 60,
       location: overrides.location ?? "Ward 3, Room 12",
+      audience: overrides.audience ?? "all_ages",
     },
     fixedClock,
   );

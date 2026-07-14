@@ -11,6 +11,8 @@ export interface HospitalSlotProposalView {
   readonly status: "submitted" | "accepted" | "rejected";
 }
 
+import type { Audience } from "@domain/slot/Slot";
+
 /**
  * A Hospital's own Slot, with its Proposals, as surfaced on the Hospital's
  * slot board — scoped to ONE Hospital's own Slots only (never another
@@ -23,4 +25,6 @@ export interface HospitalSlotView {
   readonly scheduledAt: Date;
   readonly status: "open" | "filled" | "closed";
   readonly proposals: readonly HospitalSlotProposalView[];
+  /** The Slot's hospital-set age band (Phase 1 — audience). */
+  readonly audience: Audience;
 }

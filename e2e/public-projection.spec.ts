@@ -15,7 +15,7 @@ import {
 // boundary (`GET /api/events`) and on the rendered public page (`/events`).
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_KEYS = ["artistName", "description", "durationMinutes", "scheduledAt", "title"];
+const ALLOWED_KEYS = ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"];
 
 test("GET /api/events returns only published events and never leaks forbidden data (6.4)", async () => {
   const ctx = await request.newContext({ baseURL });

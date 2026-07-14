@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { listOpenSlots } from "@application/use-cases/listOpenSlots";
 import { openSlotsDeps } from "@infrastructure/composition/container";
 import { getCurrentActorReadOnly } from "@infrastructure/http/sessionCookie";
-import { EmptyState } from "@ui/components/ui";
+import { audienceBadgeClasses, EmptyState } from "@ui/components/ui";
 import { ProposeActivityForm } from "./ProposeActivityForm";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,12 @@ export default async function ArtistSlotsPage() {
   const actor = await getCurrentActorReadOnly();
   if (!actor || actor.role !== "artist") redirect("/login");
 
-  const [slots, t, locale] = await Promise.all([listOpenSlots(actor, openSlotsDeps()), getTranslations("ArtistSlots"), getLocale()]);
+  const [slots, t, tAudience, locale] = await Promise.all([
+    listOpenSlots(actor, openSlotsDeps()),
+    getTranslations("ArtistSlots"),
+    getTranslations("Audience"),
+    getLocale(),
+  ]);
   const dateFormat = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -36,6 +41,7 @@ export default async function ArtistSlotsPage() {
                 <div className="flex items-center gap-3"><span className="font-mono text-xs uppercase tracking-wide text-primary">{dateFormat.format(slot.scheduledAt)}</span><span className="text-xs text-muted">{formatDuration(slot.durationMinutes, t)}</span></div>
                 <h2 className="text-xl font-semibold tracking-tight">{slot.title}</h2>
                 <p className="text-muted">{slot.description}</p>
+                <span className={audienceBadgeClasses}>{tAudience(slot.audience)}</span>
                 <p className="text-sm"><span className="text-muted">{t("at")} </span><span className="font-medium">{slot.hospitalName}</span><span className="text-muted"> · {slot.location}</span></p>
               </div>
               <div className="flex-shrink-0"><ProposeActivityForm slotId={slot.id} /></div>

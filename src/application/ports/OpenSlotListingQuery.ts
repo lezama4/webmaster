@@ -1,3 +1,5 @@
+import type { Audience } from "@domain/slot/Slot";
+
 /**
  * Artist-authenticated, internal-facing Slot listing item (N2) — richer
  * than the public `PublicEventProjection` (D6): includes exact `location`
@@ -11,6 +13,8 @@ export interface OpenSlotListingItem {
   readonly durationMinutes: number;
   readonly location: string;
   readonly hospitalName: string;
+  /** The Slot's hospital-set age band (Phase 1 — audience). */
+  readonly audience: Audience;
 }
 
 /**

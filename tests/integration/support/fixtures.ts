@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { createAccount } from "@domain/account/Account";
 import { createProfile, approveProfile } from "@domain/profile/Profile";
-import { createSlot } from "@domain/slot/Slot";
+import { createSlot, type Audience } from "@domain/slot/Slot";
 import { createProposal } from "@domain/proposal/Proposal";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
@@ -71,7 +71,7 @@ export async function createArtistProfile(
 export async function createOpenSlot(
   client: PrismaClient,
   hospitalProfileId: string,
-  overrides: { readonly title?: string } = {},
+  overrides: { readonly title?: string; readonly audience?: Audience } = {},
 ) {
   const slots = new PrismaSlotRepository(client);
   const slot = createSlot(
@@ -83,6 +83,7 @@ export async function createOpenSlot(
       scheduledAt: new Date(clock.now().getTime() + 7 * 24 * 60 * 60 * 1000),
       durationMinutes: 60,
       location: "Ward 3B",
+      audience: overrides.audience ?? "all_ages",
     },
     clock,
   );

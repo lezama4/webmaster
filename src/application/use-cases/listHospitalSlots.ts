@@ -50,5 +50,6 @@ function toHospitalSlotView(record: HospitalSlotView): HospitalSlotView {
       message: proposal.message,
       status: proposal.status,
     })),
+    audience: record.audience,
   };
 }

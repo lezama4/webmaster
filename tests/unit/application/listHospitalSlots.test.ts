@@ -22,6 +22,7 @@ function aHospitalSlotView(
         status: "submitted",
       },
     ],
+    audience: overrides.audience ?? "all_ages",
   };
 }
 
@@ -133,7 +134,7 @@ describe("listHospitalSlots (Hospital's own slot board, 5.4/5.6/5.10)", () => {
     expect(result).toHaveLength(1);
     const [slot] = result;
     expect(Object.keys(slot).sort()).toEqual(
-      ["proposals", "scheduledAt", "slotId", "status", "title"].sort(),
+      ["audience", "proposals", "scheduledAt", "slotId", "status", "title"].sort(),
     );
     expect(slot).not.toHaveProperty("hospitalProfileId");
     expect(slot.proposals).toHaveLength(1);

@@ -147,6 +147,7 @@ async function main(): Promise<void> {
       scheduledAt: scheduledAt(7),
       durationMinutes: 45,
       location: "Planta 2, sala de convivencia",
+      audience: "all_ages",
     },
     clock,
   );
@@ -159,6 +160,7 @@ async function main(): Promise<void> {
       scheduledAt: scheduledAt(14),
       durationMinutes: 60,
       location: "Planta 1, aula cultural",
+      audience: "adults",
     },
     clock,
   );
@@ -171,6 +173,7 @@ async function main(): Promise<void> {
       scheduledAt: scheduledAt(21),
       durationMinutes: 45,
       location: "Biblioteca hospitalaria",
+      audience: "children",
     },
     clock,
   );
@@ -183,6 +186,7 @@ async function main(): Promise<void> {
       scheduledAt: scheduledAt(28),
       durationMinutes: 45,
       location: "Pediatría, sala de familias",
+      audience: "early_childhood",
     },
     clock,
   );
@@ -195,6 +199,7 @@ async function main(): Promise<void> {
       scheduledAt: scheduledAt(35),
       durationMinutes: 50,
       location: "Salón de actos",
+      audience: "all_ages",
     },
     clock,
   );

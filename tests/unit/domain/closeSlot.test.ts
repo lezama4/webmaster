@@ -40,6 +40,7 @@ function openSlot(overrides: Partial<CreateSlotInput> = {}): Slot {
       scheduledAt: new Date("2026-08-01T17:00:00Z"),
       durationMinutes: 60,
       location: "Ward 3, Room 12",
+      audience: "all_ages",
       ...overrides,
     },
     fixedClock,

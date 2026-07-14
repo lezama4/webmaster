@@ -36,5 +36,6 @@ function toPublicEventProjection(record: PublicEventProjection): PublicEventProj
     scheduledAt: record.scheduledAt,
     durationMinutes: record.durationMinutes,
     artistName: record.artistName,
+    audience: record.audience,
   };
 }

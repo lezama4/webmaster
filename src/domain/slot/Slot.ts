@@ -7,6 +7,17 @@ import type { Clock } from "../shared/Clock";
 
 export type SlotStatus = "open" | "filled" | "closed";
 
+/**
+ * The hospital-set age band a Slot's activity targets (Phase 1). Single-
+ * select, fixed union — filtering by this value comes in a later phase.
+ */
+export type Audience =
+  | "all_ages"
+  | "early_childhood"
+  | "children"
+  | "teens"
+  | "adults";
+
 /** Text bounds per design N2 ("sane, explicit length bounds"). */
 export const TITLE_MIN_LENGTH = 3;
 export const TITLE_MAX_LENGTH = 120;
@@ -15,6 +26,13 @@ export const LOCATION_MIN_LENGTH = 1;
 export const LOCATION_MAX_LENGTH = 200;
 
 const SLOT_STATUSES: readonly SlotStatus[] = ["open", "filled", "closed"];
+const AUDIENCES: readonly Audience[] = [
+  "all_ages",
+  "early_childhood",
+  "children",
+  "teens",
+  "adults",
+];
 
 /**
  * Nominal brand (M1): a unique symbol, never exported, so outer code cannot
@@ -44,6 +62,7 @@ export type Slot = {
   readonly durationMinutes: number;
   readonly location: string;
   readonly status: SlotStatus;
+  readonly audience: Audience;
 } & { readonly [SLOT_BRAND]: "Slot" };
 
 export interface CreateSlotInput {
@@ -54,6 +73,7 @@ export interface CreateSlotInput {
   readonly scheduledAt: Date;
   readonly durationMinutes: number;
   readonly location: string;
+  readonly audience: Audience;
 }
 
 export interface RehydrateSlotInput {
@@ -65,6 +85,7 @@ export interface RehydrateSlotInput {
   readonly durationMinutes: number;
   readonly location: string;
   readonly status: SlotStatus;
+  readonly audience: Audience;
 }
 
 interface SlotFields {
@@ -75,6 +96,7 @@ interface SlotFields {
   readonly durationMinutes: number;
   readonly location: string;
   readonly status: SlotStatus;
+  readonly audience: Audience;
 }
 
 /**
@@ -92,6 +114,7 @@ function buildSlot(fields: SlotFields, scheduledAtMs: number): Slot {
     durationMinutes: fields.durationMinutes,
     location: fields.location,
     status: fields.status,
+    audience: fields.audience,
     get scheduledAt(): Date {
       return new Date(scheduledAtMs);
     },
@@ -128,6 +151,12 @@ function assertFiniteScheduledAt(scheduledAtMs: number): void {
   }
 }
 
+function assertValidAudience(audience: Audience): void {
+  if (!AUDIENCES.includes(audience)) {
+    throw new DomainValidationError(`Slot audience '${audience}' is invalid`);
+  }
+}
+
 /**
  * Creates an 'open' Slot, enforcing the N2 invariants: a finite, strictly-
  * future `scheduledAt` (via the injected Clock — never `Date.now()`, and
@@ -151,6 +180,7 @@ export function createSlot(input: CreateSlotInput, clock: Clock): Slot {
     LOCATION_MIN_LENGTH,
     LOCATION_MAX_LENGTH,
   );
+  assertValidAudience(input.audience);
 
   return buildSlot(
     {
@@ -161,6 +191,7 @@ export function createSlot(input: CreateSlotInput, clock: Clock): Slot {
       durationMinutes: input.durationMinutes,
       location: input.location.trim(),
       status: "open",
+      audience: input.audience,
     },
     scheduledAtMs,
   );
@@ -189,6 +220,7 @@ export function rehydrateSlot(input: RehydrateSlotInput): Slot {
     LOCATION_MIN_LENGTH,
     LOCATION_MAX_LENGTH,
   );
+  assertValidAudience(input.audience);
 
   return buildSlot(
     {
@@ -199,6 +231,7 @@ export function rehydrateSlot(input: RehydrateSlotInput): Slot {
       durationMinutes: input.durationMinutes,
       location: input.location,
       status: input.status,
+      audience: input.audience,
     },
     scheduledAtMs,
   );
@@ -224,6 +257,7 @@ export function fillSlot(slot: Slot): Slot {
       durationMinutes: slot.durationMinutes,
       location: slot.location,
       status: "filled",
+      audience: slot.audience,
     },
     slot.scheduledAt.getTime(),
   );
@@ -241,6 +275,7 @@ export function closeSlot(slot: Slot): Slot {
       durationMinutes: slot.durationMinutes,
       location: slot.location,
       status: "closed",
+      audience: slot.audience,
     },
     slot.scheduledAt.getTime(),
   );

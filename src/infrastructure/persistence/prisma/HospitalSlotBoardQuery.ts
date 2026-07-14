@@ -4,6 +4,7 @@ import type {
 } from "@application/dto/HospitalSlotView";
 import type { HospitalSlotBoardQuery } from "@application/ports/HospitalSlotBoardQuery";
 import type { PrismaClientOrTx } from "./client";
+import { toDomainAudience } from "./mappers";
 
 const SLOT_STATUS_TO_DOMAIN = {
   OPEN: "open",
@@ -40,6 +41,7 @@ export class PrismaHospitalSlotBoardQuery implements HospitalSlotBoardQuery {
         title: true,
         scheduledAt: true,
         status: true,
+        audience: true,
         proposals: {
           select: {
             id: true,
@@ -58,6 +60,7 @@ export class PrismaHospitalSlotBoardQuery implements HospitalSlotBoardQuery {
       title: row.title,
       scheduledAt: row.scheduledAt,
       status: SLOT_STATUS_TO_DOMAIN[row.status],
+      audience: toDomainAudience(row.audience),
       proposals: row.proposals.map(
         (proposal): HospitalSlotProposalView => ({
           proposalId: proposal.id,

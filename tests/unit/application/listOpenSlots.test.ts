@@ -27,6 +27,7 @@ function anOpenSlotListingItem(
     durationMinutes: overrides.durationMinutes ?? 60,
     location: overrides.location ?? "Ward 3, Room 12",
     hospitalName: overrides.hospitalName ?? "Hospital San Juan",
+    audience: overrides.audience ?? "all_ages",
   };
 }
 
