@@ -76,7 +76,7 @@
     "faq": {
       "title": "Frequently asked questions",
       "items": [
-        { "question": "How are events and artists rated?", "answer": "In this MVP phase, Vivetutiempo doesn't calculate automatic event ratings. The star examples you see on the homepage are illustrative, not real data. Verified artist and event ratings are planned for a later phase." },
+        { "question": "How are events and artists rated?", "answer": "Registered users can rate a published event 1–5 stars, and each event shows its average. The testimonial quotes on the homepage remain illustrative examples, not verified reviews." },
         { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a hospital publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
         { "question": "How is patient location protected?", "answer": "Vivetutiempo never publishes patient personal data. A slot's ward or room is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No patient's name, room number, or reason for admission is recorded on the platform at all." }
       ]
@@ -139,7 +139,16 @@
   "Events": {
     "title": "Upcoming events", "description": "Live performances scheduled in participating hospitals. Times and artists are confirmed; exact locations are shared privately with each ward.",
     "empty": { "title": "No events scheduled yet", "description": "As hospitals confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
-    "withArtist": "with", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }
+    "withArtist": "with", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
+    "rating": {
+      "noRatings": "No ratings yet",
+      "average": "{average} average · {count} ratings",
+      "averageLabel": "Average rating: {value} out of 5 stars",
+      "title": "Rate this event",
+      "yourRating": "Your rating",
+      "starLabel": "{value} out of 5 stars",
+      "error": "Could not save your rating. Please try again."
+    }
   },
   "Login": {
     "title": "Welcome back", "description": "Log in to coordinate or review events.", "email": "Email", "password": "Password", "submit": "Log in", "submitting": "Signing in…", "noAccount": "No account yet?", "register": "Register a hospital or artist",
