@@ -67,10 +67,11 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
       scheduledAt: slot.scheduledAt,
       durationMinutes: slot.durationMinutes,
       artistName: "Clara the Artist",
+      audience: "all_ages",
     });
     // Structural allow-list assertion: no forbidden key ever appears.
     expect(Object.keys(projection).sort()).toEqual(
-      ["artistName", "description", "durationMinutes", "scheduledAt", "title"].sort(),
+      ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"].sort(),
     );
   });
 
