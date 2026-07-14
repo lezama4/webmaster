@@ -319,4 +319,187 @@ describe("Profile state machine", () => {
       expect(approved.status).toBe("active");
     });
   });
+
+  describe("public location (Phase 2 — hospital public location)", () => {
+    it("createProfile without any location fields leaves them all undefined", () => {
+      const profile = pendingProfile();
+
+      expect(profile.city).toBeUndefined();
+      expect(profile.postalCode).toBeUndefined();
+      expect(profile.addressLine).toBeUndefined();
+      expect(profile.latitude).toBeUndefined();
+      expect(profile.longitude).toBeUndefined();
+    });
+
+    it("createProfile accepts a full, valid public location for a hospital", () => {
+      const profile = createProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        city: "Bilbao",
+        postalCode: "48013",
+        addressLine: "Plaza de Cruces, 12",
+        latitude: 43.263,
+        longitude: -2.935,
+      });
+
+      expect(profile.city).toBe("Bilbao");
+      expect(profile.postalCode).toBe("48013");
+      expect(profile.addressLine).toBe("Plaza de Cruces, 12");
+      expect(profile.latitude).toBe(43.263);
+      expect(profile.longitude).toBe(-2.935);
+    });
+
+    it("createProfile accepts a partial location (e.g. city only, no coordinates yet)", () => {
+      const profile = createProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        city: "Bilbao",
+      });
+
+      expect(profile.city).toBe("Bilbao");
+      expect(profile.latitude).toBeUndefined();
+      expect(profile.longitude).toBeUndefined();
+    });
+
+    it("denies a latitude above the valid range (> 90)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: 90.5,
+          longitude: 0,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies a latitude below the valid range (< -90)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: -90.5,
+          longitude: 0,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies a longitude above the valid range (> 180)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: 0,
+          longitude: 180.5,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies a longitude below the valid range (< -180)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: 0,
+          longitude: -180.5,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies a non-finite latitude (NaN)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: Number.NaN,
+          longitude: 0,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("denies a non-finite longitude (Infinity)", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          latitude: 0,
+          longitude: Number.POSITIVE_INFINITY,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("accepts the boundary values -90/-180 and 90/180", () => {
+      const south = createProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        latitude: -90,
+        longitude: -180,
+      });
+      const north = createProfile({
+        id: "profile-2",
+        accountId: "account-2",
+        type: "hospital",
+        name: "Hospital Esperanza",
+        latitude: 90,
+        longitude: 180,
+      });
+
+      expect(south.latitude).toBe(-90);
+      expect(south.longitude).toBe(-180);
+      expect(north.latitude).toBe(90);
+      expect(north.longitude).toBe(180);
+    });
+
+    it("rehydrateProfile round-trips every location field", () => {
+      const profile = rehydrateProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "hospital",
+        name: "Hospital San Juan",
+        status: "active",
+        city: "Bilbao",
+        postalCode: "48013",
+        addressLine: "Plaza de Cruces, 12",
+        latitude: 43.263,
+        longitude: -2.935,
+      });
+
+      expect(profile.city).toBe("Bilbao");
+      expect(profile.postalCode).toBe("48013");
+      expect(profile.addressLine).toBe("Plaza de Cruces, 12");
+      expect(profile.latitude).toBe(43.263);
+      expect(profile.longitude).toBe(-2.935);
+    });
+
+    it("rehydrateProfile denies an invalid persisted latitude", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "hospital",
+          name: "Hospital San Juan",
+          status: "active",
+          latitude: 200,
+          longitude: 0,
+        }),
+      ).toThrow(DomainValidationError);
+    });
+  });
 });

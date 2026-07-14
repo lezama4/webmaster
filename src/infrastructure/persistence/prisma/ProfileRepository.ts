@@ -24,6 +24,11 @@ export class PrismaProfileRepository implements ProfileRepository {
       name: profile.name,
       status: profileStatusToPrisma(profile.status),
       reviewRequestedAt: profile.reviewRequestedAt ?? null,
+      city: profile.city ?? null,
+      postalCode: profile.postalCode ?? null,
+      addressLine: profile.addressLine ?? null,
+      latitude: profile.latitude ?? null,
+      longitude: profile.longitude ?? null,
     };
     await this.client.profile.upsert({
       where: { id: profile.id },

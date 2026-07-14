@@ -127,6 +127,16 @@ model Profile {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
+  // PUBLIC hospital location (Phase 2). All optional — a hospital may
+  // register without them and add them later; artists never populate these.
+  // NOT the same surface as Slot.location (the ward/room), which stays
+  // PRIVATE and is never joined into the public event projection (ADR D6).
+  city        String?
+  postalCode  String?
+  addressLine String?
+  latitude    Float?
+  longitude   Float?
+
   // HOSPITAL side
   slots Slot[] @relation("HospitalSlots")
 

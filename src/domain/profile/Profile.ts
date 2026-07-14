@@ -37,6 +37,16 @@ export type Profile = {
   readonly status: ProfileStatus;
   /** Set when a re-registration re-enters review (auditable, M2). */
   readonly reviewRequestedAt?: Date;
+  // PUBLIC hospital location (Phase 2, ADR D6-adjacent — NOT the same
+  // surface as Slot.location, which stays PRIVATE/ward-level). All optional:
+  // a hospital may register without them and add them later; artists never
+  // populate them. Only meaningful for `type: "hospital"`, but not
+  // type-restricted here — nothing prevents leaving them unset for artists.
+  readonly city?: string;
+  readonly postalCode?: string;
+  readonly addressLine?: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
 } & { readonly [PROFILE_BRAND]: "Profile" };
 
 // `prisma/schema.prisma` carries `ProfileStatus.DEACTIVATED` and
@@ -44,14 +54,23 @@ export type Profile = {
 // (`src/infrastructure/persistence/prisma/ProfileRepository.ts`) maps both
 // fields; no further schema work is pending for this type.
 
-export interface CreateProfileInput {
+/** Optional public-location fields shared by `CreateProfileInput`/`RehydrateProfileInput` (Phase 2). */
+export interface ProfileLocationInput {
+  readonly city?: string;
+  readonly postalCode?: string;
+  readonly addressLine?: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
+}
+
+export interface CreateProfileInput extends ProfileLocationInput {
   readonly id: string;
   readonly accountId: string;
   readonly type: ProfileType;
   readonly name: string;
 }
 
-export interface RehydrateProfileInput {
+export interface RehydrateProfileInput extends ProfileLocationInput {
   readonly id: string;
   readonly accountId: string;
   readonly type: ProfileType;
@@ -90,6 +109,54 @@ function assertValidReviewRequestedAt(reviewRequestedAt: Date | undefined): void
 }
 
 /**
+ * Validates the OPTIONAL public-location fields (Phase 2). Every field is
+ * optional — a hospital may register without a location and add it later —
+ * but when `latitude`/`longitude` ARE present they must be finite numbers
+ * within the standard WGS84 ranges. `city`/`postalCode`/`addressLine` are
+ * free text (no format enforced here; geocoding validation is a later phase).
+ */
+function assertValidLocation(location: ProfileLocationInput): void {
+  if (location.latitude !== undefined) {
+    if (
+      !Number.isFinite(location.latitude) ||
+      location.latitude < -90 ||
+      location.latitude > 90
+    ) {
+      throw new DomainValidationError(
+        "Profile latitude must be a finite number between -90 and 90",
+      );
+    }
+  }
+  if (location.longitude !== undefined) {
+    if (
+      !Number.isFinite(location.longitude) ||
+      location.longitude < -180 ||
+      location.longitude > 180
+    ) {
+      throw new DomainValidationError(
+        "Profile longitude must be a finite number between -180 and 180",
+      );
+    }
+  }
+}
+
+function locationFields(location: ProfileLocationInput): ProfileLocationInput {
+  return {
+    ...(location.city !== undefined ? { city: location.city } : {}),
+    ...(location.postalCode !== undefined
+      ? { postalCode: location.postalCode }
+      : {}),
+    ...(location.addressLine !== undefined
+      ? { addressLine: location.addressLine }
+      : {}),
+    ...(location.latitude !== undefined ? { latitude: location.latitude } : {}),
+    ...(location.longitude !== undefined
+      ? { longitude: location.longitude }
+      : {}),
+  };
+}
+
+/**
  * Creates a new Profile. ALWAYS starts in 'pending' (M1: the initial state
  * is forced by this factory, not left to the caller to fabricate).
  */
@@ -98,6 +165,7 @@ export function createProfile(input: CreateProfileInput): Profile {
   assertNonEmpty("accountId", input.accountId);
   assertValidType(input.type);
   assertNonEmpty("name", input.name);
+  assertValidLocation(input);
 
   return {
     id: input.id,
@@ -105,6 +173,7 @@ export function createProfile(input: CreateProfileInput): Profile {
     type: input.type,
     name: input.name,
     status: "pending",
+    ...locationFields(input),
   } as Profile;
 }
 
@@ -123,6 +192,7 @@ export function rehydrateProfile(input: RehydrateProfileInput): Profile {
   assertNonEmpty("name", input.name);
   assertValidStatus(input.status);
   assertValidReviewRequestedAt(input.reviewRequestedAt);
+  assertValidLocation(input);
 
   return {
     id: input.id,
@@ -133,6 +203,7 @@ export function rehydrateProfile(input: RehydrateProfileInput): Profile {
     ...(input.reviewRequestedAt !== undefined
       ? { reviewRequestedAt: new Date(input.reviewRequestedAt.getTime()) }
       : {}),
+    ...locationFields(input),
   } as Profile;
 }
 

@@ -1,6 +1,7 @@
 import { expect, request, test } from "@playwright/test";
 import {
   SEED_COMPLETED_EVENT_TITLE,
+  SEED_HOSPITAL_LOCATIONS,
   SEED_LOCATIONS,
   SEED_PROPOSAL_IDS,
   SEED_PROPOSAL_MESSAGE_SAMPLE,
@@ -13,6 +14,16 @@ import {
 // `completed` Event, Slot locations, Proposal messages, emails, and internal
 // ids must never appear. Asserted against the seeded dataset both at the JSON
 // boundary (`GET /api/events`) and on the rendered public page (`/events`).
+//
+// Phase 2 addition: Hospitals now also carry a SEPARATE, PUBLIC location
+// (city/postal code/address/coordinates on `Profile`) for a later map/filter
+// feature. That is a DIFFERENT surface from Slot's PRIVATE `location` (ward/
+// room) — ADR D6 is specifically about the latter never appearing here. The
+// assertion below confirms introducing hospital public location did not
+// widen this projection: `PublicEventProjectionQuery` still selects only
+// Slot + accepted-Proposal-artist fields, never anything from `Profile`
+// beyond the artist's display name — so even PUBLIC hospital address data
+// must not leak through this endpoint.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const ALLOWED_KEYS = ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"];
@@ -31,6 +42,12 @@ test("GET /api/events returns only published events and never leaks forbidden da
 
   for (const location of SEED_LOCATIONS) {
     expect(raw, "must not leak a Slot location").not.toContain(location);
+  }
+  for (const address of SEED_HOSPITAL_LOCATIONS) {
+    // Phase 2: hospitals now have a PUBLIC address elsewhere on Profile —
+    // this endpoint must still never join/leak it (the projection only ever
+    // carries Slot + accepted-Proposal-artist fields, ADR D6).
+    expect(raw, "must not leak a hospital's public address").not.toContain(address);
   }
   expect(raw, "must not leak a Proposal message").not.toContain(SEED_PROPOSAL_MESSAGE_SAMPLE);
   expect(raw, "must not leak any email").not.toContain("@vtt.test");

@@ -107,6 +107,12 @@ async function main(): Promise<void> {
       accountId: IDS.accounts.sanJuan,
       type: "hospital",
       name: "Hospital San Juan",
+      // PUBLIC hospital location (Phase 2, demo data) — Bilbao.
+      city: "Bilbao",
+      postalCode: "48013",
+      addressLine: "Plaza de Cruces, 12",
+      latitude: 43.263,
+      longitude: -2.935,
     }),
   );
   const esperanza = createProfile({
@@ -114,6 +120,12 @@ async function main(): Promise<void> {
     accountId: IDS.accounts.esperanza,
     type: "hospital",
     name: "Hospital Esperanza",
+    // PUBLIC hospital location (Phase 2, demo data) — Madrid.
+    city: "Madrid",
+    postalCode: "28046",
+    addressLine: "Paseo de la Castellana, 261",
+    latitude: 40.417,
+    longitude: -3.703,
   });
   const clara = approveProfile(
     createProfile({

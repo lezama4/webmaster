@@ -87,6 +87,7 @@
   "Register": {
     "title": "Register", "description": "Hospitals and artists join here. Every profile is reviewed before it can act.", "email": "Email", "password": "Password", "passwordHint": "At least 8 characters.", "submit": "Create profile", "submitting": "Submitting…", "alreadyRegistered": "Already registered?", "login": "Log in",
     "role": { "label": "I am registering a", "hospital": "Hospital", "artist": "Artist" }, "name": { "hospital": "Hospital name", "artist": "Artist / stage name" },
+    "location": { "city": "City", "postalCode": "Postal code", "addressLine": "Street address", "hint": "Optional. Helps families find the hospital on a map." },
     "errors": { "duplicateEmail": "An account with that email already exists.", "failure": "Registration could not be completed. Check your details and try again.", "generic": "Something went wrong. Please try again." },
     "success": { "title": "Request received", "description": "Your profile is pending review by a coordinator. You can log in once it has been approved.", "action": "Go to log in" }
   },

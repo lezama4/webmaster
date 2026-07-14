@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DomainValidationError } from "@domain/errors";
 import { ConflictError, ForbiddenError, UnauthenticatedError } from "@application/errors";
 import { registerProfile } from "@application/use-cases/registerProfile";
 import {
@@ -328,5 +329,94 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
     // NO partial state: the Account write rolled back alongside the failed
     // Profile write — no orphan Account survives.
     expect(await accounts.findByEmail("atomic@vtt.test")).toBeNull();
+  });
+
+  describe("hospital public location (Phase 2 — optional, hospital-only)", () => {
+    it("persists the optional public location for a Hospital registration", async () => {
+      const deps = makeDeps();
+
+      const profile = await registerProfile(
+        {
+          email: "hospital.sanjuan@vtt.test",
+          password: "S3cure!pass",
+          role: "hospital",
+          name: "Hospital San Juan",
+          city: "Bilbao",
+          postalCode: "48013",
+          addressLine: "Plaza de Cruces, 12",
+          latitude: 43.263,
+          longitude: -2.935,
+        },
+        deps,
+      );
+
+      expect(profile.city).toBe("Bilbao");
+      expect(profile.postalCode).toBe("48013");
+      expect(profile.addressLine).toBe("Plaza de Cruces, 12");
+      expect(profile.latitude).toBe(43.263);
+      expect(profile.longitude).toBe(-2.935);
+
+      const persisted = await deps.profiles.findByAccountId(
+        (await deps.accounts.findByEmail("hospital.sanjuan@vtt.test"))!.account.id,
+      );
+      expect(persisted?.city).toBe("Bilbao");
+    });
+
+    it("registers a Hospital with NO location fields — none are required", async () => {
+      const deps = makeDeps();
+
+      const profile = await registerProfile(
+        {
+          email: "hospital.sanjuan@vtt.test",
+          password: "S3cure!pass",
+          role: "hospital",
+          name: "Hospital San Juan",
+        },
+        deps,
+      );
+
+      expect(profile.status).toBe("pending");
+      expect(profile.city).toBeUndefined();
+      expect(profile.latitude).toBeUndefined();
+    });
+
+    it("ignores location fields for an Artist registration (location is hospital-only)", async () => {
+      const deps = makeDeps();
+
+      const profile = await registerProfile(
+        {
+          email: "artist.clara@vtt.test",
+          password: "S3cure!pass",
+          role: "artist",
+          name: "Clara",
+          city: "Bilbao",
+          latitude: 43.263,
+          longitude: -2.935,
+        },
+        deps,
+      );
+
+      expect(profile.city).toBeUndefined();
+      expect(profile.latitude).toBeUndefined();
+      expect(profile.longitude).toBeUndefined();
+    });
+
+    it("propagates a DomainValidationError for an out-of-range latitude on a Hospital registration", async () => {
+      const deps = makeDeps();
+
+      await expect(
+        registerProfile(
+          {
+            email: "hospital.sanjuan@vtt.test",
+            password: "S3cure!pass",
+            role: "hospital",
+            name: "Hospital San Juan",
+            latitude: 200,
+            longitude: 0,
+          },
+          deps,
+        ),
+      ).rejects.toBeInstanceOf(DomainValidationError);
+    });
   });
 });

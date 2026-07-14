@@ -65,6 +65,21 @@ export const SEED_LOCATIONS = [
 export const SEED_PROPOSAL_MESSAGE_SAMPLE =
   "Tengo experiencia facilitando talleres de acuarela en grupo.";
 
+/**
+ * The two seeded hospitals' PUBLIC location fields (Phase 2, mirrors
+ * `prisma/seed.ts`). These are a SEPARATE, public surface on `Profile` —
+ * unlike `SEED_LOCATIONS` (Slot's private ward/room), they are allowed to
+ * exist somewhere in the system. This constant exists so a privacy test can
+ * assert the OPPOSITE of `SEED_LOCATIONS`'s check: even though this data is
+ * public, it must still never leak through the Event projection, which only
+ * ever carries Slot + accepted-Proposal-artist fields (ADR D6) — Profile
+ * (hospital) fields, public or not, are simply never part of that surface.
+ */
+export const SEED_HOSPITAL_LOCATIONS = [
+  "Plaza de Cruces, 12",
+  "Paseo de la Castellana, 261",
+] as const;
+
 /** A short, run-unique suffix for emails/titles so parallel/repeated runs never collide. */
 export function uniqueSuffix(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 100_000)}`;

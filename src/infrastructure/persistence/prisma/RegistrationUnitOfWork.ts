@@ -47,6 +47,11 @@ function profileData(profile: Profile) {
     name: profile.name,
     status: profileStatusToPrisma(profile.status),
     reviewRequestedAt: profile.reviewRequestedAt ?? null,
+    city: profile.city ?? null,
+    postalCode: profile.postalCode ?? null,
+    addressLine: profile.addressLine ?? null,
+    latitude: profile.latitude ?? null,
+    longitude: profile.longitude ?? null,
   };
 }
 

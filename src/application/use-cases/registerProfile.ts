@@ -17,6 +17,27 @@ export interface RegisterProfileInput {
   readonly password: string;
   readonly role: AccountRole;
   readonly name: string;
+  // Optional PUBLIC hospital location (Phase 2). Only meaningful for
+  // `role: "hospital"` — silently ignored for any other role (D2: the
+  // registration form only shows these fields for hospitals, but the
+  // use case does not trust the caller and enforces it server-side too).
+  readonly city?: string;
+  readonly postalCode?: string;
+  readonly addressLine?: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
+}
+
+/** Picks only the location fields relevant to a `hospital` registration; every other role gets none (Phase 2). */
+function hospitalLocationFrom(input: RegisterProfileInput) {
+  if (input.role !== "hospital") return {};
+  return {
+    ...(input.city !== undefined ? { city: input.city } : {}),
+    ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
+    ...(input.addressLine !== undefined ? { addressLine: input.addressLine } : {}),
+    ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
+    ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
+  };
 }
 
 export interface RegisterProfileDeps {
@@ -100,6 +121,7 @@ export async function registerProfile(
           accountId: ctx.existing.account.id,
           type,
           name: input.name,
+          ...hospitalLocationFrom(input),
         });
         await ctx.saveProfile(profile);
         return profile;
@@ -116,6 +138,7 @@ export async function registerProfile(
         accountId: account.id,
         type,
         name: input.name,
+        ...hospitalLocationFrom(input),
       });
       await ctx.createAccountAndProfile(account, passwordHash, profile);
       return profile;

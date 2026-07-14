@@ -154,6 +154,12 @@ export interface ProfileRow {
   readonly name: string;
   readonly status: PrismaProfileStatus;
   readonly reviewRequestedAt: Date | null;
+  // PUBLIC hospital location (Phase 2) — all nullable, see schema.prisma.
+  readonly city?: string | null;
+  readonly postalCode?: string | null;
+  readonly addressLine?: string | null;
+  readonly latitude?: number | null;
+  readonly longitude?: number | null;
 }
 
 export interface SlotRow {
@@ -201,6 +207,19 @@ export function toDomainProfile(row: ProfileRow): Profile {
     status: PROFILE_STATUS_TO_DOMAIN[row.status],
     ...(row.reviewRequestedAt !== null
       ? { reviewRequestedAt: row.reviewRequestedAt }
+      : {}),
+    ...(row.city !== null && row.city !== undefined ? { city: row.city } : {}),
+    ...(row.postalCode !== null && row.postalCode !== undefined
+      ? { postalCode: row.postalCode }
+      : {}),
+    ...(row.addressLine !== null && row.addressLine !== undefined
+      ? { addressLine: row.addressLine }
+      : {}),
+    ...(row.latitude !== null && row.latitude !== undefined
+      ? { latitude: row.latitude }
+      : {}),
+    ...(row.longitude !== null && row.longitude !== undefined
+      ? { longitude: row.longitude }
       : {}),
   });
 }
