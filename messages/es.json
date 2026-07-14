@@ -2,7 +2,7 @@
   "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Hacemos que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender, y por qué no, llorar, mientras disfrutan junto a sus seres queridos de momentos que no podrán olvidar.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender, y por qué no, llorar, mientras disfrutan junto a sus seres queridos de momentos que no podrán olvidar.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {

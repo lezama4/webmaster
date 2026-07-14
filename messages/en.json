@@ -6,7 +6,7 @@
   "LanguageSelector": { "label": "Language selector" },
   "Home": {
     "badge": "Non-profit · free for everyone involved",
-    "title": { "firstLine": "We keep life", "secondLine": "from standing still." },
+    "title": { "firstLine": "We help keep life", "secondLine": "from standing still." },
     "description": "See them smile, be moved, sing, learn — and yes, cry — again, sharing unforgettable moments with the people they love.",
     "browseEvents": "Browse upcoming events", "registerProfile": "Register a hospital or profile",
     "ariaRating": "{rating} out of 5 stars",
