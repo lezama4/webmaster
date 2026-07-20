@@ -21,6 +21,11 @@ const IDS = {
     admin: "seed-account-admin",
     sanJuan: "seed-account-hospital-san-juan",
     esperanza: "seed-account-hospital-esperanza",
+    // Phase 4 (hospital-finder-and-home-clarity): 3 NEW ACTIVE hospitals for
+    // the public directory demo. San Juan/Esperanza above are untouched.
+    delMar: "seed-account-hospital-del-mar",
+    santaClara: "seed-account-hospital-santa-clara",
+    sanRafael: "seed-account-hospital-san-rafael",
     clara: "seed-account-artist-clara",
     mateo: "seed-account-artist-mateo",
     lucia: "seed-account-artist-lucia",
@@ -29,6 +34,9 @@ const IDS = {
   profiles: {
     sanJuan: "seed-profile-hospital-san-juan",
     esperanza: "seed-profile-hospital-esperanza",
+    delMar: "seed-profile-hospital-del-mar",
+    santaClara: "seed-profile-hospital-santa-clara",
+    sanRafael: "seed-profile-hospital-san-rafael",
     clara: "seed-profile-artist-clara",
     mateo: "seed-profile-artist-mateo",
     lucia: "seed-profile-artist-lucia",
@@ -80,6 +88,21 @@ async function main(): Promise<void> {
       role: "hospital",
     }),
     createAccount({
+      id: IDS.accounts.delMar,
+      email: "hospital.delmar@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.santaClara,
+      email: "hospital.santaclara@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.sanRafael,
+      email: "hospital.sanrafael@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
       id: IDS.accounts.clara,
       email: "artist.clara@vtt.test",
       role: "artist",
@@ -127,6 +150,50 @@ async function main(): Promise<void> {
     latitude: 40.417,
     longitude: -3.703,
   });
+  // Phase 4 (hospital-finder-and-home-clarity): 3 NEW ACTIVE hospitals in
+  // distinct cities with distinct postal-code prefixes, so postal-prefix
+  // search is demonstrable. `addressLine` is POPULATED with a distinctive
+  // string on every one of them (D14) — a null `addressLine` here would
+  // make the exclusion tests pass vacuously, asserting nothing.
+  const delMar = approveProfile(
+    createProfile({
+      id: IDS.profiles.delMar,
+      accountId: IDS.accounts.delMar,
+      type: "hospital",
+      name: "Hospital Universitario del Mar",
+      city: "Valencia",
+      postalCode: "46011",
+      addressLine: "Avenida del Mar, 45",
+      latitude: 39.4699,
+      longitude: -0.3763,
+    }),
+  );
+  const santaClara = approveProfile(
+    createProfile({
+      id: IDS.profiles.santaClara,
+      accountId: IDS.accounts.santaClara,
+      type: "hospital",
+      name: "Hospital Santa Clara",
+      city: "Sevilla",
+      postalCode: "41003",
+      addressLine: "Calle Santa Clara, 8",
+      latitude: 37.3891,
+      longitude: -5.9845,
+    }),
+  );
+  const sanRafael = approveProfile(
+    createProfile({
+      id: IDS.profiles.sanRafael,
+      accountId: IDS.accounts.sanRafael,
+      type: "hospital",
+      name: "Hospital San Rafael",
+      city: "Zaragoza",
+      postalCode: "50009",
+      addressLine: "Paseo San Rafael, 33",
+      latitude: 41.6488,
+      longitude: -0.8891,
+    }),
+  );
   const clara = approveProfile(
     createProfile({
       id: IDS.profiles.clara,
@@ -297,7 +364,16 @@ async function main(): Promise<void> {
       });
     }
 
-    for (const profile of [sanJuan, esperanza, clara, mateo, lucia]) {
+    for (const profile of [
+      sanJuan,
+      esperanza,
+      delMar,
+      santaClara,
+      sanRafael,
+      clara,
+      mateo,
+      lucia,
+    ]) {
       await profileRepository.save(profile);
     }
 

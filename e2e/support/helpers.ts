@@ -78,6 +78,12 @@ export const SEED_PROPOSAL_MESSAGE_SAMPLE =
 export const SEED_HOSPITAL_LOCATIONS = [
   "Plaza de Cruces, 12",
   "Paseo de la Castellana, 261",
+  // Phase 4 (hospital-finder-and-home-clarity) — the 3 new ACTIVE hospitals'
+  // `addressLine`s. Distinctive strings so a leak-assertion test can prove
+  // `addressLine` never reaches the public hospital directory (D14).
+  "Avenida del Mar, 45",
+  "Calle Santa Clara, 8",
+  "Paseo San Rafael, 33",
 ] as const;
 
 /** A short, run-unique suffix for emails/titles so parallel/repeated runs never collide. */
