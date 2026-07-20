@@ -45,10 +45,11 @@ function BrandMark() {
 function SiteHeader({
   eventsLabel,
   finderLabel,
+  aboutLabel,
   helpLabel,
   loginLabel,
   registerLabel,
-}: Record<"eventsLabel" | "finderLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
+}: Record<"eventsLabel" | "finderLabel" | "aboutLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -65,6 +66,12 @@ function SiteHeader({
             className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
           >
             {finderLabel}
+          </Link>
+          <Link
+            href="/quienes-somos"
+            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
+          >
+            {aboutLabel}
           </Link>
           <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {helpLabel}
@@ -97,9 +104,10 @@ function SiteFooter({ description, helpLabel }: { description: string; helpLabel
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [t, tFinder, locale, messages] = await Promise.all([
+  const [t, tFinder, tAbout, locale, messages] = await Promise.all([
     getTranslations("Layout"),
     getTranslations("Finder"),
+    getTranslations("About"),
     getLocale(),
     getMessages(),
   ]);
@@ -111,6 +119,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <SiteHeader
             eventsLabel={t("nav.events")}
             finderLabel={tFinder("nav")}
+            aboutLabel={tAbout("nav")}
             helpLabel={t("nav.help")}
             loginLabel={t("nav.login")}
             registerLabel={t("nav.register")}
