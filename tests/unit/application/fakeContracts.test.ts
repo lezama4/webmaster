@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { approveProposal } from "@application/use-cases/approveProposal";
+import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
 import {
   FakeMatchingUnitOfWork,
+  FakePublicHospitalDirectoryQuery,
   FakeSessionPort,
   InMemoryEventRepository,
   InMemoryProfileRepository,
@@ -118,5 +120,42 @@ describe("FakeMatchingUnitOfWork contract (pr2a-M4): the PERSIST phase rolls bac
     expect((await slots.findById(slot.id))?.status).toBe("open");
     expect((await proposals.findById(target.id))?.status).toBe("submitted");
     expect((await proposals.findById(rival.id))?.status).toBe("submitted");
+  });
+});
+
+/**
+ * Phase 1.1 (D9): `FakePublicHospitalDirectoryQuery` honours the
+ * `PublicHospitalDirectoryQuery` port contract — `implements` alone gives a
+ * compile-time structural guarantee; this test proves the RUNTIME contract
+ * too (returns exactly the supplied items, unmodified), mirroring how
+ * `FakePublicEventProjectionQuery` is exercised via `listPublishedEvents`.
+ */
+describe("FakePublicHospitalDirectoryQuery contract (D9): listActive returns exactly what it was constructed with", () => {
+  it("returns the supplied items, in order, unmodified", async () => {
+    const items: readonly PublicHospitalProjection[] = [
+      {
+        name: "Hospital Universitario del Mar",
+        city: "Valencia",
+        postalCode: "46011",
+        latitude: 39.4699,
+        longitude: -0.3763,
+      },
+      {
+        name: "Hospital Santa Clara",
+        city: "Sevilla",
+        postalCode: "41003",
+        latitude: 37.3891,
+        longitude: -5.9845,
+      },
+    ];
+    const query = new FakePublicHospitalDirectoryQuery(items);
+
+    expect(await query.listActive()).toEqual(items);
+  });
+
+  it("returns an empty array when constructed with none", async () => {
+    const query = new FakePublicHospitalDirectoryQuery([]);
+
+    expect(await query.listActive()).toEqual([]);
   });
 });
