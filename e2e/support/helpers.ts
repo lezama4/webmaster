@@ -86,6 +86,25 @@ export const SEED_HOSPITAL_LOCATIONS = [
   "Paseo San Rafael, 33",
 ] as const;
 
+/**
+ * The 4 seeded ACTIVE hospitals' PUBLIC directory fields (Phase 10, mirrors
+ * `prisma/seed.ts`'s `name`/`city`/`postalCode`). Distinct cities and
+ * postal-code prefixes so search-by-name/city/postal-prefix is demonstrable
+ * end-to-end against the real seed, without mutating it. Used by both
+ * `hospital-directory.spec.ts` (positive assertions) and
+ * `non-correlation.spec.ts` (D10: these strings must never appear on the
+ * public Events surface).
+ */
+export const SEED_ACTIVE_HOSPITALS = [
+  { name: "Hospital San Juan", city: "Bilbao", postalCode: "48013" },
+  { name: "Hospital Universitario del Mar", city: "Valencia", postalCode: "46011" },
+  { name: "Hospital Santa Clara", city: "Sevilla", postalCode: "41003" },
+  { name: "Hospital San Rafael", city: "Zaragoza", postalCode: "50009" },
+] as const;
+
+/** The one seeded `PENDING` hospital — MUST NEVER appear in the public hospital directory (D9). */
+export const SEED_PENDING_HOSPITAL_NAME = "Hospital Esperanza";
+
 /** A short, run-unique suffix for emails/titles so parallel/repeated runs never collide. */
 export function uniqueSuffix(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 100_000)}`;
