@@ -44,10 +44,11 @@ function BrandMark() {
 
 function SiteHeader({
   eventsLabel,
+  finderLabel,
   helpLabel,
   loginLabel,
   registerLabel,
-}: Record<"eventsLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
+}: Record<"eventsLabel" | "finderLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -58,6 +59,12 @@ function SiteHeader({
         <nav className="flex items-center gap-1 text-sm">
           <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {eventsLabel}
+          </Link>
+          <Link
+            href="/encuentra-tu-momento"
+            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
+          >
+            {finderLabel}
           </Link>
           <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {helpLabel}
@@ -90,9 +97,12 @@ function SiteFooter({ description, helpLabel }: { description: string; helpLabel
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const t = await getTranslations("Layout");
-  const locale = await getLocale();
-  const messages = await getMessages();
+  const [t, tFinder, locale, messages] = await Promise.all([
+    getTranslations("Layout"),
+    getTranslations("Finder"),
+    getLocale(),
+    getMessages(),
+  ]);
 
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
@@ -100,6 +110,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SiteHeader
             eventsLabel={t("nav.events")}
+            finderLabel={tFinder("nav")}
             helpLabel={t("nav.help")}
             loginLabel={t("nav.login")}
             registerLabel={t("nav.register")}
