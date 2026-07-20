@@ -44,5 +44,14 @@ export default async function setup(): Promise<void> {
   execFileSync("npx", ["prisma", "migrate", "deploy"], {
     cwd: repoRoot,
     stdio: "inherit",
+    // `shell: true` (portable on POSIX and Windows): on Windows, `npx` is a
+    // `.cmd` shim, and `execFileSync`/`spawnSync` with the default
+    // `shell: false` performs a raw `CreateProcess` call that does NOT
+    // consult `PATHEXT`, so it fails with `ENOENT` even though `npx` is on
+    // `PATH` and works from an interactive shell. Node still handles arg
+    // quoting correctly per-element with `shell: true`, so this is safe on
+    // both platforms and is not a shell-injection concern (all args here
+    // are fixed literals, never user input).
+    shell: true,
   });
 }
