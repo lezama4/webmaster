@@ -75,6 +75,16 @@
       ]
     }
   },
+  "Finder": {
+    "nav": "Find your hospital",
+    "title": "Find your hospital",
+    "description": "Check the hospitals that are already part of Vivetutiempo and see if yours is among them.",
+    "search": { "label": "Search by name, city, or postal code", "placeholder": "For example: Bilbao, 48013…" },
+    "resultCount": { "all": "{count} hospitals found", "partial": "{count} hospitals found · {mappable} shown on the map" },
+    "map": { "ariaLabel": "Indicative map of participating hospitals", "caption": "Indicative map, not to scale — each point's position is approximate." },
+    "empty": { "title": "No hospitals match that search", "description": "Try a different name, city, or postal code." },
+    "noLocation": "Location not provided"
+  },
   "Events": {
     "title": "Upcoming events", "description": "Live performances scheduled in participating hospitals. Times and artists are confirmed; exact locations are shared privately with each ward.",
     "empty": { "title": "No events scheduled yet", "description": "As hospitals confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
