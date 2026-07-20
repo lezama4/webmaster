@@ -53,6 +53,14 @@
       "description": "Hospitals and artists register in the same place. A coordinator reviews every profile before it can act.",
       "primaryCta": "Register a hospital or profile",
       "secondaryCta": "Browse upcoming events"
+    },
+    "what": {
+      "eyebrow": "What Vivetutiempo is",
+      "title": "Live culture to accompany the wait.",
+      "description": "Vivetutiempo connects hospitals with artists to fill waiting hours with music, workshops, and live performances. Free for everyone. Non-profit.",
+      "steps": ["Hospitals publish open slots", "Artists propose activities", "The event is published"],
+      "primaryCta": "Browse upcoming events",
+      "secondaryCta": "How it works"
     }
   },
   "Help": {
@@ -84,6 +92,50 @@
     "map": { "ariaLabel": "Indicative map of participating hospitals", "caption": "Indicative map, not to scale — each point's position is approximate." },
     "empty": { "title": "No hospitals match that search", "description": "Try a different name, city, or postal code." },
     "noLocation": "Location not provided"
+  },
+  "About": {
+    "nav": "About us",
+    "eyebrow": "About us",
+    "title": "A non-profit platform bringing live culture to the hospital bedside.",
+    "intro": "Here we explain what Vivetutiempo is, who takes part, how privacy is protected, and why it's free. For a step-by-step of how to publish or propose, visit Help.",
+    "purpose": {
+      "title": "Our purpose",
+      "description": "Long hospital stays isolate. Vivetutiempo exists so music, theatre, and workshops reach the ward without replacing clinical care, always coordinated with the hospital."
+    },
+    "roles": {
+      "title": "Who takes part",
+      "items": [
+        { "name": "Admin", "description": "Validates every hospital and artist profile before it can act on the platform." },
+        { "name": "Hospital", "description": "Publishes open slots in the ward's schedule when there is room for an activity." },
+        { "name": "Artist", "description": "Proposes an activity for a published slot, within their reach and availability." },
+        { "name": "Patient and family", "description": "Enjoy the scheduled event, with no registration required." }
+      ]
+    },
+    "flow": {
+      "title": "The journey, at a glance",
+      "description": "A slot starts at the hospital, an artist proposes for it, and it becomes a public event. For the detail of each step, see Help.",
+      "stages": ["Slot published", "Artist proposal", "Event confirmed"]
+    },
+    "validation": {
+      "title": "Validated profiles",
+      "description": "No hospital or artist can act on the platform until an admin reviews and approves their profile. That validation is what keeps Vivetutiempo safe and clinically sound."
+    },
+    "dataStance": {
+      "title": "What data we publish, and what we don't",
+      "description": "We publish what's needed to find a hospital or an event: name, city, postal code, and, for hospitals, an approximate map location.",
+      "excludedTitle": "Deliberately, we never publish:",
+      "excluded": [
+        "The exact room or ward where an event takes place",
+        "The content of proposals between hospitals and artists",
+        "Email addresses or internal database identifiers",
+        "Any visible link between a specific hospital and its events"
+      ],
+      "note": "The hospital directory and the event listing are deliberately kept unlinked: seeing a hospital never reveals which events it has had, and seeing an event never reveals which hospital it happened at."
+    },
+    "funding": {
+      "title": "Why it's free",
+      "description": "Vivetutiempo is a non-profit initiative. Hospitals, artists, and families pay nothing to take part; the project is sustained apart from any transaction between them."
+    }
   },
   "Events": {
     "title": "Upcoming events", "description": "Live performances scheduled in participating hospitals. Times and artists are confirmed; exact locations are shared privately with each ward.",

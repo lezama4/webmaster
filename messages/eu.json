@@ -47,6 +47,14 @@
       "description": "Ospitaleak eta artistak leku berean erregistratzen dira. Koordinatzaile batek profil bakoitza berrikusten du jarduteko gai izan aurretik.",
       "primaryCta": "Erregistratu ospitale edo profil bat",
       "secondaryCta": "Ikusi hurrengo ekitaldiak"
+    },
+    "what": {
+      "eyebrow": "Zer da Vivetutiempo",
+      "title": "Zuzeneko kultura itxaronaldia laguntzeko.",
+      "description": "Vivetutiempok ospitaleak eta artistak konektatzen ditu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
+      "steps": ["Ospitaleek hutsuneak argitaratzen dituzte", "Artistek jarduerak proposatzen dituzte", "Ekitaldia argitaratzen da"],
+      "primaryCta": "Ikusi hurrengo ekitaldiak",
+      "secondaryCta": "Nola funtzionatzen duen"
     }
   },
   "Help": {
@@ -73,6 +81,50 @@
     "map": { "ariaLabel": "Parte hartzen duten ospitaleen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
     "empty": { "title": "Ez dugu bilaketa horrekin bat datorren ospitalerik aurkitu", "description": "Saiatu beste izen, herri edo posta kode batekin." },
     "noLocation": "Kokapena ez da adierazi"
+  },
+  "About": {
+    "nav": "Gutaz",
+    "eyebrow": "Gutaz",
+    "title": "Irabazi-asmorik gabeko plataforma bat, zuzeneko kultura ospitaleko ohera eramateko.",
+    "intro": "Hemen azaltzen dugu zer den Vivetutiempo, nortzuk parte hartzen duten, pribatutasuna nola babesten den eta zergatik den doakoa. Argitaratzeko edo proposatzeko urratsen xehetasunetarako, ikusi Laguntza.",
+    "purpose": {
+      "title": "Gure helburua",
+      "description": "Ospitaleko egonaldi luzeek isolatu egiten dute. Vivetutiempo existitzen da musika, antzerkia eta tailerrak gelara irits daitezen zainketa klinikoa ordeztu gabe, beti ospitalearekin koordinatuta."
+    },
+    "roles": {
+      "title": "Nortzuk parte hartzen duten",
+      "items": [
+        { "name": "Administratzailea", "description": "Ospitale eta artista profil bakoitza balidatzen du, plataforman jardun ahal izan aurretik." },
+        { "name": "Ospitalea", "description": "Gelako agendan hutsuneak argitaratzen ditu, jarduera baterako tokia dagoenean." },
+        { "name": "Artista", "description": "Argitaratutako hutsune baterako jarduera bat proposatzen du, bere esparruaren eta erabilgarritasunaren arabera." },
+        { "name": "Pazientea eta familia", "description": "Programatutako ekitaldiaz gozatzen dute, izena eman beharrik gabe." }
+      ]
+    },
+    "flow": {
+      "title": "Bidea, begi-kolpe batean",
+      "description": "Hutsune bat ospitalean hasten da, artista batek proposatzen du, eta ekitaldi publiko bihurtzen da. Urrats bakoitzaren xehetasunetarako, ikusi Laguntza.",
+      "stages": ["Hutsunea argitaratuta", "Artistaren proposamena", "Ekitaldia baieztatuta"]
+    },
+    "validation": {
+      "title": "Balidatutako profilak",
+      "description": "Ez ospitale batek ez artista batek ezin dute plataforman jardun, administratzaile batek profila berrikusi eta onartu arte. Balidazio horrek mantentzen du Vivetutiempo segurua eta zentzu klinikoarekin."
+    },
+    "dataStance": {
+      "title": "Zer datu argitaratzen ditugun, eta zer ez",
+      "description": "Ospitale edo ekitaldi bat aurkitzeko behar dena argitaratzen dugu: izena, herria, posta-kodea eta, ospitaleen kasuan, mapako kokapen hurbildu bat.",
+      "excludedTitle": "Nahita, inoiz ez dugu argitaratzen:",
+      "excluded": [
+        "Ekitaldia gertatzen den gela edo areto zehatza",
+        "Ospitale eta artisten arteko proposamenen edukia",
+        "Helbide elektronikoak edo datu-baseko barne-identifikadoreak",
+        "Ospitale jakin bat eta bere ekitaldien arteko lotura ikusgairik"
+      ],
+      "note": "Ospitale-direktorioa eta ekitaldien zerrenda nahita mantentzen dira lotu gabe: ospitale bat ikusteak ez du inoiz agerian uzten zer ekitaldi izan dituen, eta ekitaldi bat ikusteak ez du inoiz agerian uzten zein ospitaletan izan zen."
+    },
+    "funding": {
+      "title": "Zergatik den doakoa",
+      "description": "Vivetutiempo irabazi-asmorik gabeko ekimena da. Ospitaleek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
+    }
   },
   "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten ospitaleetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira solairu bakoitzarekin.", "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Ospitaleek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
   "Login": { "title": "Ongi etorri berriro", "description": "Hasi saioa ekitaldiak koordinatzeko edo berrikusteko.", "email": "Helbide elektronikoa", "password": "Pasahitza", "submit": "Hasi saioa", "submitting": "Saioa hasten…", "noAccount": "Ez duzu konturik?", "register": "Erregistratu ospitale edo artista bat", "errors": { "invalidCredentials": "Helbide elektronikoa edo pasahitza ez da zuzena.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
