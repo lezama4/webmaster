@@ -19,8 +19,12 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
-      {/* 1. Hero — large, full-bleed image with a big serif statement overlaid. */}
-      <section className="relative isolate flex min-h-[75vh] items-end overflow-hidden sm:min-h-[88vh]">
+      {/* 1. Hero — large, full-bleed image with a big serif statement overlaid.
+          Deliberately short of a full viewport: the "what this is" block below
+          must break the fold, or a first-time visitor sees only the emotional
+          statement and never learns what the platform does. The overhang also
+          signals there is more to scroll. */}
+      <section className="relative isolate flex min-h-[68vh] items-end overflow-hidden sm:min-h-[72vh]">
         <Image
           src="/images/hero-cello-community-v2.png"
           alt={t("hero.imageAlt")}
