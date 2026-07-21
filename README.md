@@ -135,8 +135,10 @@ npm run db:seed
 ```
 
 El seed es idempotente y solo escribe registros ficticios y estables de demo:
-siete cuentas, cinco Slots, dos Eventos y cuatro hospitales `ACTIVE` (más uno
-`PENDING`) que alimentan `/encuentra-tu-momento`. No debe utilizarse para
+16 cuentas, cinco Slots, dos Eventos y diez hospitales `ACTIVE` (más uno
+`PENDING`, Hospital Esperanza) que alimentan `/encuentra-tu-momento`. Uno de
+los diez hospitales `ACTIVE` (Hospital del Guadiana) no tiene coordenadas: se
+lista en el buscador pero no muestra pin en el mapa. No debe utilizarse para
 cargar datos reales de hospitales, artistas o pacientes.
 
 ### 4. Arrancar la aplicación
