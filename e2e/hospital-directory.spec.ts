@@ -189,7 +189,9 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     // independent of how many links a future header redesign adds), then
     // Tab once: `<li>` cards carry no tabindex, so the very next focusable
     // element in DOM/tab order is the first map pin (D11: tab order == list
-    // order, i.e. the D9 city-asc sort — Bilbao/"Hospital San Juan" first).
+    // order, i.e. the D9 city-asc sort — "A Coruña"/"Hospital do Orzán"
+    // sorts first among the 10-hospital roster; Bilbao/"Hospital San Juan"
+    // was only first back when the seed had 4 ACTIVE hospitals).
     await page.locator("#hospital-search").focus();
     await page.keyboard.press("Tab");
 
@@ -199,7 +201,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     await page.keyboard.press("Enter");
 
     await expect(firstPin).toHaveAttribute("aria-pressed", "true");
-    const firstCard = page.locator("li").filter({ hasText: "Hospital San Juan" });
+    const firstCard = page.locator("li").filter({ hasText: "Hospital do Orzán" });
     await expect(firstCard).toHaveAttribute("aria-current", "true");
   });
 
