@@ -26,6 +26,15 @@ const IDS = {
     delMar: "seed-account-hospital-del-mar",
     santaClara: "seed-account-hospital-santa-clara",
     sanRafael: "seed-account-hospital-san-rafael",
+    // 10-hospital roster expansion (hospital-finder-and-home-clarity apply
+    // follow-up): 6 more NEW ACTIVE hospitals, one per remaining region.
+    // Esperanza stays PENDING — never promoted, never duplicated.
+    urumea: "seed-account-hospital-urumea",
+    monteverde: "seed-account-hospital-monteverde",
+    besos: "seed-account-hospital-besos",
+    orzan: "seed-account-hospital-orzan",
+    bernesga: "seed-account-hospital-bernesga",
+    guadiana: "seed-account-hospital-guadiana",
     clara: "seed-account-artist-clara",
     mateo: "seed-account-artist-mateo",
     lucia: "seed-account-artist-lucia",
@@ -37,6 +46,12 @@ const IDS = {
     delMar: "seed-profile-hospital-del-mar",
     santaClara: "seed-profile-hospital-santa-clara",
     sanRafael: "seed-profile-hospital-san-rafael",
+    urumea: "seed-profile-hospital-urumea",
+    monteverde: "seed-profile-hospital-monteverde",
+    besos: "seed-profile-hospital-besos",
+    orzan: "seed-profile-hospital-orzan",
+    bernesga: "seed-profile-hospital-bernesga",
+    guadiana: "seed-profile-hospital-guadiana",
     clara: "seed-profile-artist-clara",
     mateo: "seed-profile-artist-mateo",
     lucia: "seed-profile-artist-lucia",
@@ -100,6 +115,36 @@ async function main(): Promise<void> {
     createAccount({
       id: IDS.accounts.sanRafael,
       email: "hospital.sanrafael@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.urumea,
+      email: "hospital.urumea@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.monteverde,
+      email: "hospital.monteverde@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.besos,
+      email: "hospital.besos@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.orzan,
+      email: "hospital.orzan@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.bernesga,
+      email: "hospital.bernesga@vtt.test",
+      role: "hospital",
+    }),
+    createAccount({
+      id: IDS.accounts.guadiana,
+      email: "hospital.guadiana@vtt.test",
       role: "hospital",
     }),
     createAccount({
@@ -192,6 +237,93 @@ async function main(): Promise<void> {
       addressLine: "Paseo San Rafael, 33",
       latitude: 41.6488,
       longitude: -0.8891,
+    }),
+  );
+  // 10-hospital roster expansion: 6 more NEW ACTIVE hospitals, one per
+  // remaining region (Gipuzkoa, Madrid, Barcelona, A Coruña, León,
+  // Extremadura), same fictional-name register as the entries above (rivers/
+  // districts, not real institution names). `addressLine` is populated on
+  // every one EXCEPT Guadiana (below), consistent with the same D14
+  // non-vacuous-exclusion rule.
+  const urumea = approveProfile(
+    createProfile({
+      id: IDS.profiles.urumea,
+      accountId: IDS.accounts.urumea,
+      type: "hospital",
+      name: "Hospital Urumea",
+      city: "Donostia-San Sebastián",
+      postalCode: "20003",
+      addressLine: "Paseo del Urumea, 5",
+      latitude: 43.318,
+      longitude: -1.981,
+    }),
+  );
+  const monteverde = approveProfile(
+    createProfile({
+      id: IDS.profiles.monteverde,
+      accountId: IDS.accounts.monteverde,
+      type: "hospital",
+      name: "Hospital Monteverde",
+      // Separate ACTIVE Madrid hospital, distinct from the PENDING
+      // Hospital Esperanza (also Madrid) — different postal code/location.
+      city: "Madrid",
+      postalCode: "28003",
+      addressLine: "Calle de Monteverde, 19",
+      latitude: 40.4378,
+      longitude: -3.7003,
+    }),
+  );
+  const besos = approveProfile(
+    createProfile({
+      id: IDS.profiles.besos,
+      accountId: IDS.accounts.besos,
+      type: "hospital",
+      name: "Hospital del Besòs",
+      city: "Barcelona",
+      postalCode: "08019",
+      addressLine: "Rambla del Besòs, 7",
+      latitude: 41.4145,
+      longitude: 2.2153,
+    }),
+  );
+  const orzan = approveProfile(
+    createProfile({
+      id: IDS.profiles.orzan,
+      accountId: IDS.accounts.orzan,
+      type: "hospital",
+      name: "Hospital do Orzán",
+      city: "A Coruña",
+      postalCode: "15003",
+      addressLine: "Paseo do Orzán, 22",
+      latitude: 43.3713,
+      longitude: -8.3936,
+    }),
+  );
+  const bernesga = approveProfile(
+    createProfile({
+      id: IDS.profiles.bernesga,
+      accountId: IDS.accounts.bernesga,
+      type: "hospital",
+      name: "Hospital del Bernesga",
+      city: "León",
+      postalCode: "24001",
+      addressLine: "Avenida del Bernesga, 14",
+      latitude: 42.5987,
+      longitude: -5.5671,
+    }),
+  );
+  // Deliberate exception (spec gap closed): a hospital that registered
+  // before setting its map position — `city`/`postalCode` are populated,
+  // `latitude`/`longitude`/`addressLine` stay null. Demonstrates "listed in
+  // results but renders no pin, never defaulted to 0,0".
+  const guadiana = approveProfile(
+    createProfile({
+      id: IDS.profiles.guadiana,
+      accountId: IDS.accounts.guadiana,
+      type: "hospital",
+      name: "Hospital del Guadiana",
+      city: "Badajoz",
+      postalCode: "06001",
     }),
   );
   const clara = approveProfile(
@@ -370,6 +502,12 @@ async function main(): Promise<void> {
       delMar,
       santaClara,
       sanRafael,
+      urumea,
+      monteverde,
+      besos,
+      orzan,
+      bernesga,
+      guadiana,
       clara,
       mateo,
       lucia,

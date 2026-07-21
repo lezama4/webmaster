@@ -295,12 +295,27 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       }),
     );
 
-    await profiles.save(hospital);
-    await profiles.save(hospital);
-    await profiles.save(hospital);
+    try {
+      await profiles.save(hospital);
+      await profiles.save(hospital);
+      await profiles.save(hospital);
 
-    const rows = await client.profile.findMany({ where: { id: fixedProfileId } });
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.name).toBe("Hospital Idempotency Check");
+      const rows = await client.profile.findMany({ where: { id: fixedProfileId } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.name).toBe("Hospital Idempotency Check");
+    } finally {
+      // This is the ONLY test in the file whose fixture data survives past
+      // its own run: every other test's rows are wiped by the NEXT test's
+      // `beforeEach(resetDatabase)`, but this is the last test declared in
+      // the file, so nothing resets after it. Against the shared Neon `dev`
+      // branch that meant an ACTIVE "Hospital Idempotency Check" profile
+      // (with no coordinates/postalCode) persisted indefinitely and leaked
+      // into the real public hospital directory UI. Clean up explicitly, in
+      // a `finally` so it still runs if an assertion above throws — do not
+      // rely on suite ordering or on a future test being added after this
+      // one.
+      await client.profile.deleteMany({ where: { id: fixedProfileId } });
+      await client.account.deleteMany({ where: { id: accountId } });
+    }
   });
 });
