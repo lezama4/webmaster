@@ -214,10 +214,15 @@ ejecución contra el despliegue se realiza con:
 PLAYWRIGHT_BASE_URL="https://url-produccion.example" npm run test:e2e
 ```
 
-Al actualizar este documento, el workflow versionado todavía no invoca
-`npm run test:e2e`. No se debe afirmar evidencia E2E en CI hasta que se añada
-ese paso y se conserve una ejecución verde del commit de despliegue. Esta
-limitación se declara de forma explícita para no sobrestimar la evidencia.
+El workflow versionado incluye además un job `e2e` independiente que
+aprovisiona su propio PostgreSQL 16, aplica migraciones, carga el seed de
+demostración, instala Chromium y ejecuta `npm run test:e2e` contra esa base
+real. Se dispara en los mismos pushes y pull requests que el resto de la
+verificación, de modo que la evidencia E2E en CI sí puede afirmarse.
+
+Esa ejecución en CI es más fiable que una local: parte de una base limpia en
+cada intento, mientras que en local la base se comparte entre ejecuciones y las
+suites que registran perfiles no los limpian al terminar.
 
 El procedimiento de producción, variables requeridas, CSRF de origen canónico,
 rollback y comprobaciones posteriores están en
