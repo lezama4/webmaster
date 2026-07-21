@@ -84,23 +84,45 @@ export const SEED_HOSPITAL_LOCATIONS = [
   "Avenida del Mar, 45",
   "Calle Santa Clara, 8",
   "Paseo San Rafael, 33",
+  // 10-hospital roster expansion — the 5 more `addressLine`-bearing ACTIVE
+  // hospitals. Hospital del Guadiana (Extremadura) deliberately has NO
+  // `addressLine` (nor coordinates) and is intentionally absent from this
+  // list — see `SEED_ACTIVE_HOSPITALS`'s comment.
+  "Paseo del Urumea, 5",
+  "Calle de Monteverde, 19",
+  "Rambla del Besòs, 7",
+  "Paseo do Orzán, 22",
+  "Avenida del Bernesga, 14",
 ] as const;
 
 /**
- * The 4 seeded ACTIVE hospitals' PUBLIC directory fields (Phase 10, mirrors
- * `prisma/seed.ts`'s `name`/`city`/`postalCode`). Distinct cities and
- * postal-code prefixes so search-by-name/city/postal-prefix is demonstrable
- * end-to-end against the real seed, without mutating it. Used by both
- * `hospital-directory.spec.ts` (positive assertions) and
- * `non-correlation.spec.ts` (D10: these strings must never appear on the
- * public Events surface).
+ * The 10 seeded ACTIVE hospitals' PUBLIC directory fields (Phase 10 + the
+ * 10-hospital roster expansion, mirrors `prisma/seed.ts`'s
+ * `name`/`city`/`postalCode`). Distinct cities and postal-code prefixes so
+ * search-by-name/city/postal-prefix is demonstrable end-to-end against the
+ * real seed, without mutating it. Used by both `hospital-directory.spec.ts`
+ * (positive assertions) and `non-correlation.spec.ts` (D10: these strings
+ * must never appear on the public Events surface).
+ *
+ * Hospital del Guadiana (Extremadura) is included here (it IS ACTIVE, with
+ * `city`/`postalCode`) but has no coordinates and no `addressLine` — it is
+ * the seed's deliberate "listed but not pinned" case.
  */
 export const SEED_ACTIVE_HOSPITALS = [
   { name: "Hospital San Juan", city: "Bilbao", postalCode: "48013" },
   { name: "Hospital Universitario del Mar", city: "Valencia", postalCode: "46011" },
   { name: "Hospital Santa Clara", city: "Sevilla", postalCode: "41003" },
   { name: "Hospital San Rafael", city: "Zaragoza", postalCode: "50009" },
+  { name: "Hospital Urumea", city: "Donostia-San Sebastián", postalCode: "20003" },
+  { name: "Hospital Monteverde", city: "Madrid", postalCode: "28003" },
+  { name: "Hospital del Besòs", city: "Barcelona", postalCode: "08019" },
+  { name: "Hospital do Orzán", city: "A Coruña", postalCode: "15003" },
+  { name: "Hospital del Bernesga", city: "León", postalCode: "24001" },
+  { name: "Hospital del Guadiana", city: "Badajoz", postalCode: "06001" },
 ] as const;
+
+/** The one seeded ACTIVE hospital with no coordinates (Phase 4 gap closed, hospital-finder-and-home-clarity follow-up): listed in the directory but renders no map pin, never defaulted to 0,0. */
+export const SEED_NO_COORDINATES_HOSPITAL_NAME = "Hospital del Guadiana";
 
 /** The one seeded `PENDING` hospital — MUST NEVER appear in the public hospital directory (D9). */
 export const SEED_PENDING_HOSPITAL_NAME = "Hospital Esperanza";

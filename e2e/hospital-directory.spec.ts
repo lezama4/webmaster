@@ -1,6 +1,11 @@
 import { expect, request, test } from "@playwright/test";
 
-import { SEED_ACTIVE_HOSPITALS, SEED_HOSPITAL_LOCATIONS, SEED_PENDING_HOSPITAL_NAME } from "./support/helpers";
+import {
+  SEED_ACTIVE_HOSPITALS,
+  SEED_HOSPITAL_LOCATIONS,
+  SEED_NO_COORDINATES_HOSPITAL_NAME,
+  SEED_PENDING_HOSPITAL_NAME,
+} from "./support/helpers";
 
 // Task 10.1 — the `/encuentra-tu-momento` journey (ADR D9 allow-list, D11
 // mocked map + accessibility, D12 client-side search). Mirrors
@@ -33,7 +38,7 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     const raw = await res.text();
     const body = JSON.parse(raw) as { hospitals: Array<Record<string, unknown>> };
 
-    expect(body.hospitals.length).toBeGreaterThanOrEqual(4);
+    expect(body.hospitals.length).toBeGreaterThanOrEqual(10);
 
     for (const hospital of body.hospitals) {
       expect(Object.keys(hospital).sort()).toEqual(ALLOWED_HOSPITAL_KEYS);
@@ -44,7 +49,7 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     for (const seeded of SEED_ACTIVE_HOSPITALS) {
       expect(names).toContain(seeded.name);
     }
-    expect(cities.size).toBeGreaterThanOrEqual(3);
+    expect(cities.size).toBeGreaterThanOrEqual(10);
     expect(names).not.toContain(SEED_PENDING_HOSPITAL_NAME);
 
     for (const address of SEED_HOSPITAL_LOCATIONS) {
@@ -207,7 +212,11 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
       labels.push((await pins.nth(i).getAttribute("aria-label")) ?? "");
     }
 
+    // Hospital del Guadiana has no coordinates and is deliberately excluded:
+    // it renders no pin at all (see the "listed but renders no pin" test
+    // below), so it has no aria-label to check here.
     for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      if (hospital.name === SEED_NO_COORDINATES_HOSPITAL_NAME) continue;
       expect(labels.some((label) => label.includes(hospital.name))).toBe(true);
     }
   });
@@ -232,18 +241,26 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
   });
 
   // Spec: "Hospital with null coordinates is listed but not pinned." The
-  // current seed (`prisma/seed.ts`) has NO ACTIVE hospital with a null
-  // latitude/longitude — all 4 (San Juan, del Mar, Santa Clara, San Rafael)
-  // carry real coordinates — so this branch cannot be exercised end-to-end
-  // without mutating the shared Neon `dev` seed, which is out of this
-  // batch's scope (Phase 4 already shipped and closed in PR2). Marked
-  // `skip`, not written as a hollow always-true assertion. The invariant
-  // itself IS covered: `HospitalMap` routes every hospital through
-  // `selectMappableHospitals` before ever calling `projectCoordinates`, and
-  // `tests/unit/ui/selectMappableHospitals.test.ts` asserts a null-coordinate
-  // hospital is excluded, composing the REAL `projectCoordinates` (not a
-  // mock). See this batch's report for the explicit gap note.
-  test.skip("a hospital with null coordinates is listed but renders no pin", async () => {});
+  // 10-hospital roster expansion added Hospital del Guadiana (Extremadura)
+  // with no latitude/longitude (modelling a hospital that registered before
+  // setting its map position), closing the gap this test used to skip. The
+  // invariant is also covered at the unit level:
+  // `tests/unit/ui/selectMappableHospitals.test.ts` asserts a
+  // null-coordinate hospital is excluded, composing the REAL
+  // `projectCoordinates` (not a mock) — this test is the end-to-end proof.
+  test("a hospital with null coordinates is listed but renders no pin", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    const card = page.locator("li").filter({ hasText: SEED_NO_COORDINATES_HOSPITAL_NAME });
+    await expect(card).toBeVisible();
+
+    const pins = page.getByTestId("hospital-pin");
+    const pinCount = await pins.count();
+    for (let i = 0; i < pinCount; i += 1) {
+      const label = (await pins.nth(i).getAttribute("aria-label")) ?? "";
+      expect(label).not.toContain(SEED_NO_COORDINATES_HOSPITAL_NAME);
+    }
+  });
 });
 
 test.describe("/encuentra-tu-momento — locale rendering via NEXT_LOCALE cookie (D13/D15)", () => {
