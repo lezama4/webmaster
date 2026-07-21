@@ -53,14 +53,14 @@
     "eyebrow": "Ayuda",
     "title": "Cómo funciona Vivetutiempo",
     "intro": "Una guía rápida del proceso, pensada para hospitales, artistas y familias.",
-    "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro personas, una tarde compartida. Cada paso se revisa antes de llegar a un paciente." },
-    "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Coordinadores", "text": "El hospital revisa las propuestas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } },
+    "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro pasos, una tarde compartida. Antes de empezar, un administrador valida cada hospital y cada artista; después, cada paso se revisa antes de llegar a un paciente." },
+    "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Hospitales", "text": "El mismo hospital revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } },
     "faq": {
       "title": "Preguntas frecuentes",
       "items": [
         { "question": "¿Cómo se valoran los eventos y los artistas?", "answer": "En esta fase MVP, Vivetutiempo no calcula valoraciones automáticas de eventos. Los ejemplos con estrellas que ves en la portada son ilustrativos, no datos reales. Registrar valoraciones verificadas de artistas y eventos está previsto para una fase posterior." },
         { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un hospital indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
-        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Vivetutiempo nunca publica datos personales de pacientes. Un hueco muestra únicamente la planta o sala del hospital; el nombre, la habitación o el motivo de ingreso de cualquier paciente nunca aparecen en la plataforma." }
+        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Vivetutiempo nunca publica datos personales de pacientes. La planta o sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la habitación o el motivo de ingreso de cualquier paciente no se registran en la plataforma." }
       ]
     }
   },

@@ -53,14 +53,14 @@
     "eyebrow": "Laguntza",
     "title": "Nola funtzionatzen du Vivetutiempok",
     "intro": "Prozesuaren gida labur bat, ospitale, artista eta familientzat.",
-    "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau pertsona, arratsalde partekatu bat. Urrats bakoitza berrikusten da paziente batengana iritsi aurretik." },
-    "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Koordinatzaileak", "text": "Ospitaleak proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
+    "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau urrats, arratsalde partekatu bat. Hasi aurretik, administratzaile batek ospitale eta artista bakoitza balioztatzen du; ondoren, urrats bakoitza berrikusten da paziente batengana iritsi aurretik." },
+    "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Ospitaleak", "text": "Ospitale berak jasotako proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
     "faq": {
       "title": "Maiz egiten diren galderak",
       "items": [
         { "question": "Nola baloratzen dira ekitaldiak eta artistak?", "answer": "MVP fase honetan, Vivetutiempok ez ditu ekitaldien balorazio automatikoak kalkulatzen. Hasierako orrian ikusten dituzun izar-adibideak ilustragarriak dira, ez benetako datuak. Artisten eta ekitaldien balorazio egiaztatuak fase geroago baterako aurreikusita daude." },
         { "question": "Zer esan nahi dute hutsune baten adin-tarteek (audientzia)?", "answer": "Ospitale batek argitaratzen duen hutsune bakoitzak hurbilketa-adin-tarte bat adierazten du —adibidez, 0–5, 6–12, helduak edo adin guztiak— artistek bertaratuko diren pertsonentzat egokia den jarduera bat proposa dezaten." },
-        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Vivetutiempok ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune batek ospitaleko gela edo areto mota bakarrik erakusten du; ez da inoiz agertzen plataforman inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik." }
+        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Vivetutiempok ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune baten solairua edo gela proposamen bat aztertzen ari diren artista identifikatuei bakarrik erakusten zaie; ekitaldien agenda publikoan kokapen hori ez da inoiz agertzen. Inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik ez da plataforman erregistratzen." }
       ]
     }
   },
