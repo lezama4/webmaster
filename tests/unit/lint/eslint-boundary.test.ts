@@ -121,3 +121,120 @@ describe("ESLint domain/application boundary (M5)", () => {
     expect(messages).toEqual([]);
   });
 });
+
+// D10: the application layer cannot see a UI-level join, so ESLint closes
+// that route. Neither public surface's route/page may import the OTHER
+// surface's use case, DTO, port, or composition-root factory (design.md
+// D10 enforcement-layer table, "Finder page imports listPublishedEvents"
+// row) — proven here the same way the M5 domain/application boundary is
+// proven above: fixtures against the real config, not just observing that
+// current (clean) imports happen to pass.
+describe("ESLint D10 cross-surface isolation (hospital directory <-> events)", () => {
+  const hospitalSurfaceRules = findRulesFor("src/app/encuentra-tu-momento/**/*.{ts,tsx}");
+  const eventSurfaceRules = findRulesFor("src/app/events/**/*.{ts,tsx}");
+
+  const HOSPITAL_PAGE_FILENAME = "src/app/encuentra-tu-momento/__lint-fixture__.ts";
+  const HOSPITAL_API_FILENAME = "src/app/api/hospitals/__lint-fixture__.ts";
+  const EVENT_PAGE_FILENAME = "src/app/events/__lint-fixture__.ts";
+  const EVENT_API_FILENAME = "src/app/api/events/__lint-fixture__.ts";
+
+  it("flags src/app/encuentra-tu-momento/** importing listPublishedEvents", () => {
+    const messages = lintSnippet(
+      hospitalSurfaceRules,
+      'import { listPublishedEvents } from "@application/use-cases/listPublishedEvents";',
+      HOSPITAL_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/encuentra-tu-momento/** importing PublicEventProjection", () => {
+    const messages = lintSnippet(
+      hospitalSurfaceRules,
+      'import { PublicEventProjection } from "@application/dto/PublicEventProjection";',
+      HOSPITAL_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/encuentra-tu-momento/** importing PublicEventProjectionQuery", () => {
+    const messages = lintSnippet(
+      hospitalSurfaceRules,
+      'import { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";',
+      HOSPITAL_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/api/hospitals/** importing publicDeps from the container", () => {
+    const messages = lintSnippet(
+      hospitalSurfaceRules,
+      'import { publicDeps } from "@infrastructure/composition/container";',
+      HOSPITAL_API_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("does NOT flag src/app/api/hospitals/** importing hospitalDirectoryDeps from the container", () => {
+    const messages = lintSnippet(
+      hospitalSurfaceRules,
+      'import { hospitalDirectoryDeps } from "@infrastructure/composition/container";',
+      HOSPITAL_API_FILENAME,
+    );
+
+    expect(messages).toEqual([]);
+  });
+
+  it("flags src/app/events/** importing listPublicHospitals", () => {
+    const messages = lintSnippet(
+      eventSurfaceRules,
+      'import { listPublicHospitals } from "@application/use-cases/listPublicHospitals";',
+      EVENT_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/events/** importing PublicHospitalProjection", () => {
+    const messages = lintSnippet(
+      eventSurfaceRules,
+      'import { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";',
+      EVENT_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/events/** importing PublicHospitalDirectoryQuery", () => {
+    const messages = lintSnippet(
+      eventSurfaceRules,
+      'import { PublicHospitalDirectoryQuery } from "@application/ports/PublicHospitalDirectoryQuery";',
+      EVENT_PAGE_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("flags src/app/api/events/** importing hospitalDirectoryDeps from the container", () => {
+    const messages = lintSnippet(
+      eventSurfaceRules,
+      'import { hospitalDirectoryDeps } from "@infrastructure/composition/container";',
+      EVENT_API_FILENAME,
+    );
+
+    expect(messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  });
+
+  it("does NOT flag src/app/api/events/** importing publicDeps from the container", () => {
+    const messages = lintSnippet(
+      eventSurfaceRules,
+      'import { publicDeps } from "@infrastructure/composition/container";',
+      EVENT_API_FILENAME,
+    );
+
+    expect(messages).toEqual([]);
+  });
+});

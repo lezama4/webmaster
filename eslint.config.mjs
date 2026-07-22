@@ -133,6 +133,79 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // D10 cross-surface isolation: the application layer cannot see a
+  // UI-level join between the hospital directory and events surfaces, so
+  // ESLint closes that route. Neither surface's route/page may import the
+  // OTHER surface's use case, DTO, port, or composition-root factory —
+  // even though both live under src/app/ and nothing stops a same-layer
+  // import at the domain/application boundary rules above. See design.md
+  // D10's enforcement-layer table ("Finder page imports listPublishedEvents").
+  {
+    files: [
+      "src/app/encuentra-tu-momento/**/*.{ts,tsx}",
+      "src/app/api/hospitals/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@application/use-cases/listPublishedEvents",
+              message: "The hospital directory surface must not import the Events surface (ADR D10).",
+            },
+            {
+              name: "@application/dto/PublicEventProjection",
+              message: "The hospital directory surface must not import the Events surface (ADR D10).",
+            },
+            {
+              name: "@application/ports/PublicEventProjectionQuery",
+              message: "The hospital directory surface must not import the Events surface (ADR D10).",
+            },
+            {
+              name: "@infrastructure/composition/container",
+              importNames: ["publicDeps"],
+              message:
+                "The hospital directory surface must not import the Events surface's composition factory (ADR D10).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      "src/app/events/**/*.{ts,tsx}",
+      "src/app/api/events/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@application/use-cases/listPublicHospitals",
+              message: "The Events surface must not import the hospital directory surface (ADR D10).",
+            },
+            {
+              name: "@application/dto/PublicHospitalProjection",
+              message: "The Events surface must not import the hospital directory surface (ADR D10).",
+            },
+            {
+              name: "@application/ports/PublicHospitalDirectoryQuery",
+              message: "The Events surface must not import the hospital directory surface (ADR D10).",
+            },
+            {
+              name: "@infrastructure/composition/container",
+              importNames: ["hospitalDirectoryDeps"],
+              message:
+                "The Events surface must not import the hospital directory surface's composition factory (ADR D10).",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
