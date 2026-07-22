@@ -2,9 +2,19 @@
 
 **Target duration:** 12–15 minutes  
 **Target length:** 17 slides  
-**Evidence cut-off:** Domain and application layers reviewed. Infrastructure,
-Prisma, migrations, UI, end-to-end flow, and deployment are in progress and
-must not be presented as completed or verified.
+**Evidence cut-off:** revision `482aefd` on `main`, 2026-07-22.
+
+All four layers are implemented, the application is deployed at
+<https://webmaster-lemon.vercel.app> serving the seeded demo dataset, and CI run
+[29905717933](https://github.com/lezama4/webmaster/actions/runs/29905717933) is
+green on both jobs — `test` 360 passed / 0 skipped (unit plus PostgreSQL 16
+integration and concurrency), `e2e` 12 Playwright tests passed against real
+PostgreSQL and seeded data.
+
+**What must still not be presented as done:** production hardening. There are no
+security response headers, no CSP, no application logging and no dependency
+scanning. Block 2 (ratings) and Block 3 (simulated patronage) are future scope
+and exist only on unmerged branches. The repository is currently **private**.
 
 ## Slide 1 — Vivetutiempo: turning hospital idle time into living time
 
@@ -87,7 +97,7 @@ several proposals and the Hospital chooses the one that best fits its context.�
 
 | Block | Scope | Status at this evidence cut-off |
 | --- | --- | --- |
-| 1. Core | Onboarding, Slot/Proposal coordination, Event publication, public browsing. | Domain and application implemented; infrastructure/UI/deployment in progress. |
+| 1. Core | Onboarding, Slot/Proposal coordination, Event publication, public browsing. | Implemented end to end, deployed, and covered by executed tests. Production hardening pending. |
 | 2. Rating | One rating per Patient/Family account and completed Event. | Planned. |
 | 3. Patronage | Simulated campaigns behind a `PaymentGateway` port. | Planned; no real payments. |
 
@@ -108,9 +118,9 @@ out of scope; the future block models only a simulated adapter boundary.”
 **Bullets**
 
 - Next.js, TypeScript and Tailwind: one web repository with typed delivery and UI.
-- PostgreSQL + Prisma: transactional persistence target; adapter implementation is in progress.
-- Vitest + Playwright: unit, integration and E2E strategy.
-- Vercel + managed PostgreSQL: deployable MVP with low operational overhead.
+- PostgreSQL + Prisma: transactional persistence; adapters implemented and verified against real PostgreSQL in CI.
+- Vitest + Playwright: unit, integration and E2E strategy, all three executing in CI.
+- Vercel + managed PostgreSQL: deployed and live.
 - **Monolith over microservices:** fewer distributed failure modes and less infrastructure without a current need.
 - **DB-backed sessions over JWT:** immediate revocation after profile rejection/deactivation.
 
@@ -135,9 +145,9 @@ because JWT is inherently wrong.”
 
 - `domain/`: framework-free entities, state machines, pure rules.
 - `application/`: use cases and ports; orchestrates the domain.
-- `infrastructure/`: Prisma, sessions, hashing and HTTP adapters — **in progress**.
-- `ui/` and `app/`: presentation and thin Next.js entry points — **in progress**.
-- Dependencies point inward; domain/application do not import Next.js or Prisma.
+- `infrastructure/`: Prisma repositories, three transactional units of work, sessions, hashing, rate limiting and HTTP adapters.
+- `ui/` and `app/`: presentation plus thin Next.js entry points — 5 public pages, 3 role areas, 11 mutating API routes.
+- Dependencies point inward; domain/application do not import Next.js or Prisma — enforced by ESLint and green in CI.
 
 **Visual**
 
@@ -205,9 +215,11 @@ lock Slot first → reload Slot + all Proposals → pure decision → atomic per
 **Speaker note**
 
 “The key insight came from an adversarial review: locking after a decision is
-too late. A concurrent submission could otherwise survive on a filled Slot.
-The application contract is implemented; proof of real PostgreSQL locking and
-rollback is still pending the infrastructure integration tests.”
+too late. A concurrent submission could otherwise survive on a filled Slot. The
+contract is implemented as `SELECT … FOR UPDATE` on the Slot row before any
+decision-informing read, and it is proven — nine race scenarios are forced with
+explicit barriers in both orderings and execute against real PostgreSQL in CI,
+not against in-memory fakes.”
 
 ---
 
@@ -268,11 +280,14 @@ process, rather than evidence on its own.”
   - Result: lock-first `MatchingUnitOfWork` design.
 - Domain review found missing persistence support for `DEACTIVATED` and
   re-registration traceability.
-  - Result: required schema/migration work, currently in progress.
+  - Result: schema/migration delivered; migration applies to an empty database in CI.
 - Application review found that a TypeScript allow-list is not runtime redaction
   and that re-registration lacked credential proof.
-  - Result: explicit release-blocking hardening items.
+  - Result: a runtime field-by-field DTO with an HTTP no-leak test, and
+    password-verified re-registration — both closed with executed evidence.
 - Review reports preserve both findings and evidence status.
+- Findings that remain open are still recorded as open: the aggregate status
+  matrix, Profile/Proposal text bounds, and production hardening.
 
 **Visual**
 
@@ -295,19 +310,23 @@ as solved.”
 
 - Domain unit tests: states, factories, ownership, cascades and illegal transitions.
 - Application unit tests: roles, live-profile checks, use-case orchestration and port contracts.
-- Integration tests: PostgreSQL transactions, locks, partial indexes and session adapter — **in progress**.
-- E2E tests: public browsing and the complete role flow — **planned for Block 1 completion**.
+- Integration tests: PostgreSQL transactions, locks, partial indexes and session adapter — 17 files, serial, **executed in CI**.
+- E2E tests: public browsing, the complete demo chain and the authorisation denial matrix — 12 tests, **executed in CI**.
+- Headline evidence: **360 passed / 0 skipped** plus **12 Playwright tests passed**, on revision `482aefd`.
 - No coverage percentage or production claim is made in this presentation without a reproducible execution record.
 
 **Visual**
 
-- Test pyramid with “implemented”, “in progress”, and “planned” labels.
+- Test pyramid with the executed counts per level and the dated CI run identifier.
 
 **Speaker note**
 
 “Selective strict TDD focuses on the most valuable rules: state transitions and
-business invariants. In-memory doubles prove orchestration, but they cannot
-prove a row lock or database rollback. That distinction is intentional.”
+business invariants. In-memory doubles prove orchestration but cannot prove a row
+lock or a database rollback — which is exactly why the concurrency evidence comes
+from real PostgreSQL in CI rather than from fakes. Locally these race tests are
+skipped by default and are flaky against a remote database because of network
+latency; CI with a local PostgreSQL service is the authoritative record.”
 
 ---
 
@@ -322,22 +341,26 @@ prove a row lock or database rollback. That distinction is intentional.”
 - Public output is limited to: title, description, date/time, duration and
   artist display name.
 - Always excluded: room/ward, proposal message, email and internal IDs.
-- Server-side roles, ownership and active Profile checks protect mutations.
-- Designed session lifecycle: argon2id, revocable DB sessions, rotation, idle/
-  absolute expiry and rate limiting — **adapter verification pending**.
+- Server-side role, ownership, profile-type and live-status checks protect every mutation — re-read inside the mutation's own transaction.
+- Session lifecycle implemented and verified: argon2id with pinned parameters, revocable DB sessions storing only the token hash, fresh token per login, idle/absolute expiry, and atomic rate limiting.
+- CSRF enforced on all 11 mutating routes, including login; fails closed if `APP_ORIGIN` is unset.
 - Hospital-context minimisation: no clinical data; location and private messages
   are treated as confidential.
+- **Still open and stated as such:** no security headers, no CSP, no logging, no dependency scanning.
 
 **Visual**
 
-- “Public allow-list” box next to “never expose” box.
+- “Public allow-list” box next to “never expose” box; a third box listing the open hardening items.
 
 **Speaker note**
 
-“Security is both architecture and implementation. The domain/application
-layers already express role and ownership controls, but a runtime public DTO,
-CSRF routes, persistence adapter and deployment configuration must still be
-verified before the MVP is exposed.”
+“Security is both architecture and implementation. The controls an earlier
+revision of the threat model called pending — the runtime public DTO, CSRF on
+every route, the session adapter, atomic rate limiting — are now integrated and
+each one cites a test that executed. What is deliberately *not* claimed is
+production hardening: this deployment has no security headers, no CSP, no
+logging and no dependency scanning. It is a defensible MVP, not an
+Internet-ready service, and the threat model says so control by control.”
 
 ---
 
@@ -360,10 +383,17 @@ verified before the MVP is exposed.”
 
 **Speaker note**
 
-“This is the intended final live demonstration, not a claim that an E2E demo
-was executed at this evidence cut-off. Before the defence, it must run against
-the deployed core with non-sensitive seed data and verify the public response
-does not contain forbidden fields.”
+“This chain is not aspirational: `e2e/demo-chain.spec.ts` automates exactly these
+six steps and passed in CI against real PostgreSQL and seeded data, and a
+companion test asserts that the public response contains only the five allowed
+fields. The live demo shows the same chain against the deployed URL with
+fictional seed data.”
+
+> **TODO (autor):** decide how to run the demo on the day. The chain is proven in
+> CI against a local PostgreSQL, but no run has been recorded against the
+> *deployed* URL (tasks 7.7/7.8). Either record one beforehand and show it as
+> evidence, or perform the demo live and be explicit that CI is the reproducible
+> record. Do not imply a production smoke run happened if it did not.
 
 ---
 
@@ -373,18 +403,25 @@ does not contain forbidden fields.”
 
 **Bullets**
 
-| Implemented and reviewed | In progress / must be verified | Planned |
+| Implemented, and proven by an executed test | Implemented, not yet hardened | Planned |
 | --- | --- | --- |
-| Domain state machines, pure acceptance/close operations, application ports and use cases, unit-test suites. | Prisma repositories, migrations, row locks/indexes, session adapter, CSRF, rate limiter, public runtime mapper, UI, integration/E2E tests, deployment. | Block 2 ratings, Block 3 simulated patronage, enriched public experience. |
+| Domain state machines and cascades; application ports, use cases and guards; Prisma repositories, migrations, row locks and partial indexes; session adapter; CSRF on every mutation; atomic rate limiter; runtime public allow-list; UI and API routes; integration and E2E suites; deployment serving seeded data. | Security response headers and CSP; request schema and body-size validation; environment validation at startup; security logging and alerting; dependency scanning. Aggregate status matrix and Profile/Proposal text bounds also remain open. | Block 2 ratings, Block 3 simulated patronage, enriched public experience. |
 
-- Open release gates: runtime public no-leak, credential-verified re-registration,
-  atomic session revocation, real concurrency tests, production hardening.
+- Evidence: CI run 29905717933 on `482aefd` — 360 passed / 0 skipped, plus 12 Playwright tests.
+- Live: <https://webmaster-lemon.vercel.app>.
 
 **Speaker note**
 
-“This slide is deliberately explicit. A defensible TFM does not convert a
-design decision or interface into a production guarantee. The next milestone is
-verification of the real adapters, not additional feature scope.”
+“This slide is deliberately explicit, and the middle column is the honest one. A
+defensible TFM does not convert a design decision into a production guarantee —
+but it also should not undersell evidence that exists. The core is deployed and
+its concurrency, authorisation and data-minimisation properties are proven by
+tests that ran. The next milestone is hardening and observability, not feature
+scope.”
+
+> **TODO (autor):** the repository is currently private. If it is still private
+> at the defence, say so plainly on this slide rather than letting the tribunal
+> discover it — a stated limitation reads as rigour, a discovered one does not.
 
 ---
 
@@ -394,7 +431,7 @@ verification of the real adapters, not additional feature scope.”
 
 **Bullets**
 
-- Complete Block 1: infrastructure, accessible UI, seeds, deployment and smoke test.
+- Harden Block 1: security headers and CSP, request validation, security logging, dependency scanning.
 - Block 2: ratings only after `Event.completed`, with one rating per account/event.
 - Block 3: simulated patronage through `PaymentGateway`; real payment processing
   requires a separate legal, privacy, fraud and financial threat model.
@@ -437,8 +474,9 @@ product. Questions are welcome.”
 
 - Replace placeholders on Slide 1 with author, Master’s programme, supervisor and date.
 - Add academic references on arts/humanisation in hospitals; do not make empirical claims without them.
-- Update Slides 12–15 only from reproducible execution evidence after the
-  infrastructure and deployment are complete.
+- Re-run `npm run test` and check the latest CI run before the defence; if the
+  numbers on Slides 12 and 15 have moved, update them rather than quoting these.
+- Confirm the deployed URL is still live on the morning of the defence.
 - Rehearse the live-demo fallback: a recorded demonstration is useful, but it
   must be identified as recorded and match the deployed revision.
 - Keep technical identifiers in speaker notes where possible; the oral message
