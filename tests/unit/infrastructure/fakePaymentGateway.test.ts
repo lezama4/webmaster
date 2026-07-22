@@ -4,7 +4,7 @@ import { FakePaymentGateway } from "@infrastructure/payment/FakePaymentGateway";
 
 const request = {
   paymentId: "support-payment-1",
-  campaignReference: "campaign-music-ward",
+  campaignReference: "campaign-music-ward" as const,
   amountCents: 5000,
   currency: "EUR" as const,
   simulated: true as const,
@@ -77,12 +77,50 @@ describe("FakePaymentGateway", () => {
     expect(first.receiptReference).not.toBe(second.receiptReference);
   });
 
-  it("keeps the synthetic reference well-formed for an unusual payment id", async () => {
+  it("maps distinct payment ids to distinct receipt references", async () => {
     const gateway = new FakePaymentGateway({ outcome: "succeeded" });
+    const paymentIds = [
+      "pay-1",
+      "pay_1",
+      "PAY-1",
+      "pay1",
+      "pay-1-",
+      "-pay-1",
+      "p-ay-1",
+      "a",
+      "A",
+      "a-",
+      "a_",
+    ];
 
-    const result = await gateway.simulate({ ...request, paymentId: "a b/c" });
+    const references = await Promise.all(
+      paymentIds.map(async (paymentId) =>
+        (await gateway.simulate({ ...request, paymentId })).receiptReference),
+    );
 
-    expect(result.receiptReference).toBe("sim_a-b-c");
-    expect(result.receiptReference).toMatch(/^sim_[A-Za-z0-9_-]+$/);
+    expect(new Set(references).size).toBe(paymentIds.length);
+    for (const reference of references) {
+      expect(reference).toMatch(/^sim_[A-Za-z0-9_-]+$/);
+    }
   });
+
+  it.each([
+    "a b/c",
+    "pay 1",
+    "pay.1",
+    "pay/1",
+    "pay+1",
+    "",
+    "   ",
+    "ES91 2100 0418 4502 0005 1332",
+  ])(
+    "refuses to derive a reference from a non-opaque payment id: %j",
+    async (paymentId) => {
+      const gateway = new FakePaymentGateway({ outcome: "succeeded" });
+
+      await expect(gateway.simulate({ ...request, paymentId })).rejects.toThrow(
+        Error,
+      );
+    },
+  );
 });

@@ -15,29 +15,44 @@ export type SupportPaymentStatus =
   | "declined"
   | "cancelled";
 
+/** Every status a payment can hold once it has left `pending`. */
+export type SupportPaymentTerminalStatus = Exclude<
+  SupportPaymentStatus,
+  "pending"
+>;
+
 export type SimulatedSettlementOutcome = "succeeded" | "declined";
 
 export const MAX_SIMULATED_SUPPORT_AMOUNT_CENTS = 100_000_000;
-export const MAX_CAMPAIGN_REFERENCE_LENGTH = 128;
 export const MAX_SUPPORT_PAYMENT_ID_LENGTH = 128;
 
 /**
- * A campaign reference is an opaque slug, never free text. The explicit
- * charset is what keeps the field from becoming a channel for financial or
- * personal data: without it an IBAN, PAN, phone number, NUL byte, newline,
- * bidi-override glyph, or raw markup would be accepted and forwarded verbatim
- * into the outbound gateway request. The leading lookahead requires at least
- * one letter, so a digits-only value — the shape of a card, phone, or account
- * number — cannot pass as a campaign slug either.
+ * The complete set of system-issued campaign identifiers a simulated payment
+ * may reference. This is deliberately a closed enumeration and NOT a charset
+ * rule: a charset cannot keep financial data out of a free-text field, because
+ * an IBAN starts with an ISO 3166 country code and a caller can always prefix
+ * a PAN or a phone number with letters (`card-4111111111111111`,
+ * `es9121000418450200051332`). With a closed set there is no field a donor can
+ * type into at all, so the channel is removed by construction rather than
+ * filtered. A new campaign is added here, by the system, never by a caller.
  */
-const CAMPAIGN_REFERENCE_PATTERN = /^(?=[a-z0-9-]*[a-z])[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const SUPPORT_CAMPAIGN_REFERENCES = Object.freeze([
+  "campaign-music-ward",
+  "campaign-artist-residency",
+  "campaign-hospital-outreach",
+  "campaign-general-fund",
+] as const);
 
-const SUPPORT_PAYMENT_STATUSES: readonly SupportPaymentStatus[] = [
-  "pending",
-  "succeeded",
-  "declined",
-  "cancelled",
-];
+export type SupportCampaignReference =
+  (typeof SUPPORT_CAMPAIGN_REFERENCES)[number];
+
+/**
+ * An `id` is an opaque identifier, never text. It is forwarded verbatim to the
+ * gateway as `SimulatedGatewayRequest.paymentId`, so without an explicit
+ * charset it would accept an IBAN, PAN, NUL byte, newline, bidi-override
+ * glyph, or raw markup exactly like an unconstrained free-text field.
+ */
+const SUPPORT_PAYMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 const PAYER_KINDS: readonly SupportPayerKind[] = [
   "individual",
@@ -52,6 +67,12 @@ const PAYMENT_METHODS: readonly SimulatedPaymentMethod[] = [
   "bank_transfer",
 ];
 
+const TERMINAL_STATUSES: readonly SupportPaymentTerminalStatus[] = [
+  "succeeded",
+  "declined",
+  "cancelled",
+];
+
 const SETTLEMENT_OUTCOMES: readonly SimulatedSettlementOutcome[] = [
   "succeeded",
   "declined",
@@ -62,11 +83,13 @@ declare const SUPPORT_PAYMENT_BRAND: unique symbol;
 /**
  * A demonstration-only support-payment state machine. This aggregate is NOT
  * a ledger entry, donation certificate, charge, bank transfer, or payout.
- * It intentionally contains no card, phone, IBAN, provider, or identity data.
+ * It intentionally contains no card, phone, IBAN, provider, or identity data,
+ * and it has no free-text field at all: `campaignReference` is a system-issued
+ * enumerated identifier and `id` is an opaque identifier.
  */
 export type SupportPayment = {
   readonly id: string;
-  readonly campaignReference: string;
+  readonly campaignReference: SupportCampaignReference;
   readonly amountCents: number;
   readonly currency: "EUR";
   /** Every serializable payment value is explicitly demonstration-only. */
@@ -78,7 +101,7 @@ export type SupportPayment = {
 
 export interface CreateSupportPaymentInput {
   readonly id: string;
-  readonly campaignReference: string;
+  readonly campaignReference: SupportCampaignReference;
   readonly amountCents: number;
   readonly payerKind: SupportPayerKind;
   readonly method: SimulatedPaymentMethod;
@@ -86,16 +109,21 @@ export interface CreateSupportPaymentInput {
 
 export interface RehydrateSupportPaymentInput {
   readonly id: string;
-  readonly campaignReference: string;
+  readonly campaignReference: SupportCampaignReference;
   readonly amountCents: number;
   readonly payerKind: SupportPayerKind;
   readonly method: SimulatedPaymentMethod;
-  readonly status: SupportPaymentStatus;
+  /**
+   * Terminal only. A `pending` payment is produced by `createSupportPayment`
+   * from its own inputs, so rehydration can never be used as an exported
+   * status setter that reopens a settled or cancelled payment.
+   */
+  readonly status: SupportPaymentTerminalStatus;
 }
 
 interface SupportPaymentFields {
   readonly id: string;
-  readonly campaignReference: string;
+  readonly campaignReference: SupportCampaignReference;
   readonly amountCents: number;
   readonly payerKind: SupportPayerKind;
   readonly method: SimulatedPaymentMethod;
@@ -125,6 +153,11 @@ function buildSupportPayment(fields: SupportPaymentFields): SupportPayment {
 
 /** Returns the trimmed value so callers store the normalized form. */
 function assertBoundedText(field: string, value: string, max: number): string {
+  if (typeof value !== "string") {
+    throw new DomainValidationError(
+      `SupportPayment ${field} must be a string`,
+    );
+  }
   const trimmed = value.trim();
   if (trimmed.length === 0) {
     throw new DomainValidationError(`SupportPayment ${field} must not be empty`);
@@ -137,24 +170,31 @@ function assertBoundedText(field: string, value: string, max: number): string {
   return trimmed;
 }
 
-function assertCampaignReference(value: string): string {
-  const reference = assertBoundedText(
-    "campaignReference",
-    value,
-    MAX_CAMPAIGN_REFERENCE_LENGTH,
-  );
-  if (!CAMPAIGN_REFERENCE_PATTERN.test(reference)) {
+function assertId(value: string): string {
+  const id = assertBoundedText("id", value, MAX_SUPPORT_PAYMENT_ID_LENGTH);
+  if (!SUPPORT_PAYMENT_ID_PATTERN.test(id)) {
     throw new DomainValidationError(
-      "SupportPayment campaignReference must be a lowercase alphanumeric slug separated by single hyphens and containing at least one letter",
+      "SupportPayment id must contain only letters, digits, hyphens, and underscores",
     );
   }
-  return reference;
+  return id;
 }
 
-function assertStatus(status: SupportPaymentStatus): void {
-  if (!SUPPORT_PAYMENT_STATUSES.includes(status)) {
+function assertCampaignReference(
+  value: SupportCampaignReference,
+): SupportCampaignReference {
+  if (!SUPPORT_CAMPAIGN_REFERENCES.includes(value)) {
     throw new DomainValidationError(
-      `SupportPayment status '${status}' is invalid`,
+      `SupportPayment campaignReference '${String(value)}' is not a known campaign identifier`,
+    );
+  }
+  return value;
+}
+
+function assertTerminalStatus(status: SupportPaymentTerminalStatus): void {
+  if (!TERMINAL_STATUSES.includes(status)) {
+    throw new DomainValidationError(
+      `SupportPayment cannot be rehydrated into status '${String(status)}'; only ${TERMINAL_STATUSES.join(", ")} are terminal`,
     );
   }
 }
@@ -195,11 +235,36 @@ function assertPending(payment: SupportPayment, transition: string): void {
   }
 }
 
+/**
+ * Re-runs every non-status assertion and returns the normalized values.
+ * Transitions use it too: checking `status` alone would let a cast or
+ * deserialized object carrying a corrupt known value — a negative amount, an
+ * IBAN in a field, an unknown method — emerge as a frozen, valid-looking
+ * terminal payment.
+ */
+function assertKnownFields(
+  payment: SupportPayment,
+): Omit<SupportPaymentFields, "status"> {
+  const id = assertId(payment.id);
+  const campaignReference = assertCampaignReference(payment.campaignReference);
+  assertAmountCents(payment.amountCents);
+  assertPayerKind(payment.payerKind);
+  assertMethod(payment.method);
+
+  return {
+    id,
+    campaignReference,
+    amountCents: payment.amountCents,
+    payerKind: payment.payerKind,
+    method: payment.method,
+  };
+}
+
 /** Creates a pending, simulation-only support payment in integer EUR cents. */
 export function createSupportPayment(
   input: CreateSupportPaymentInput,
 ): SupportPayment {
-  const id = assertBoundedText("id", input.id, MAX_SUPPORT_PAYMENT_ID_LENGTH);
+  const id = assertId(input.id);
   const campaignReference = assertCampaignReference(input.campaignReference);
   assertAmountCents(input.amountCents);
   assertPayerKind(input.payerKind);
@@ -216,20 +281,21 @@ export function createSupportPayment(
 }
 
 /**
- * Rebuilds a SupportPayment from persisted or transported data. Unlike
- * `createSupportPayment` it MAY produce any valid status, but it re-runs every
- * assertion so corrupt data fails fast instead of silently rehydrating, and it
- * copies only known fields so no extra property survives the round trip.
+ * Rebuilds a SupportPayment from persisted or transported data in one of its
+ * terminal statuses. It re-runs every assertion so corrupt data fails fast,
+ * copies only known fields so no extra property survives the round trip, and
+ * rejects `pending` so it cannot be used to reopen a terminal payment and
+ * settle it again to the opposite outcome.
  */
 export function rehydrateSupportPayment(
   input: RehydrateSupportPaymentInput,
 ): SupportPayment {
-  const id = assertBoundedText("id", input.id, MAX_SUPPORT_PAYMENT_ID_LENGTH);
+  const id = assertId(input.id);
   const campaignReference = assertCampaignReference(input.campaignReference);
   assertAmountCents(input.amountCents);
   assertPayerKind(input.payerKind);
   assertMethod(input.method);
-  assertStatus(input.status);
+  assertTerminalStatus(input.status);
 
   return buildSupportPayment({
     id,
@@ -247,17 +313,18 @@ export function settleSupportPayment(
   outcome: SimulatedSettlementOutcome,
 ): SupportPayment {
   assertPending(payment, "settle");
+  const fields = assertKnownFields(payment);
   if (!SETTLEMENT_OUTCOMES.includes(outcome)) {
     throw new DomainValidationError(
-      `SupportPayment settlement outcome '${outcome}' is invalid`,
+      `SupportPayment settlement outcome '${String(outcome)}' is invalid`,
     );
   }
   return buildSupportPayment({
-    id: payment.id,
-    campaignReference: payment.campaignReference,
-    amountCents: payment.amountCents,
-    payerKind: payment.payerKind,
-    method: payment.method,
+    id: fields.id,
+    campaignReference: fields.campaignReference,
+    amountCents: fields.amountCents,
+    payerKind: fields.payerKind,
+    method: fields.method,
     status: outcome,
   });
 }
@@ -265,12 +332,13 @@ export function settleSupportPayment(
 /** Cancels a pending simulation before the fake gateway settles it. */
 export function cancelSupportPayment(payment: SupportPayment): SupportPayment {
   assertPending(payment, "cancel");
+  const fields = assertKnownFields(payment);
   return buildSupportPayment({
-    id: payment.id,
-    campaignReference: payment.campaignReference,
-    amountCents: payment.amountCents,
-    payerKind: payment.payerKind,
-    method: payment.method,
+    id: fields.id,
+    campaignReference: fields.campaignReference,
+    amountCents: fields.amountCents,
+    payerKind: fields.payerKind,
+    method: fields.method,
     status: "cancelled",
   });
 }

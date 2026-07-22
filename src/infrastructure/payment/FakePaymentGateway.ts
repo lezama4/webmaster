@@ -13,15 +13,29 @@ export interface FakePaymentGatewayOptions {
 
 const SIMULATED_OUTCOMES: readonly SimulatedOutcome[] = ["succeeded", "declined"];
 
+/** Matches the opaque identifier charset the domain enforces on a payment id. */
+const OPAQUE_PAYMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 /**
  * Derives an obviously synthetic, per-payment receipt reference. Deriving it
  * from the payment id (instead of a per-instance counter) keeps it unique and
  * traceable across gateway instances — two fresh gateways must never both
- * claim `sim_1`. Characters outside the synthetic-reference charset are
- * replaced so the result always stays recognizable as a simulation.
+ * claim `sim_1`.
+ *
+ * The mapping is the identity on the accepted charset, so it is injective:
+ * distinct payment ids always produce distinct references. Rewriting
+ * out-of-charset characters instead would make `pay 1`, `pay.1`, `pay/1` and
+ * `pay+1` all collapse to the same reference, so a rejected request is
+ * preferred over a silent collision. The adapter enforces this itself rather
+ * than trusting the caller to have validated the id upstream.
  */
 function syntheticReference(paymentId: string): string {
-  return `sim_${paymentId.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+  if (!OPAQUE_PAYMENT_ID_PATTERN.test(paymentId)) {
+    throw new Error(
+      "FakePaymentGateway requires an opaque payment id of letters, digits, hyphens, and underscores to derive a collision-free synthetic reference",
+    );
+  }
+  return `sim_${paymentId}`;
 }
 
 /**

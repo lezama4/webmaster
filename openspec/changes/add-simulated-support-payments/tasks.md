@@ -31,6 +31,7 @@
 
 - [x] 5.1 Constrain `campaignReference` to a slug charset and bound/trim `id`,
   so neither field can carry financial or control-character data.
+  **Superseded by 6.1: the charset rule did not hold — see below.**
 - [x] 5.2 Add `rehydrateSupportPayment`, build every payment field by field,
   and freeze it so terminal states and `simulated` hold at runtime.
 - [x] 5.3 Validate and capture the fake adapter outcome at construction, and
@@ -38,3 +39,32 @@
 - [x] 5.4 Mark the gateway request `simulated: true` and cancel the pending
   payment when the gateway call or its receipt check fails.
 - [x] 5.5 Regenerate the security approval evidence from an actual run.
+
+## 6. Round-2 hardening — test first
+
+- [x] 6.1 Replace the free-text `campaignReference` with a closed, frozen set
+  of system-issued campaign identifiers and delete the slug pattern. The
+  pattern's "must contain a letter" lookahead could not reject an IBAN
+  (`es9121000418450200051332`), a letter-prefixed PAN
+  (`card-4111111111111111`), or a letter-prefixed phone number
+  (`tel-34600123456`); an enumeration removes the channel by construction.
+- [x] 6.2 Constrain `id` to an opaque identifier charset in both
+  `createSupportPayment` and `rehydrateSupportPayment`, since it is forwarded
+  to the adapter as `paymentId`.
+- [x] 6.3 Re-run every field assertion inside `settleSupportPayment` and
+  `cancelSupportPayment`, so a corrupt known value cannot reach a terminal
+  state through a cast or a deserializer.
+- [x] 6.4 Restrict `rehydrateSupportPayment` to terminal statuses, so it cannot
+  reopen a settled payment as `pending`.
+- [x] 6.5 Replace the `Object.assign`-onto-the-caught-error failure path with a
+  `FailedSimulationError` class carrying the original as `cause` and the
+  cancelled payment as a non-enumerable, non-writable own property, and replace
+  the `in`-based type guard with `instanceof`.
+- [x] 6.6 Validate the gateway `outcome` against the simulated union and move
+  the settlement inside the guarded region, so no failure path abandons a
+  payment in `pending`.
+- [x] 6.7 Make the synthetic receipt derivation injective: reject a non-opaque
+  payment id in the adapter instead of rewriting it onto a colliding reference.
+- [x] 6.8 Align the security approval, the aggregate doc comment, and this spec
+  with what the code demonstrably enforces, and regenerate the evidence numbers
+  from an actual run.

@@ -6,6 +6,7 @@ import type {
   SimulatedGatewayRequest,
 } from "@application/ports/PaymentGateway";
 import {
+  FailedSimulationError,
   isFailedSimulationError,
   simulateSupportPayment,
 } from "@application/use-cases/simulateSupportPayment";
@@ -28,21 +29,32 @@ class ControlledPaymentGateway implements PaymentGateway {
 
 function input() {
   return {
-    campaignReference: "campaign-music-ward",
+    campaignReference: "campaign-music-ward" as const,
     amountCents: 5000,
     payerKind: "corporate_sponsor" as const,
     method: "bank_transfer" as const,
   };
 }
 
+function run(paymentGateway: PaymentGateway, idPrefix = "support-payment") {
+  return simulateSupportPayment(input(), {
+    idGenerator: new SequentialIdGenerator(idPrefix),
+    paymentGateway,
+  });
+}
+
+function caught(promise: Promise<unknown>): Promise<unknown> {
+  return promise.then(
+    () => undefined,
+    (error: unknown) => error,
+  );
+}
+
 describe("simulateSupportPayment", () => {
   it("settles with a gateway-owned successful simulated outcome", async () => {
     const paymentGateway = new ControlledPaymentGateway("succeeded");
 
-    const result = await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    });
+    const result = await run(paymentGateway);
 
     expect(result.payment).toMatchObject({
       id: "support-payment-1",
@@ -61,10 +73,7 @@ describe("simulateSupportPayment", () => {
   it("settles with a gateway-owned declined outcome", async () => {
     const paymentGateway = new ControlledPaymentGateway("declined");
 
-    const result = await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    });
+    const result = await run(paymentGateway);
 
     expect(result.payment.status).toBe("declined");
     expect(result.receipt.simulated).toBe(true);
@@ -73,10 +82,7 @@ describe("simulateSupportPayment", () => {
   it("never sends a caller-controlled outcome or financial identifier to the gateway", async () => {
     const paymentGateway = new ControlledPaymentGateway("succeeded");
 
-    await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    });
+    await run(paymentGateway);
 
     expect(paymentGateway.requests[0]).toEqual({
       paymentId: "support-payment-1",
@@ -103,10 +109,7 @@ describe("simulateSupportPayment", () => {
   it("marks the outbound gateway request as an explicit simulation", async () => {
     const paymentGateway = new ControlledPaymentGateway("succeeded");
 
-    await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    });
+    await run(paymentGateway);
 
     expect(paymentGateway.requests[0]!.simulated).toBe(true);
   });
@@ -122,15 +125,15 @@ describe("simulateSupportPayment", () => {
       },
     };
 
-    await expect(
-      simulateSupportPayment(input(), {
-        idGenerator: new SequentialIdGenerator("support-payment"),
-        paymentGateway,
-      }),
-    ).rejects.toBeInstanceOf(DomainValidationError);
+    const error = await caught(run(paymentGateway));
+
+    expect(error).toBeInstanceOf(FailedSimulationError);
+    expect((error as FailedSimulationError).cause).toBeInstanceOf(
+      DomainValidationError,
+    );
   });
 
-  it("cancels the pending payment and rethrows when the gateway rejects", async () => {
+  it("cancels the pending payment and wraps the gateway rejection", async () => {
     const failure = new Error("gateway unavailable");
     const paymentGateway: PaymentGateway = {
       async simulate() {
@@ -138,15 +141,18 @@ describe("simulateSupportPayment", () => {
       },
     };
 
-    const error: unknown = await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    }).catch((caught: unknown) => caught);
+    const error = await caught(run(paymentGateway));
 
-    expect(error).toBe(failure);
+    expect(error).toBeInstanceOf(FailedSimulationError);
     expect(isFailedSimulationError(error)).toBe(true);
-    expect((error as { cancelledPayment: { status: string } }).cancelledPayment)
-      .toMatchObject({ id: "support-payment-1", status: "cancelled" });
+    expect((error as FailedSimulationError).cause).toBe(failure);
+    expect((error as FailedSimulationError).message).toContain(
+      "gateway unavailable",
+    );
+    expect((error as FailedSimulationError).cancelledPayment).toMatchObject({
+      id: "support-payment-1",
+      status: "cancelled",
+    });
   });
 
   it("cancels the pending payment when the receipt fails the synthetic check", async () => {
@@ -160,15 +166,111 @@ describe("simulateSupportPayment", () => {
       },
     };
 
-    const error: unknown = await simulateSupportPayment(input(), {
-      idGenerator: new SequentialIdGenerator("support-payment"),
-      paymentGateway,
-    }).catch((caught: unknown) => caught);
+    const error = await caught(run(paymentGateway));
 
-    expect(error).toBeInstanceOf(DomainValidationError);
-    expect(isFailedSimulationError(error)).toBe(true);
+    expect(error).toBeInstanceOf(FailedSimulationError);
+    expect((error as FailedSimulationError).cause).toBeInstanceOf(
+      DomainValidationError,
+    );
+    expect((error as FailedSimulationError).cancelledPayment.status).toBe(
+      "cancelled",
+    );
+  });
+
+  it("cancels the pending payment when the gateway returns an outcome outside the union", async () => {
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        return {
+          outcome: "refunded",
+          receiptReference: "sim_controlled_1",
+          simulated: true,
+        } as never;
+      },
+    };
+
+    const error = await caught(run(paymentGateway));
+
+    expect(error).toBeInstanceOf(FailedSimulationError);
+    expect((error as FailedSimulationError).cause).toBeInstanceOf(
+      DomainValidationError,
+    );
+    expect((error as FailedSimulationError).cancelledPayment.status).toBe(
+      "cancelled",
+    );
+  });
+
+  it("never mutates a shared error constant thrown by the adapter", async () => {
+    const sharedFailure = new Error("shared adapter failure");
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw sharedFailure;
+      },
+    };
+
+    const first = (await caught(
+      run(paymentGateway, "first-payment"),
+    )) as FailedSimulationError;
+    const second = (await caught(
+      run(paymentGateway, "second-payment"),
+    )) as FailedSimulationError;
+
+    expect(first).not.toBe(second);
+    expect(first.cancelledPayment.id).toBe("first-payment-1");
+    expect(second.cancelledPayment.id).toBe("second-payment-1");
+    expect(sharedFailure).not.toHaveProperty("cancelledPayment");
+  });
+
+  it("still cancels the payment when the adapter throws a frozen error", async () => {
+    const frozenFailure = Object.freeze(new Error("frozen adapter failure"));
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw frozenFailure;
+      },
+    };
+
+    const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+    expect(error).toBeInstanceOf(FailedSimulationError);
+    expect(error.cause).toBe(frozenFailure);
+    expect(error.cancelledPayment.status).toBe("cancelled");
+  });
+
+  it("preserves a non-Error rejection as the cause instead of stringifying it away", async () => {
+    const nonError = { code: "GATEWAY_DOWN" };
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw nonError;
+      },
+    };
+
+    const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+    expect(error).toBeInstanceOf(FailedSimulationError);
+    expect(error.cause).toBe(nonError);
+    expect(error.message).not.toContain("[object Object]");
+  });
+
+  it("keeps cancelledPayment non-enumerable and non-writable", async () => {
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw new Error("gateway unavailable");
+      },
+    };
+
+    const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+    expect(Object.keys(error)).not.toContain("cancelledPayment");
+    expect(JSON.stringify(error)).not.toContain("cancelledPayment");
     expect(
-      (error as { cancelledPayment: { status: string } }).cancelledPayment.status,
-    ).toBe("cancelled");
+      Object.getOwnPropertyDescriptor(error, "cancelledPayment"),
+    ).toMatchObject({ enumerable: false, writable: false });
+  });
+
+  it("does not treat an unrelated error carrying a cancelledPayment key as a failed simulation", () => {
+    const impostor = Object.assign(new Error("unrelated"), {
+      cancelledPayment: { status: "cancelled" },
+    });
+
+    expect(isFailedSimulationError(impostor)).toBe(false);
   });
 });

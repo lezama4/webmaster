@@ -1,12 +1,17 @@
 import type {
   SimulatedPaymentMethod,
+  SupportCampaignReference,
   SupportPayerKind,
 } from "@domain/support-payment/SupportPayment";
 
-/** Safe, simulation-only request shape. It intentionally has no financial identifier. */
+/**
+ * Safe, simulation-only request shape. It intentionally has no financial
+ * identifier and no free-text field: `paymentId` is an opaque identifier and
+ * `campaignReference` is one of the system-issued campaign identifiers.
+ */
 export interface SimulatedGatewayRequest {
   readonly paymentId: string;
-  readonly campaignReference: string;
+  readonly campaignReference: SupportCampaignReference;
   readonly amountCents: number;
   readonly currency: "EUR";
   /**
