@@ -111,3 +111,46 @@ decision *not* to add the control.
   "re-runs every field assertion" was inaccurate.
 - [x] 7.9 Regenerate the evidence numbers from an actual run and add an explicit
   "Known non-guarantees" section to the security approval.
+
+## 8. Round-5 hardening — test first
+
+- [x] 8.1 Correct `src/application/errors.ts`, the security approval, and the
+  design doc: `AdapterContractError` cannot reach `toErrorResponse` from
+  `simulateSupportPayment`, because it is only ever constructed inside the
+  guarded region whose `catch` unconditionally rethrows a
+  `FailedSimulationError`. It surfaces only as `cause`.
+- [x] 8.2 Add `FailedSimulationError.causedByAdapterDefect` — an own,
+  non-enumerable, non-writable boolean derived from `cause instanceof
+  AdapterContractError`, with the derivation guarded against a trapped
+  prototype lookup. Without it, a handler following the documented advice to
+  map `FailedSimulationError` to a business status would report adapter DEFECTS
+  as ordinary business outcomes. Record the type erasure as a known
+  non-guarantee.
+- [x] 8.3 Make `assertId` DENY a non-canonical id instead of trimming it, and
+  bound the RAW input before any normalization. `trim()` accepted
+  `"  support-payment-1  "` where the spec says whitespace MUST be denied, and
+  it was a lossy rewrite that collapsed `"abc"`, `" abc "` and `"abc\n"` onto
+  one id and therefore one receipt reference — contradicting the injectivity
+  the adapter's no-rewrite rule is built on. Rename the test that asserted the
+  old behaviour.
+- [x] 8.4 Freeze every object the flow hands out: the receipt, the
+  `SimulateSupportPaymentResult` wrapper, the outbound `SimulatedGatewayRequest`
+  and the `FakePaymentGateway.simulate` result. `readonly` is erased at compile
+  time, so the security approval's freeze argument only held for the aggregate.
+- [x] 8.5 Bound the derived `FailedSimulationError.message`, which otherwise
+  propagated unbounded adapter-supplied text into logs. The full value survives
+  on `cause`.
+- [x] 8.6 Freeze the remaining module-private allowed-value sets
+  (`PAYER_KINDS`, `PAYMENT_METHODS`, `TERMINAL_STATUSES`,
+  `SETTLEMENT_OUTCOMES`, `SIMULATED_GATEWAY_OUTCOMES`, `SIMULATED_OUTCOMES`);
+  `TERMINAL_STATUSES.push("pending")` would have reopened the route
+  `rehydrateSupportPayment` exists to close. Not exported, so recorded as
+  verified by inspection rather than by a test.
+- [x] 8.7 Read the `FakePaymentGateway` configured outcome exactly once, and
+  raise `AdapterContractError` from the project taxonomy at both of its throw
+  sites instead of a bare `Error` that `.toThrow(Error)` could not distinguish.
+- [x] 8.8 State per-payment `receiptReference` uniqueness as an adapter
+  obligation in the `PaymentGateway` port contract, not verified by the use
+  case, and record it under "Known non-guarantees" — rather than coupling the
+  use case to the adapter's naming scheme.
+- [x] 8.9 Regenerate the security approval evidence numbers from an actual run.

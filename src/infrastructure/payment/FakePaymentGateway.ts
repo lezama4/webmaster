@@ -1,3 +1,4 @@
+import { AdapterContractError } from "@application/errors";
 import type {
   PaymentGateway,
   SimulatedGatewayRequest,
@@ -12,7 +13,11 @@ export interface FakePaymentGatewayOptions {
   readonly outcome: SimulatedOutcome;
 }
 
-const SIMULATED_OUTCOMES: readonly SimulatedOutcome[] = ["succeeded", "declined"];
+/** Frozen, not merely `readonly`: `readonly` is erased at compile time. */
+const SIMULATED_OUTCOMES: readonly SimulatedOutcome[] = Object.freeze([
+  "succeeded",
+  "declined",
+] as const);
 
 /** Matches the opaque identifier charset the domain enforces on a payment id. */
 const OPAQUE_PAYMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -41,7 +46,10 @@ function syntheticReference(paymentId: string): string {
     paymentId.length > MAX_SUPPORT_PAYMENT_ID_LENGTH ||
     !OPAQUE_PAYMENT_ID_PATTERN.test(paymentId)
   ) {
-    throw new Error(
+    // A port-contract violation, raised from the project taxonomy rather than
+    // as a bare `Error`, so a caller (and a test) can assert the class instead
+    // of a predicate every exception satisfies.
+    throw new AdapterContractError(
       `FakePaymentGateway requires an opaque payment id of letters, digits, hyphens, and underscores, at most ${MAX_SUPPORT_PAYMENT_ID_LENGTH} characters, to derive a collision-free synthetic reference`,
     );
   }
@@ -61,12 +69,18 @@ export class FakePaymentGateway implements PaymentGateway {
   private readonly outcome: SimulatedOutcome;
 
   constructor(options: FakePaymentGatewayOptions) {
-    if (!SIMULATED_OUTCOMES.includes(options?.outcome)) {
-      throw new Error(
+    // Read the configured outcome EXACTLY ONCE, into a local, then validate
+    // and store that same local. `options.outcome` may be a getter, so reading
+    // it a second time to store it would let one value pass the check and a
+    // different one reach the field — the same read-once contract the use case
+    // applies to gateway results.
+    const outcome: unknown = options?.outcome;
+    if (!SIMULATED_OUTCOMES.includes(outcome as SimulatedOutcome)) {
+      throw new AdapterContractError(
         "FakePaymentGateway must be configured with a 'succeeded' or 'declined' simulated outcome",
       );
     }
-    this.outcome = options.outcome;
+    this.outcome = outcome as SimulatedOutcome;
   }
 
   async simulate(
@@ -76,10 +90,13 @@ export class FakePaymentGateway implements PaymentGateway {
     // The request never decides success or decline: keeping that outcome in
     // trusted adapter configuration prevents a caller from turning the
     // simulation into a client-controlled "payment success".
-    return {
+    //
+    // Frozen so the `simulated` marker cannot be flipped by whatever receives
+    // it; `readonly` on the port type is erased at compile time.
+    return Object.freeze({
       outcome: this.outcome,
       receiptReference: syntheticReference(request.paymentId),
-      simulated: true,
-    };
+      simulated: true as const,
+    });
   }
 }

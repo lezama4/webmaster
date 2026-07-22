@@ -15,6 +15,7 @@ import {
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type {
   PaymentGateway,
+  SimulatedGatewayRequest,
   SimulatedGatewayResult,
 } from "@application/ports/PaymentGateway";
 
@@ -40,8 +41,9 @@ export interface SimulateSupportPaymentResult {
   readonly receipt: SimulatedPaymentReceipt;
 }
 
+/** Frozen, not merely `readonly`: `readonly` is erased at compile time. */
 const SIMULATED_GATEWAY_OUTCOMES: readonly SimulatedGatewayResult["outcome"][] =
-  ["succeeded", "declined"];
+  Object.freeze(["succeeded", "declined"] as const);
 
 const SYNTHETIC_RECEIPT_PATTERN = /^sim_[A-Za-z0-9_-]+$/;
 
@@ -137,28 +139,39 @@ export async function simulateSupportPayment(
   });
 
   try {
-    const gatewayResult = await deps.paymentGateway.simulate({
+    // Frozen before it leaves: this is the one object handed to a foreign
+    // adapter, and an adapter must not be able to `delete request.simulated`
+    // (or overwrite it) before reading it. The marker is the whole point of
+    // carrying it on the request.
+    const request: SimulatedGatewayRequest = Object.freeze({
       paymentId: payment.id,
       campaignReference: payment.campaignReference,
       amountCents: payment.amountCents,
       currency: payment.currency,
-      simulated: true,
+      simulated: true as const,
       payerKind: payment.payerKind,
       method: payment.method,
     });
+    const gatewayResult = await deps.paymentGateway.simulate(request);
     const validated = validateGatewayResult(gatewayResult);
 
     // Settlement stays inside the guarded region: it is the last step that can
     // still reject, and a rejection outside it would strand the payment in
     // `pending` with no cancellation. Both values come from `validated`, never
     // from a second read of the adapter's own object.
-    return {
+    //
+    // Receipt and wrapper are frozen for the same reason the aggregate is:
+    // `readonly` is erased at compile time, so `result.receipt.simulated =
+    // false` would otherwise succeed silently, and freezing the aggregate buys
+    // nothing at the boundary if `result.payment` can be swapped for an
+    // unfrozen look-alike.
+    return Object.freeze({
       payment: settleSupportPayment(payment, validated.outcome),
-      receipt: {
+      receipt: Object.freeze({
         reference: validated.receiptReference,
-        simulated: true,
-      },
-    };
+        simulated: true as const,
+      }),
+    });
   } catch (error) {
     // Cancellation is the documented failure path: never leave the payment
     // stranded in `pending` because the adapter, its receipt, or the

@@ -26,6 +26,20 @@ export interface SimulatedGatewayRequest {
 
 export interface SimulatedGatewayResult {
   readonly outcome: "succeeded" | "declined";
+  /**
+   * ADAPTER OBLIGATION, NOT A VERIFIED GUARANTEE. The reference MUST identify
+   * the one payment it was produced for: distinct `paymentId` values MUST
+   * yield distinct references, and a reference MUST NOT be reused across
+   * calls.
+   *
+   * `simulateSupportPayment` does NOT check this. It validates only that the
+   * reference is a bounded, explicitly synthetic `sim_`-prefixed string, so an
+   * adapter returning a constant `sim_x` for every call passes. Verifying it
+   * would require the use case to know how the adapter derives the reference,
+   * coupling the application layer to an adapter naming scheme — a worse
+   * trade than stating the obligation here. `FakePaymentGateway` discharges it
+   * with an injective identity mapping over the payment id.
+   */
   readonly receiptReference: string;
   readonly simulated: true;
 }

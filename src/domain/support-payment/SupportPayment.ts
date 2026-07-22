@@ -54,29 +54,35 @@ export type SupportCampaignReference =
  */
 const SUPPORT_PAYMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
-const PAYER_KINDS: readonly SupportPayerKind[] = [
+/*
+ * Every allowed-value set below is frozen, not merely typed `readonly`.
+ * `readonly` is erased at compile time, so a plain array would still accept
+ * `TERMINAL_STATUSES.push("pending")` at runtime — reopening the very route
+ * `rehydrateSupportPayment` refuses to take. These sets are module-private, so
+ * the freeze is defence in depth against code inside this module, not a
+ * boundary control; it is verified by inspection, not by a test, because a
+ * module-private constant has no externally observable behaviour to assert.
+ */
+const PAYER_KINDS: readonly SupportPayerKind[] = Object.freeze([
   "individual",
   "private_patron",
   "institution",
   "corporate_sponsor",
-];
+] as const);
 
-const PAYMENT_METHODS: readonly SimulatedPaymentMethod[] = [
+const PAYMENT_METHODS: readonly SimulatedPaymentMethod[] = Object.freeze([
   "card",
   "bizum",
   "bank_transfer",
-];
+] as const);
 
-const TERMINAL_STATUSES: readonly SupportPaymentTerminalStatus[] = [
-  "succeeded",
-  "declined",
-  "cancelled",
-];
+const TERMINAL_STATUSES: readonly SupportPaymentTerminalStatus[] = Object.freeze(
+  ["succeeded", "declined", "cancelled"] as const,
+);
 
-const SETTLEMENT_OUTCOMES: readonly SimulatedSettlementOutcome[] = [
-  "succeeded",
-  "declined",
-];
+const SETTLEMENT_OUTCOMES: readonly SimulatedSettlementOutcome[] = Object.freeze(
+  ["succeeded", "declined"] as const,
+);
 
 declare const SUPPORT_PAYMENT_BRAND: unique symbol;
 
@@ -154,33 +160,43 @@ function buildSupportPayment(fields: SupportPaymentFields): SupportPayment {
   }) as SupportPayment;
 }
 
-/** Returns the trimmed value so callers store the normalized form. */
-function assertBoundedText(field: string, value: string, max: number): string {
-  if (typeof value !== "string") {
-    throw new DomainValidationError(
-      `SupportPayment ${field} must be a string`,
-    );
-  }
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    throw new DomainValidationError(`SupportPayment ${field} must not be empty`);
-  }
-  if (trimmed.length > max) {
-    throw new DomainValidationError(
-      `SupportPayment ${field} must not exceed ${max} characters`,
-    );
-  }
-  return trimmed;
-}
-
+/**
+ * Denies an id that is not already in canonical form; it never normalizes one.
+ *
+ * The id is system-generated (`deps.idGenerator.next()`), so surrounding
+ * whitespace means the value is MALFORMED, not that it needs repairing. Two
+ * reasons the earlier `trim()` had to go:
+ *
+ * 1. Injectivity. Trimming is a lossy rewrite: `"abc"`, `" abc "` and
+ *    `"abc\n"` all collapse onto one id, and therefore onto one synthetic
+ *    receipt reference. That is exactly the collision the adapter's own
+ *    no-rewrite rule (`syntheticReference`) exists to prevent, so accepting it
+ *    one layer earlier would have made that argument false.
+ * 2. Truthfulness. The spec requires that an id containing whitespace be
+ *    denied. Silently accepting and rewriting it is not a denial.
+ *
+ * The bound is checked against the RAW input, before any other inspection, so
+ * a whitespace-padded oversized string is rejected on its length instead of
+ * being copied first.
+ */
 function assertId(value: string): string {
-  const id = assertBoundedText("id", value, MAX_SUPPORT_PAYMENT_ID_LENGTH);
-  if (!SUPPORT_PAYMENT_ID_PATTERN.test(id)) {
+  if (typeof value !== "string") {
+    throw new DomainValidationError("SupportPayment id must be a string");
+  }
+  if (value.length > MAX_SUPPORT_PAYMENT_ID_LENGTH) {
     throw new DomainValidationError(
-      "SupportPayment id must contain only letters, digits, hyphens, and underscores",
+      `SupportPayment id must not exceed ${MAX_SUPPORT_PAYMENT_ID_LENGTH} characters`,
     );
   }
-  return id;
+  if (value.length === 0) {
+    throw new DomainValidationError("SupportPayment id must not be empty");
+  }
+  if (!SUPPORT_PAYMENT_ID_PATTERN.test(value)) {
+    throw new DomainValidationError(
+      "SupportPayment id must contain only letters, digits, hyphens, and underscores, with no surrounding whitespace",
+    );
+  }
+  return value;
 }
 
 /**

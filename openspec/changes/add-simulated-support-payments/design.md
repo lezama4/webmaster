@@ -63,6 +63,20 @@ import `fetch`, Node networking APIs, or a provider SDK.
 - A misbehaving adapter raises `AdapterContractError` from the application
   error taxonomy, never a `DomainError`: a gateway response is not domain
   input, and an adapter defect is not a rejected caller operation.
+- `AdapterContractError` never reaches `toErrorResponse` from
+  `simulateSupportPayment`. It is only ever constructed inside that use case's
+  guarded region, whose `catch` unconditionally rethrows a
+  `FailedSimulationError`, so it surfaces only as `FailedSimulationError.cause`
+  and its "falls through to 500" mapping is unreachable from there.
+- Because of that type erasure, a future handler MUST branch on
+  `FailedSimulationError.causedByAdapterDefect` before choosing a status.
+  Mapping the class wholesale to a business status — on the reasoning that a
+  cancelled simulation is an ordinary business outcome — would report adapter
+  DEFECTS to clients as ordinary business outcomes, which is precisely what
+  splitting `AdapterContractError` out of the taxonomy exists to prevent.
+- Per-payment uniqueness of `receiptReference` is an adapter obligation stated
+  in the port contract, not something the use case verifies. Checking it would
+  couple the application layer to an adapter's naming scheme.
 - Denials of enumerated values report the field name and the allowed set,
   never the rejected value. Echoing it would copy a financial identifier into
   logs — the very channel the enumeration exists to remove — and interpolating

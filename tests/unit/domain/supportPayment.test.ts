@@ -149,10 +149,20 @@ describe("SupportPayment (simulation-only domain)", () => {
     },
   );
 
-  it("denies a blank or oversized id and trims the stored value", () => {
+  it("denies a blank or oversized id", () => {
     expect(() =>
       createSupportPayment({
         id: "   ",
+        campaignReference: "campaign-music-ward",
+        amountCents: 100,
+        payerKind: "individual",
+        method: "card",
+      }),
+    ).toThrow(DomainValidationError);
+
+    expect(() =>
+      createSupportPayment({
+        id: "",
         campaignReference: "campaign-music-ward",
         amountCents: 100,
         payerKind: "individual",
@@ -169,16 +179,60 @@ describe("SupportPayment (simulation-only domain)", () => {
         method: "card",
       }),
     ).toThrow(DomainValidationError);
+  });
 
-    expect(
+  /**
+   * The id is system-generated, so an id that is not already in canonical form
+   * is malformed, not something to repair. Normalising it would also be lossy:
+   * trimming collapses `"abc"`, `" abc "` and `"abc\n"` onto one id, and
+   * therefore onto one receipt reference — contradicting the injectivity the
+   * adapter's own no-rewrite rule is built on.
+   */
+  it.each([
+    "  support-payment-1  ",
+    " support-payment-1",
+    "support-payment-1 ",
+    "support-payment-1\n",
+    "\tsupport-payment-1",
+  ])("denies a non-canonical id instead of normalising it: %j", (id) => {
+    expect(() =>
       createSupportPayment({
-        id: "  support-payment-1  ",
+        id,
         campaignReference: "campaign-music-ward",
         amountCents: 100,
         payerKind: "individual",
         method: "card",
-      }).id,
-    ).toBe("support-payment-1");
+      }),
+    ).toThrow(DomainValidationError);
+
+    expect(() =>
+      rehydrateSupportPayment({
+        id,
+        campaignReference: "campaign-music-ward",
+        amountCents: 100,
+        payerKind: "individual",
+        method: "card",
+        status: "succeeded",
+      }),
+    ).toThrow(DomainValidationError);
+  });
+
+  /**
+   * The bound must apply to the RAW input, before any inspection that would
+   * materialise a second copy of it.
+   */
+  it("bounds the raw id before any normalisation", () => {
+    const padded = `${" ".repeat(MAX_SUPPORT_PAYMENT_ID_LENGTH * 2)}pay-1`;
+
+    expect(() =>
+      createSupportPayment({
+        id: padded,
+        campaignReference: "campaign-music-ward",
+        amountCents: 100,
+        payerKind: "individual",
+        method: "card",
+      }),
+    ).toThrow(/must not exceed/);
   });
 
   it.each([

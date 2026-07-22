@@ -9,6 +9,7 @@ import type {
   PaymentGateway,
   SimulatedGatewayRequest,
 } from "@application/ports/PaymentGateway";
+import { MAX_FAILED_SIMULATION_MESSAGE_LENGTH } from "@application/errors";
 import {
   MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH,
   isFailedSimulationError,
@@ -342,6 +343,159 @@ describe("simulateSupportPayment", () => {
         status: "cancelled",
       });
       expect(typeof (error as FailedSimulationError).message).toBe("string");
+    });
+  });
+
+  describe("everything the use case hands out is frozen", () => {
+    it("freezes the receipt so the simulated marker cannot be flipped", async () => {
+      const result = await run(new ControlledPaymentGateway("succeeded"));
+
+      expect(Object.isFrozen(result.receipt)).toBe(true);
+      expect(() => {
+        (result.receipt as { simulated: boolean }).simulated = false;
+      }).toThrow(TypeError);
+      expect(result.receipt.simulated).toBe(true);
+    });
+
+    /**
+     * Freezing the aggregate buys nothing at the boundary if the wrapper
+     * holding it can have `payment` swapped for an unfrozen look-alike.
+     */
+    it("freezes the result wrapper so the payment cannot be swapped out", async () => {
+      const result = await run(new ControlledPaymentGateway("succeeded"));
+
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(() => {
+        (result as { payment: unknown }).payment = { status: "succeeded" };
+      }).toThrow(TypeError);
+      expect(result.payment.status).toBe("succeeded");
+    });
+
+    /**
+     * The request is the one object handed to a foreign adapter, so an adapter
+     * must not be able to `delete request.simulated` before reading it.
+     */
+    it("freezes the outbound gateway request handed to the adapter", async () => {
+      const paymentGateway = new ControlledPaymentGateway("succeeded");
+
+      await run(paymentGateway);
+
+      const request = paymentGateway.requests[0]!;
+      expect(Object.isFrozen(request)).toBe(true);
+      expect(() => {
+        delete (request as { simulated?: unknown }).simulated;
+      }).toThrow(TypeError);
+      expect(request.simulated).toBe(true);
+    });
+  });
+
+  describe("the derived failure message is bounded", () => {
+    it("bounds an unbounded adapter-supplied message without losing the cause", async () => {
+      const hostile = new Error("x".repeat(50_000));
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw hostile;
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(error.message.length).toBeLessThanOrEqual(
+        MAX_FAILED_SIMULATION_MESSAGE_LENGTH,
+      );
+      // The full value is never lost: it survives verbatim on `cause`.
+      expect((error.cause as Error).message).toHaveLength(50_000);
+    });
+
+    it("leaves a message already within the bound untouched", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw new Error("gateway unavailable");
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(error.message).toBe("gateway unavailable");
+    });
+  });
+
+  /**
+   * `AdapterContractError` is structurally incapable of escaping this use case:
+   * it is only ever constructed inside the guarded region, whose `catch`
+   * unconditionally rethrows a `FailedSimulationError`. A future handler that
+   * maps `FailedSimulationError` to a business status therefore needs a way to
+   * tell an adapter DEFECT apart from a legitimate decline-cancel without
+   * unwrapping `cause` by hand.
+   */
+  describe("adapter defects stay distinguishable at the thrown type", () => {
+    it("flags an adapter-contract violation on the wrapper", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          return {
+            outcome: "succeeded",
+            receiptReference: "real-looking-reference",
+            simulated: true,
+          } as never;
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(error.cause).toBeInstanceOf(AdapterContractError);
+      expect(error.causedByAdapterDefect).toBe(true);
+    });
+
+    it("does not flag an ordinary gateway rejection as an adapter defect", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw new Error("gateway unavailable");
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(error.causedByAdapterDefect).toBe(false);
+    });
+
+    it("keeps the discriminator non-writable so it cannot be forged", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw new Error("gateway unavailable");
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(() => {
+        (error as { causedByAdapterDefect: boolean }).causedByAdapterDefect =
+          true;
+      }).toThrow(TypeError);
+      expect(error.causedByAdapterDefect).toBe(false);
+    });
+
+    /**
+     * Deriving the discriminator must not become a second failure: it runs
+     * after the payment has already been cancelled, and `instanceof` is
+     * trappable by a `Proxy`.
+     */
+    it("survives a cause whose prototype lookup throws", async () => {
+      const hostile = new Proxy(new Error("hostile"), {
+        getPrototypeOf() {
+          throw new Error("prototype lookup exploded");
+        },
+      });
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw hostile;
+        },
+      };
+
+      const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+      expect(isFailedSimulationError(error)).toBe(true);
+      expect(error.causedByAdapterDefect).toBe(false);
+      expect(error.cancelledPayment.status).toBe("cancelled");
     });
   });
 

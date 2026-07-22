@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { AdapterContractError } from "@application/errors";
 import { MAX_SUPPORT_PAYMENT_ID_LENGTH } from "@domain/support-payment/SupportPayment";
 import { FakePaymentGateway } from "@infrastructure/payment/FakePaymentGateway";
 
@@ -61,9 +62,58 @@ describe("FakePaymentGateway", () => {
   it.each(["captured", "SUCCEEDED", "", undefined, null])(
     "rejects an outcome outside the simulated union at construction: %p",
     (outcome) => {
-      expect(() => new FakePaymentGateway({ outcome } as never)).toThrow(Error);
+      expect(() => new FakePaymentGateway({ outcome } as never)).toThrow(
+        AdapterContractError,
+      );
     },
   );
+
+  /**
+   * The configured outcome must be read off the options object EXACTLY ONCE,
+   * into a local, and both validated and stored from that local. Reading it a
+   * second time lets a getter return one value to the check and another to the
+   * field — the same read-once contract the use case applies to gateway
+   * results.
+   */
+  it("reads the configured outcome exactly once so a getter cannot flip it after validation", async () => {
+    let reads = 0;
+    const options = {
+      get outcome(): "succeeded" | "declined" {
+        reads += 1;
+        return reads === 1 ? "succeeded" : "declined";
+      },
+    };
+
+    const gateway = new FakePaymentGateway(options);
+
+    expect((await gateway.simulate(request)).outcome).toBe("succeeded");
+  });
+
+  it("cannot be configured with a value that only passes validation on its first read", async () => {
+    let reads = 0;
+    const options = {
+      get outcome() {
+        reads += 1;
+        return reads === 1 ? "succeeded" : "captured";
+      },
+    };
+
+    const gateway = new FakePaymentGateway(options as never);
+
+    expect((await gateway.simulate(request)).outcome).toBe("succeeded");
+  });
+
+  it("freezes the result so a consumer cannot flip the simulated marker", async () => {
+    const gateway = new FakePaymentGateway({ outcome: "succeeded" });
+
+    const result = await gateway.simulate(request);
+
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(() => {
+      (result as { simulated: boolean }).simulated = false;
+    }).toThrow(TypeError);
+    expect(result.simulated).toBe(true);
+  });
 
   it("derives a unique receipt reference from the payment id across instances", async () => {
     const first = await new FakePaymentGateway({ outcome: "succeeded" }).simulate(
@@ -120,7 +170,7 @@ describe("FakePaymentGateway", () => {
       const gateway = new FakePaymentGateway({ outcome: "succeeded" });
 
       await expect(gateway.simulate({ ...request, paymentId })).rejects.toThrow(
-        Error,
+        AdapterContractError,
       );
     },
   );
@@ -139,7 +189,7 @@ describe("FakePaymentGateway", () => {
         ...request,
         paymentId: "a".repeat(MAX_SUPPORT_PAYMENT_ID_LENGTH + 1),
       }),
-    ).rejects.toThrow(Error);
+    ).rejects.toThrow(AdapterContractError);
   });
 
   it("still accepts a payment id at the bound", async () => {
