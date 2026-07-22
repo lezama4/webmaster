@@ -2,7 +2,16 @@
 
 **Formato:** screencast con narración en primera persona  
 **Duración objetivo:** 9 minutos y 30 segundos  
-**Criterio de evidencia:** separar siempre lo implementado y revisado de lo que está en progreso o planificado. No presentar como verde, desplegado o transaccionalmente verificado aquello que no tenga una ejecución reproducible asociada al momento de grabar.
+**Revisión grabada:** `482aefd` en `main`. **Actualizado:** 2026-07-22.
+
+**Criterio de evidencia:** separar siempre lo implementado y verificado de lo que sigue pendiente. No presentar como verde, desplegado o transaccionalmente verificado aquello que no tenga una ejecución reproducible asociada al momento de grabar. El criterio no cambia; lo que ha cambiado es qué cae de cada lado.
+
+**Evidencia disponible al grabar:**
+
+- Ejecución de CI [29905717933](https://github.com/lezama4/webmaster/actions/runs/29905717933) sobre `482aefd`, con los dos trabajos en verde: `test` con 360 pruebas superadas y 0 omitidas (unitarias más integración y concurrencia contra PostgreSQL 16 real) y `e2e` con 12 pruebas de Playwright superadas contra PostgreSQL real y datos sembrados.
+- Aplicación desplegada y sirviendo datos sembrados en <https://webmaster-lemon.vercel.app>.
+
+**Lo que sigue sin poder afirmarse:** que el despliegue esté endurecido. No hay cabeceras de seguridad, ni CSP, ni registro de eventos, ni análisis de dependencias. Los bloques 2 y 3 no existen en `main`. El repositorio es privado.
 
 ## Preparación antes de grabar
 
@@ -15,7 +24,8 @@ Tener abiertas, por este orden:
 5. src/application/ports/MatchingUnitOfWork.ts y el caso de uso de aprobación.
 6. Las carpetas tests/unit/domain/ y tests/unit/application/.
 7. docs/security-threat-model.md y la carpeta reviews/.
-8. La aplicación local o desplegada sólo si el flujo completo está realmente disponible y verificado.
+8. La aplicación desplegada en <https://webmaster-lemon.vercel.app> (el flujo completo está disponible y verificado).
+9. La ejecución de CI 29905717933, para mostrar el resultado con revisión y fecha visibles.
 
 Grabo a 1080p, con fuente ampliada y sin notificaciones. Oculto archivos .env, secretos, correos reales y rutas personales. Utilizo únicamente datos ficticios de demostración.
 
@@ -77,7 +87,7 @@ He dividido el producto en tres bloques. El bloque uno es el núcleo de coordina
 
 “Este es el repositorio. La solución es un monolito con Next.js y TypeScript, pero organizado en capas con dependencias hacia dentro.
 
-En domain están las reglas puras: entidades, máquinas de estado e invariantes. En application están los casos de uso y los puertos que expresan lo que necesito de persistencia, sesiones o tiempo. La infraestructura y la interfaz implementan o consumen esos contratos; en este corte del vídeo las presento como trabajo en progreso cuando no haya evidencia verificable.
+En domain están las reglas puras: entidades, máquinas de estado e invariantes. En application están los casos de uso y los puertos que expresan lo que necesito de persistencia, sesiones o tiempo. La infraestructura implementa esos contratos —repositorios Prisma, tres unidades de trabajo transaccionales, sesiones, hashing y limitación de intentos— y la capa de entrega los consume desde las páginas y los once manejadores de ruta de mutación. Las cuatro capas están implementadas y su comportamiento se verifica en integración continua.
 
 La decisión de monolito es deliberada. Para este MVP, microservicios o Kubernetes añadirían complejidad operativa sin resolver una necesidad actual. La arquitectura hexagonal aporta separación y testabilidad sin distribuir prematuramente el sistema.”
 
@@ -106,7 +116,7 @@ Aquí muestro la operación pura acceptProposal. No conoce Prisma, HTTP ni Next.
 
 La concurrencia añade un segundo requisito. No basta con decidir en memoria: una propuesta podría llegar mientras se aprueba otra. Por eso el contrato withLockedSlot exige bloquear primero el hueco, leer dentro de la transacción los datos vivos, ejecutar la decisión y persistir antes de confirmar.
 
-La semántica está implementada en dominio y aplicación. La demostración de bloqueo real, índices parciales y reversión transaccional debe apoyarse en pruebas de integración reproducibles; no la presentaré como verificada hasta que esas pruebas se ejecuten en CI.”
+La semántica está implementada en dominio y aplicación, y el adaptador cumple el contrato: ejecuta un SELECT FOR UPDATE sobre la fila del hueco antes de cualquier lectura que informe la decisión. Y esto no lo afirmo por lectura del código: nueve escenarios de carrera se fuerzan con barreras explícitas, en ambos órdenes, contra PostgreSQL real, y se ejecutan en integración continua. Los índices únicos parciales se comprueban además contra el catálogo real de la base de datos.”
 
 ### Qué muestro
 
@@ -119,6 +129,8 @@ La semántica está implementada en dominio y aplicación. La demostración de b
   - bloqueo primero;
   - snapshot vivo;
   - persistencia antes de confirmar.
+- src/infrastructure/persistence/prisma/MatchingUnitOfWork.ts, señalando el SELECT ... FOR UPDATE real.
+- tests/integration/, mostrando los ficheros de carrera y el soporte de barreras.
 - design.md, ADR D4, señalando la carrera que motivó este rediseño.
 
 ### Transición
@@ -158,19 +170,21 @@ La revisión adversarial es importante porque busca cómo romper el diseño. Por
 
 ### Qué digo
 
-“La estrategia de calidad tiene varios niveles. En dominio, las pruebas cubren fábricas, transiciones ilegales, propiedad y cascadas. En aplicación, cubren roles, autorización y orquestación con puertos. Las pruebas de integración son las que deben demostrar la base de datos, las transacciones y las carreras.
+“La estrategia de calidad tiene varios niveles. En dominio, las pruebas cubren fábricas, transiciones ilegales, propiedad y cascadas. En aplicación, cubren roles, autorización y orquestación con puertos. Las de integración demuestran la base de datos, las transacciones y las carreras. Y las de extremo a extremo demuestran la cadena completa sobre HTTP real.
 
-No mostraré una consola verde si no corresponde al mismo commit y a una ejecución reproducible. Si dispongo de un resultado de CI verificable, lo mostraré indicando la fecha y revisión. Si no, mostraré las suites y diré con claridad que su ejecución en CI está pendiente.
+Muestro el resultado de integración continua indicando revisión y fecha: sobre el commit 482aefd, 360 pruebas superadas y ninguna omitida, más doce pruebas de Playwright superadas contra PostgreSQL real y datos sembrados. Señalo expresamente el cero de omitidas, porque es lo que distingue «existen pruebas de integración» de «se han ejecutado».
 
-En seguridad sigo un modelo de amenazas OWASP. La consulta pública se protege con una proyección allow-list: sólo título, descripción, fecha, duración y nombre público del artista. No deben salir ubicación exacta, mensaje privado, correo electrónico ni identificadores internos.
+En seguridad sigo un modelo de amenazas OWASP. La consulta pública se protege con una proyección allow-list: sólo título, descripción, fecha, duración y nombre público del artista. No salen ubicación exacta, mensaje privado, correo electrónico ni identificadores internos, y una prueba extremo a extremo comprueba el conjunto exacto de claves y la ausencia de cada valor prohibido en el cuerpo crudo de la respuesta.
 
-También trato las sesiones, la revocación, CSRF, límites de inicio de sesión, inyección, logging y retención de datos como controles que requieren evidencia, no como promesas. En un contexto hospitalario, ubicación e identidad son datos sensibles por contexto aunque no exista información clínica.”
+Las sesiones almacenan únicamente el hash del testigo, CSRF se aplica en los once manejadores de mutación y falla de forma cerrada, y el limitador de intentos consume cada intento de forma atómica. Todo ello con prueba ejecutada.
+
+Y ahora la parte que también hay que decir: el despliegue no está endurecido. No hay cabeceras de seguridad, ni política de contenidos, ni registro de eventos, ni análisis de dependencias. Es un MVP defendible, no un servicio listo para producción, y el modelo de amenazas lo documenta control por control. En un contexto hospitalario, ubicación e identidad son datos sensibles por contexto aunque no exista información clínica.”
 
 ### Qué muestro
 
 - tests/unit/domain/acceptProposal.test.ts y la carpeta tests/unit/application/.
-- Opción A, sólo si existe CI actual y verificable: captura limpia del CI o terminal, con commit y fecha visibles.
-- Opción B, si no hay ejecución verificable: no muestro consola verde; muestro las carpetas de pruebas y un rótulo “Pruebas de integración: pendientes de ejecución en CI”.
+- La ejecución de CI 29905717933, con commit y fecha visibles, destacando los dos trabajos en verde y el «360 passed | 0 skipped».
+- e2e/public-projection.spec.ts, mostrando la comprobación del conjunto exacto de claves permitidas.
 - docs/security-threat-model.md, secciones de activos, proyección pública y riesgos abiertos.
 - specs/public-event-browsing/spec.md, con los campos permitidos y prohibidos.
 
@@ -190,23 +204,20 @@ También trato las sesiones, la revocación, CSRF, límites de inicio de sesión
 
 El Hospital propietario acepta una. El resultado esperado es que el hueco pase a lleno, la propuesta elegida se acepte, las rivales pendientes se rechacen y se publique un evento. Finalmente, abro la consulta pública sin sesión y compruebo que sólo aparece la información permitida.
 
-Si, al grabar, el despliegue o la interfaz final aún están pendientes, no simularé esta ejecución. Mostraré esta secuencia como objetivo de demostración, junto con los escenarios de especificación y el estado del proyecto. Cuando el flujo esté disponible, sustituiré esta parte por una demo con datos ficticios y una comprobación visible de la respuesta pública.”
+Esta secuencia no es un objetivo: está automatizada en e2e/demo-chain.spec.ts y se ejecuta en integración continua contra PostgreSQL real y datos sembrados. La grabo sobre la aplicación desplegada, con datos ficticios de demostración, y muestro la comprobación de la respuesta pública.”
 
 ### Qué muestro
 
-**Si la aplicación está realmente disponible:**
+Sobre la aplicación desplegada, con las credenciales sembradas documentadas en README.md:
 
 1. Inicio de sesión como Admin y activación de perfiles.
 2. Inicio de sesión como Hospital y creación de un Slot.
 3. Inicio de sesión como Artista y envío de una Proposal.
 4. Inicio de sesión como Hospital y aprobación.
 5. Navegador en incógnito o sesión cerrada con consulta pública.
-6. Inspector de red o respuesta JSON, sólo si es seguro, para comprobar que no existen location, message, emails ni IDs internos.
+6. Inspector de red o respuesta JSON para comprobar que no existen location, message, emails ni IDs internos.
 
-**Si la aplicación no está disponible:**
-
-- Escenarios de specs/slot-proposal-coordination/spec.md y specs/public-event-browsing/spec.md.
-- Sobreimpresión: “Demo E2E y despliegue: pendientes de verificación”.
+Antes de grabar: si se ha ejecutado la suite de integración, hay que volver a sembrar con `npm run db:seed`, porque esa suite vacía los datos de demostración.
 
 ### Transición
 
@@ -220,9 +231,9 @@ Si, al grabar, el despliegue o la interfaz final aún están pendientes, no simu
 
 ### Qué digo
 
-“En el estado actual, las capas de dominio y aplicación contienen el modelo de estados, las operaciones puras, los puertos y los casos de uso revisados. Es una base relevante, pero no equivale todavía a un MVP desplegado.
+“En el estado actual, el bloque uno está implementado de extremo a extremo, desplegado y respaldado por evidencia ejecutada: las cuatro capas, las migraciones, las sesiones reales, el control de origen, la interfaz, la suite de integración contra PostgreSQL y la suite extremo a extremo.
 
-La infraestructura, las migraciones, las sesiones reales, los controles de origen, la interfaz, las pruebas de integración ejecutadas en CI y el despliegue deben verificarse antes de exponer el producto. Los hallazgos adversariales abiertos son puertas de salida, no detalles que ocultar.
+Lo que no está hecho lo digo con la misma precisión. El despliegue no tiene cabeceras de seguridad ni política de contenidos, no hay registro de eventos de seguridad ni análisis de dependencias, la validación de agregado no cubre la matriz completa de estados y los nombres de perfil y mensajes de propuesta siguen sin acotar. Los hallazgos adversariales abiertos son puertas de salida, no detalles que ocultar.
 
 Después del núcleo, el bloque dos incorporará valoraciones de eventos completados. El bloque tres modelará mecenazgo de forma simulada. Cualquier pago real, integración hospitalaria o función con datos adicionales requerirá un análisis de seguridad, privacidad y legal específico antes de implementarse.”
 
@@ -230,12 +241,12 @@ Después del núcleo, el bloque dos incorporará valoraciones de eventos complet
 
 - Tabla visible:
 
-| Implementado y revisado | En progreso / por verificar | Planificado |
+| Implementado y con prueba ejecutada | Implementado, sin endurecer | Planificado |
 | --- | --- | --- |
-| Dominio, aplicación, casos de uso y pruebas unitarias existentes. | Infraestructura, UI, pruebas de integración ejecutadas, E2E y despliegue. | Valoraciones, mecenazgo simulado y consulta pública enriquecida. |
+| Dominio, aplicación, infraestructura y entrega; migraciones e índices; sesiones y CSRF; concurrencia lock-first; suites de integración y extremo a extremo; despliegue sirviendo datos sembrados. | Cabeceras de seguridad y CSP; validación de esquema y tamaño de peticiones; registro de eventos; análisis de dependencias; matriz del agregado; límites de texto. | Valoraciones, mecenazgo simulado y consulta pública enriquecida. |
 
 - docs/memoria-tfm-borrador.md, sección de trabajo pendiente.
-- No muestro infraestructura ni migraciones en esta grabación.
+- La ejecución de CI con revisión y fecha visibles.
 
 ### Transición
 
@@ -269,7 +280,11 @@ Gracias por su atención.”
 - Añadir subtítulos y revisar contraste y tamaño de fuente.
 - Usar un cursor lento y resaltar sólo la línea o bloque relevante.
 - Sustituir todos los marcadores [nombre] y datos de ejemplo antes de exportar.
-- Antes de publicar, comprobar que cada frase sobre pruebas, despliegue, sesiones o concurrencia tiene evidencia actual. Rebajar a “diseñado”, “en progreso” o “pendiente de verificación” cuando no la tenga.
+- Antes de publicar, comprobar que cada frase sobre pruebas, despliegue, sesiones o concurrencia tiene evidencia actual. Rebajar a “diseñado”, “en progreso” o “pendiente de verificación” cuando no la tenga. El criterio sigue vigente en ambas direcciones: tampoco conviene decir “pendiente” de algo que ya está probado.
+- Volver a ejecutar `npm run test` y consultar la última ejecución de CI antes de grabar; si los números han cambiado, narrar los nuevos en lugar de los de este guion.
+- Comprobar que la URL desplegada responde y que los datos sembrados están presentes.
+
+> **TODO (autor):** decidir si mencionar en el vídeo que el repositorio es privado. Si va a seguir siéndolo, es preferible decirlo que dejar que se descubra. Y si se hace público antes de grabar, incluir el enlace o el QR en el cierre.
 
 ## Artefactos de apoyo
 
