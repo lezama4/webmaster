@@ -27,18 +27,33 @@ export interface SimulatedGatewayRequest {
 export interface SimulatedGatewayResult {
   readonly outcome: "succeeded" | "declined";
   /**
-   * ADAPTER OBLIGATION, NOT A VERIFIED GUARANTEE. The reference MUST identify
-   * the one payment it was produced for: distinct `paymentId` values MUST
-   * yield distinct references, and a reference MUST NOT be reused across
-   * calls.
+   * ENFORCED SHAPE. The reference MUST be the literal prefix `sim_` followed
+   * by one or more characters drawn from `[A-Za-z0-9_-]`, and MUST be at most
+   * `MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH` (132) characters in total.
+   * `simulateSupportPayment` checks all three and raises
+   * `AdapterContractError` otherwise, cancelling the payment — so an adapter
+   * whose own reference scheme uses a different charset or a longer format is
+   * REJECTED at runtime. The three constraints are stated here because an
+   * implementer reading only this interface has no other way to learn them.
    *
-   * `simulateSupportPayment` does NOT check this. It validates only that the
-   * reference is a bounded, explicitly synthetic `sim_`-prefixed string, so an
-   * adapter returning a constant `sim_x` for every call passes. Verifying it
-   * would require the use case to know how the adapter derives the reference,
-   * coupling the application layer to an adapter naming scheme — a worse
-   * trade than stating the obligation here. `FakePaymentGateway` discharges it
-   * with an injective identity mapping over the payment id.
+   * ADAPTER OBLIGATION, NOT A VERIFIED GUARANTEE. Beyond that shape, the
+   * reference MUST identify the one payment it was produced for: distinct
+   * `paymentId` values MUST yield distinct references, and a reference MUST
+   * NOT be reused across calls.
+   *
+   * `simulateSupportPayment` does NOT check either property. It validates only
+   * shape, charset and length, so an adapter returning a constant `sim_x` for
+   * every call passes. Verifying it would require the use case to know how the
+   * adapter derives the reference, coupling the application layer to an
+   * adapter naming scheme — a worse trade than stating the obligation here.
+   *
+   * `FakePaymentGateway` discharges INJECTIVITY OVER PAYMENT IDS, and only
+   * that: it maps `id -> sim_<id>`, so distinct ids yield distinct references.
+   * NON-REUSE ACROSS CALLS is strictly stronger and no adapter can discharge
+   * it alone — it holds only if `IdGenerator.next()` never repeats a value,
+   * which is a PRECONDITION on that port, not a property of this one. The test
+   * fake `SequentialIdGenerator` restarts its counter per instance and does
+   * not satisfy it.
    */
   readonly receiptReference: string;
   readonly simulated: true;

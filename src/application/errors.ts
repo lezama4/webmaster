@@ -12,19 +12,27 @@ import type { SupportPayment } from "@domain/support-payment/SupportPayment";
  * through to a generic 500 in `toErrorResponse`.
  *
  * For `AdapterContractError` that mapping is unreachable from
- * `simulateSupportPayment`: the error is only ever constructed inside that use
- * case's guarded region, whose `catch` unconditionally rethrows a
- * `FailedSimulationError`, so it surfaces ONLY as `FailedSimulationError.cause`
- * and never reaches `toErrorResponse` from there. (Adapters may also raise it
- * at wiring time — see `FakePaymentGateway` — which is outside any request
- * path.)
+ * `simulateSupportPayment`. There are FOUR construction sites. Three of them
+ * are reachable from this use case, and each is either inside its guarded
+ * region (`validateGatewayResult`, twice) or inside the adapter call that
+ * region awaits (`FakePaymentGateway.simulate` -> `syntheticReference`, which
+ * runs on the request path, not at wiring time); the region's `catch`
+ * unconditionally rethrows a `FailedSimulationError`, so from here the error
+ * surfaces ONLY as `FailedSimulationError.cause` and never reaches
+ * `toErrorResponse`. The fourth site — `FakePaymentGateway`'s constructor —
+ * runs when the adapter is wired, before any call reaches the use case, so it
+ * is not covered by that argument and is not reachable from a request either.
  *
  * For `FailedSimulationError` the missing mapping is a KNOWN GAP the first
- * handler to expose the simulation must close. That handler MUST branch on
- * `causedByAdapterDefect` before choosing a status: an adapter defect and a
- * legitimate decline-cancel are otherwise indistinguishable at the thrown
- * type, so mapping the class wholesale to a business status would report
- * adapter defects to clients as ordinary business outcomes.
+ * handler to expose the simulation must close. That class is raised for
+ * FAILURES ONLY: a gateway `outcome: "declined"` passes validation, settles
+ * the payment, and RESOLVES normally, so it never reaches this error at all
+ * and there is no business-outcome bucket inside the class. The handler MUST
+ * still branch on `causedByAdapterDefect` before choosing a status, because
+ * the class mixes an adapter-contract DEFECT (a bug on our side of the
+ * boundary) with a gateway or infrastructure REJECTION (an external failure).
+ * Mapping the class wholesale to a business status would be wrong for every
+ * member of it.
  */
 export abstract class ApplicationError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -53,10 +61,12 @@ export class NotFoundError extends ApplicationError {}
  * not be raised as a `DomainError`: a gateway response is not domain input.
  *
  * It is intentionally left unmapped in `toErrorResponse`. That mapping is in
- * any case unreachable from `simulateSupportPayment`, which wraps every
- * throw from its guarded region in a `FailedSimulationError`; there it
- * survives only as `cause`, discriminated by
- * `FailedSimulationError.causedByAdapterDefect`.
+ * any case unreachable from `simulateSupportPayment`, which wraps every throw
+ * from its guarded region — including throws from the adapter call that region
+ * awaits — in a `FailedSimulationError`; there it survives only as `cause`,
+ * discriminated by `FailedSimulationError.causedByAdapterDefect`. The one
+ * construction site outside that region is `FakePaymentGateway`'s constructor,
+ * which runs at wiring time.
  */
 export class AdapterContractError extends ApplicationError {}
 
@@ -94,17 +104,22 @@ export class FailedSimulationError extends ApplicationError {
   declare readonly cancelledPayment: SupportPayment;
 
   /**
-   * Whether the failure was an adapter DEFECT (`cause` is an
-   * `AdapterContractError`) rather than an ordinary business outcome such as a
-   * gateway decline or an infrastructure rejection.
+   * Whether the failure is an adapter-contract DEFECT (`cause` is an
+   * `AdapterContractError`) rather than a gateway or infrastructure REJECTION.
+   * Both arms are failures. A gateway decline is in NEITHER: a `declined`
+   * outcome settles the payment and the use case resolves normally, so it
+   * never reaches this class.
    *
    * It exists because `AdapterContractError` cannot escape
    * `simulateSupportPayment` on its own: it is raised inside the guarded
-   * region, whose `catch` unconditionally wraps it here. Without this flag the
-   * two cases are indistinguishable at the thrown type, and a handler mapping
-   * `FailedSimulationError` to a business status would report adapter defects
-   * to clients as ordinary business outcomes — the exact confusion splitting
-   * `AdapterContractError` out of the taxonomy was meant to prevent.
+   * region, whose `catch` unconditionally wraps it here, erasing the
+   * distinction at the thrown type.
+   *
+   * It is a PARTIAL classifier, not a total one. `true` means this codebase
+   * itself labelled the cause `AdapterContractError`; `false` means only that
+   * it did not. An adapter throwing its own error type is a genuine defect
+   * that reads as `false`. See "Known non-guarantees" in
+   * `docs/simulated-payment-security-review.md`.
    *
    * Own, non-enumerable, non-writable, for the same reason as
    * `cancelledPayment`: a handler must not be able to forge it.
@@ -125,6 +140,18 @@ export class FailedSimulationError extends ApplicationError {
       writable: false,
       configurable: false,
     });
+    // `Error` installs `cause` as writable AND configurable. A handler is told
+    // it may branch on the discriminator OR unwrap `cause`; leaving `cause`
+    // writable would make those two routes unequally protected, because the
+    // value the locked discriminator was derived from could still be swapped
+    // underneath it. Re-declared with the same value and the same
+    // non-enumerable shape `Error` gives it, only locked.
+    Object.defineProperty(this, "cause", {
+      value: cause,
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
   }
 }
 
@@ -132,10 +159,14 @@ export class FailedSimulationError extends ApplicationError {
  * Classifies a rejection without ever throwing itself, for the same reason as
  * `describeCause`: this runs inside the `catch`, after the payment has already
  * been cancelled, and `instanceof` performs a prototype lookup a `Proxy` can
- * trap and make throw. An unclassifiable cause is reported as NOT an adapter
- * defect, which is the conservative answer: it keeps the failure in the
- * business-outcome class rather than silently promoting an unknown value to a
- * defect.
+ * trap and make throw.
+ *
+ * A cause it cannot classify is reported as NOT a defect. That is the only
+ * answer available without throwing, but it is NOT a safe default: `false` is
+ * the value a handler is told to read as "not an adapter defect", so an
+ * unclassifiable cause is DEMOTED rather than escalated. Read `false` as "not
+ * labelled `AdapterContractError` by this codebase", never as "definitely not
+ * a defect".
  */
 function isAdapterDefect(cause: unknown): boolean {
   try {

@@ -346,7 +346,11 @@ describe("simulateSupportPayment", () => {
     });
   });
 
-  describe("everything the use case hands out is frozen", () => {
+  // Scoped deliberately: these three objects plus the payment aggregate and
+  // the `FakePaymentGateway` result are the frozen set. The thrown
+  // `FailedSimulationError` is NOT in it — it is an extensible `Error`
+  // protected per property instead.
+  describe("the receipt, the wrapper and the outbound request are frozen", () => {
     it("freezes the receipt so the simulated marker cannot be flipped", async () => {
       const result = await run(new ControlledPaymentGateway("succeeded"));
 
@@ -421,14 +425,18 @@ describe("simulateSupportPayment", () => {
   });
 
   /**
-   * `AdapterContractError` is structurally incapable of escaping this use case:
-   * it is only ever constructed inside the guarded region, whose `catch`
-   * unconditionally rethrows a `FailedSimulationError`. A future handler that
-   * maps `FailedSimulationError` to a business status therefore needs a way to
-   * tell an adapter DEFECT apart from a legitimate decline-cancel without
-   * unwrapping `cause` by hand.
+   * `AdapterContractError` cannot escape this use case on its own: every
+   * construction site is inside the guarded region or inside the adapter call
+   * that region awaits, and its `catch` unconditionally rethrows a
+   * `FailedSimulationError`.
+   *
+   * Every member of that class is a FAILURE — a gateway `declined` outcome
+   * settles and resolves normally (see "settles with a gateway-owned declined
+   * outcome"), so no business outcome arrives here. The discriminator exists to
+   * separate an adapter-contract DEFECT from a gateway or infrastructure
+   * REJECTION without unwrapping `cause` by hand.
    */
-  describe("adapter defects stay distinguishable at the thrown type", () => {
+  describe("adapter defects stay distinguishable from external rejections", () => {
     it("flags an adapter-contract violation on the wrapper", async () => {
       const paymentGateway: PaymentGateway = {
         async simulate() {
@@ -497,6 +505,68 @@ describe("simulateSupportPayment", () => {
       expect(error.causedByAdapterDefect).toBe(false);
       expect(error.cancelledPayment.status).toBe("cancelled");
     });
+  });
+
+  /**
+   * A result that is absent or not an object must be classified as an adapter
+   * defect, not left to produce a bare `TypeError` from the first property
+   * dereference. The discriminator only ever reports `true` for defects this
+   * codebase itself labels, so an unlabelled defect is silently DEMOTED into
+   * the branch a handler is told to treat as non-defect.
+   */
+  describe("a malformed gateway result is classified, not dereferenced", () => {
+    const MALFORMED_RESULTS: ReadonlyArray<[string, unknown]> = [
+      ["undefined", undefined],
+      ["null", null],
+      ["a string", "sim_not_an_object"],
+      ["a number", 42],
+      ["a boolean", true],
+    ];
+
+    it.each(MALFORMED_RESULTS)(
+      "raises an adapter-contract violation when the gateway resolves to %s",
+      async (_name, malformed) => {
+        const paymentGateway: PaymentGateway = {
+          async simulate() {
+            return malformed as never;
+          },
+        };
+
+        const error = (await caught(
+          run(paymentGateway),
+        )) as FailedSimulationError;
+
+        expect(error).toBeInstanceOf(FailedSimulationError);
+        expect(error.cause).toBeInstanceOf(AdapterContractError);
+        expect(error.causedByAdapterDefect).toBe(true);
+        expect(error.cancelledPayment.status).toBe("cancelled");
+      },
+    );
+  });
+
+  /**
+   * The documents tell a future handler it may branch on the flag OR unwrap
+   * `cause`. `Error` defines `cause` as writable and configurable, so without
+   * this the two routes are not equally protected: the flag cannot be forged
+   * but the value it was derived from can be swapped underneath it.
+   */
+  it("keeps cause non-writable so it cannot diverge from the discriminator", async () => {
+    const failure = new Error("gateway unavailable");
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw failure;
+      },
+    };
+
+    const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+    expect(() => {
+      (error as { cause: unknown }).cause = new AdapterContractError("forged");
+    }).toThrow(TypeError);
+    expect(error.cause).toBe(failure);
+    expect(
+      Object.getOwnPropertyDescriptor(error, "cause"),
+    ).toMatchObject({ enumerable: false, writable: false, configurable: false });
   });
 
   describe("the receipt reference is validated once and used once", () => {

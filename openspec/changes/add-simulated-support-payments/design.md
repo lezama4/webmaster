@@ -64,23 +64,42 @@ import `fetch`, Node networking APIs, or a provider SDK.
   error taxonomy, never a `DomainError`: a gateway response is not domain
   input, and an adapter defect is not a rejected caller operation.
 - `AdapterContractError` never reaches `toErrorResponse` from
-  `simulateSupportPayment`. It is only ever constructed inside that use case's
-  guarded region, whose `catch` unconditionally rethrows a
-  `FailedSimulationError`, so it surfaces only as `FailedSimulationError.cause`
-  and its "falls through to 500" mapping is unreachable from there.
-- Because of that type erasure, a future handler MUST branch on
-  `FailedSimulationError.causedByAdapterDefect` before choosing a status.
-  Mapping the class wholesale to a business status — on the reasoning that a
-  cancelled simulation is an ordinary business outcome — would report adapter
-  DEFECTS to clients as ordinary business outcomes, which is precisely what
-  splitting `AdapterContractError` out of the taxonomy exists to prevent.
-- Per-payment uniqueness of `receiptReference` is an adapter obligation stated
-  in the port contract, not something the use case verifies. Checking it would
-  couple the application layer to an adapter's naming scheme.
-- Denials of enumerated values report the field name and the allowed set,
-  never the rejected value. Echoing it would copy a financial identifier into
-  logs — the very channel the enumeration exists to remove — and interpolating
-  an untrusted value can itself throw.
+  `simulateSupportPayment`. It has four construction sites: two in
+  `validateGatewayResult`, plus `FakePaymentGateway`'s constructor and its
+  `syntheticReference`. Every site is either inside the use case's guarded
+  region or inside the adapter call that region awaits — `syntheticReference`
+  runs on the request path, from `FakePaymentGateway.simulate` — except the
+  constructor, which runs at wiring time before any call reaches the use case.
+  The guarded region's `catch` unconditionally rethrows a
+  `FailedSimulationError`, so from this use case the error surfaces only as
+  `FailedSimulationError.cause` and its "falls through to 500" mapping is
+  unreachable.
+- `FailedSimulationError` is raised for FAILURES ONLY. A gateway `declined`
+  outcome passes validation, settles the payment, and the use case RESOLVES
+  normally — it never reaches this error, so the class has no business-outcome
+  member. Because the wrapping erases the thrown type, a future handler MUST
+  branch on `FailedSimulationError.causedByAdapterDefect` before choosing a
+  status: the class mixes an adapter-contract DEFECT (a bug on our side of the
+  boundary) with a gateway or infrastructure REJECTION (an external failure).
+  Mapping it wholesale to a business status would be wrong for every member.
+- `causedByAdapterDefect` is a PARTIAL classifier: `true` means this codebase
+  labelled the cause, `false` means only that it did not. Genuine defects can
+  read `false` — an adapter throwing its own error type, for instance. Recorded
+  as a known non-guarantee rather than presented as a total classification.
+- The `receiptReference` SHAPE — `sim_` prefix, `[A-Za-z0-9_-]` charset,
+  132-character maximum — is enforced by the use case and therefore stated as
+  an explicit obligation in the port contract; an adapter cannot be expected to
+  discover a runtime rejection. Per-payment UNIQUENESS remains an unverified
+  adapter obligation, because checking it would couple the application layer to
+  an adapter's naming scheme. Non-reuse across calls additionally depends on
+  `IdGenerator.next()` never repeating, which is a precondition on that port.
+- No validator echoes the value it rejected. Echoing it would copy a financial
+  identifier into logs — the very channel the enumeration exists to remove —
+  and interpolating an untrusted value can itself throw. Reporting the field
+  name and the allowed set is narrower: that applies to the enumerated
+  denials (`campaignReference`, `payerKind`, `method`, settlement outcome,
+  rehydrated status), not to the denied-transition guard, which reports
+  neither.
 - Client input never includes an outcome, gateway token, payment URL, or
   provider identifier.
 - No amount is represented by `number` with a fractional semantic; the domain

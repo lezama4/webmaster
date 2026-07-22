@@ -48,10 +48,18 @@ const SIMULATED_GATEWAY_OUTCOMES: readonly SimulatedGatewayResult["outcome"][] =
 const SYNTHETIC_RECEIPT_PATTERN = /^sim_[A-Za-z0-9_-]+$/;
 
 /**
- * `sim_` plus the longest payment id the domain will issue. The reference is
- * derived from the payment id, so the domain bound is the honest bound; an
- * adapter returning anything longer is not producing a reference for one of
- * our payments.
+ * An INDEPENDENT DEFENSIVE CAP on adapter-supplied text, not a consequence of
+ * how the reference is derived. The port deliberately refuses to mandate a
+ * derivation, so no assumption about the adapter's naming scheme can justify a
+ * bound; the reason to bound at all is that the value is adapter-controlled,
+ * reaches the receipt and the logs, and `SYNTHETIC_RECEIPT_PATTERN` is itself
+ * unbounded.
+ *
+ * The number is borrowed from the domain's own id bound only because that is a
+ * known-generous size for an opaque reference. It is stated as an obligation
+ * on `SimulatedGatewayResult.receiptReference`, so an adapter needing a longer
+ * scheme changes this constant deliberately instead of discovering the limit
+ * as a runtime rejection.
  */
 export const MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH =
   "sim_".length + MAX_SUPPORT_PAYMENT_ID_LENGTH;
@@ -83,6 +91,13 @@ interface ValidatedGatewayResult {
  * check runs first. The length bound is checked here too, because the pattern
  * itself is unbounded.
  *
+ * The shape of the result is checked BEFORE any property is read. An adapter
+ * whose `simulate` resolves to `undefined` or `null` would otherwise make the
+ * first dereference throw a bare `TypeError`, which carries no label this
+ * codebase recognises: `FailedSimulationError.causedByAdapterDefect` would
+ * then report `false` for what is unambiguously an adapter defect, demoting it
+ * into the branch a handler is told to treat as a non-defect.
+ *
  * These are adapter-contract violations, not domain-invariant violations: a
  * gateway response is not domain input, so it raises an application-layer
  * error.
@@ -90,6 +105,12 @@ interface ValidatedGatewayResult {
 function validateGatewayResult(
   result: SimulatedGatewayResult,
 ): ValidatedGatewayResult {
+  if (typeof result !== "object" || result === null) {
+    throw new AdapterContractError(
+      "PaymentGateway must resolve to a simulated gateway result object",
+    );
+  }
+
   const simulated: unknown = result.simulated;
   const receiptReference: unknown = result.receiptReference;
   const outcome: unknown = result.outcome;
@@ -152,6 +173,12 @@ export async function simulateSupportPayment(
       payerKind: payment.payerKind,
       method: payment.method,
     });
+    // UNBOUNDED. There is no timeout here, so an adapter whose promise never
+    // settles leaves this payment in `pending` forever with the `catch` never
+    // running. The cancellation guarantee below therefore covers gateway calls
+    // that SETTLE — resolve or reject — and nothing else. A timeout belongs
+    // with the first caller that can reach this over the network, together
+    // with the cancellation policy for a call that later completes.
     const gatewayResult = await deps.paymentGateway.simulate(request);
     const validated = validateGatewayResult(gatewayResult);
 
@@ -173,9 +200,10 @@ export async function simulateSupportPayment(
       }),
     });
   } catch (error) {
-    // Cancellation is the documented failure path: never leave the payment
-    // stranded in `pending` because the adapter, its receipt, or the
-    // settlement failed.
+    // Cancellation is the documented failure path: once the gateway call has
+    // settled, no rejection of the adapter, its receipt, its outcome, or the
+    // settlement leaves the payment stranded in `pending`. A call that never
+    // settles is outside this guarantee — see the note on the `await` above.
     throw new FailedSimulationError(cancelSupportPayment(payment), error);
   }
 }

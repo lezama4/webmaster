@@ -154,3 +154,74 @@ decision *not* to add the control.
   case, and record it under "Known non-guarantees" — rather than coupling the
   use case to the adapter's naming scheme.
 - [x] 8.9 Regenerate the security approval evidence numbers from an actual run.
+
+> Round 6 superseded two claims recorded above. **8.1** is false as written:
+> `AdapterContractError` has four construction sites, not one region — see 9.1.
+> **8.2**'s framing of the alternative as "ordinary business outcomes" is false:
+> a declined gateway outcome resolves normally and never reaches
+> `FailedSimulationError` — see 9.2.
+
+## 9. Round-6 correction — documentation, plus two test-first code changes
+
+Round 6 of the adversarial review returned zero CRITICALs for the second
+consecutive round. Every remaining finding was a sentence asserting more than
+the code does. No security control was missing.
+
+- [x] 9.1 Correct the `AdapterContractError` construction-site claim in
+  `src/application/errors.ts`, the security approval, and the design doc. There
+  are FOUR sites: two in `validateGatewayResult`, plus `FakePaymentGateway`'s
+  constructor and its `syntheticReference`. The old wording said "only ever
+  constructed inside the guarded region" and characterised all adapter sites as
+  wiring-time, but `syntheticReference` runs on the request path. The
+  conclusion survives — that path is awaited from inside the guarded region —
+  but not for the stated reason.
+- [x] 9.2 Delete the "legitimate decline-cancel" case from
+  `src/application/errors.ts`, the security approval, the design doc, and the
+  test describe block. It does not exist: a gateway `outcome: "declined"`
+  passes validation, is settled by `settleSupportPayment(payment, "declined")`,
+  and the use case RESOLVES normally — asserted by "settles with a
+  gateway-owned declined outcome". Every constructible
+  `FailedSimulationError` is a failure, so the discriminator separates an
+  adapter-contract DEFECT from a gateway/infrastructure REJECTION, never from a
+  business outcome. The old wording would have led a handler to return a
+  business status for what is always an internal failure.
+- [x] 9.3 (code, test first) Raise `AdapterContractError` in
+  `validateGatewayResult` for a result that is absent or not an object, BEFORE
+  dereferencing any property. A gateway resolving to `undefined`/`null`
+  previously produced a bare `TypeError`, which carries no label this codebase
+  recognises, so `causedByAdapterDefect` reported `false` for an unambiguous
+  defect. Document the discriminator as a PARTIAL classifier and record the
+  remaining cases (an adapter throwing its own type, a cross-realm error, a
+  trapped prototype lookup) as a known non-guarantee, noting that the `false`
+  branch DEMOTES an unclassifiable failure rather than escalating it.
+- [x] 9.4 (code, test first) Re-declare `FailedSimulationError.cause` as own,
+  non-enumerable, non-writable and non-configurable. `Error` installs it
+  writable and configurable, so the two routes the documents offer a handler —
+  branch on the discriminator, or unwrap `cause` — were not equally protected.
+- [x] 9.5 State the `receiptReference` prefix, charset and 132-character
+  maximum as explicit obligations in the `SimulatedGatewayResult` contract: the
+  use case enforces all three and cancels the payment otherwise, and an adapter
+  author reading only the interface had no way to learn them. Rejustify
+  `MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH` as an independent defensive cap
+  rather than as a consequence of a derivation the port refuses to mandate.
+- [x] 9.6 Scope the freeze claim to the five enumerated objects and record the
+  thrown `FailedSimulationError` as extensible but protected per property.
+- [x] 9.7 Qualify "no payment is left in `pending`" to gateway calls that
+  SETTLE, in the use case, the security approval, and the spec scenario. The
+  `await` has no timeout, so a hanging adapter strands a payment with the
+  `catch` never running. Added as a known non-guarantee.
+- [x] 9.8 Split the validator claim in the security approval and the spec:
+  value-withholding holds for ALL validators; reporting the field name and the
+  allowed set applies to the enumerated denials only, not to `assertPending`,
+  whose message names neither.
+- [x] 9.9 Correct the uniqueness claim. `FakePaymentGateway` discharges
+  injectivity over payment ids only. Non-reuse across calls depends on
+  `IdGenerator.next()` never repeating, now stated as a precondition on that
+  port; `SequentialIdGenerator` restarts per instance and does not satisfy it.
+- [x] 9.10 Add the missing delta-spec scenarios: a declined outcome is not a
+  failure, a malformed gateway result is classified rather than dereferenced,
+  the adapter-defect discriminator and its locked descriptors, the bounded
+  failure message, and the runtime freezing of the receipt, result wrapper,
+  outbound request and gateway result.
+- [x] 9.11 Regenerate the security approval evidence numbers from an actual
+  run.

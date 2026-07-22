@@ -44,16 +44,25 @@ financial record, or transfer funds to an Artist or any other party.
   `simulated: true`. The request carries the marker too, so the one object
   handed to an adapter is not byte-for-byte indistinguishable from a real
   charge request.
-- **Every object this flow hands out is frozen**, so `simulated: true` cannot
-  be flipped and the aggregate cannot be swapped at the boundary: the payment
-  (`buildSupportPayment`), the receipt, the `SimulateSupportPaymentResult`
-  wrapper, the outbound `SimulatedGatewayRequest`, and the
-  `FakePaymentGateway.simulate` result. `readonly` is erased at compile time,
-  so without the freeze `result.receipt.simulated = false` would have succeeded
-  silently and an adapter could have run `delete request.simulated` before
-  reading it. Freezing the aggregate alone bought nothing at the boundary while
-  the wrapper holding it still allowed `result.payment` to be replaced by an
-  unfrozen look-alike.
+- **Five objects are frozen**: the payment (`buildSupportPayment`), the
+  receipt, the `SimulateSupportPaymentResult` wrapper, the outbound
+  `SimulatedGatewayRequest`, and the `FakePaymentGateway.simulate` result. Each
+  is asserted by a test. So `simulated: true` cannot be flipped and the
+  aggregate cannot be swapped at the boundary. `readonly` is erased at compile
+  time, so without the freeze `result.receipt.simulated = false` would have
+  succeeded silently and an adapter could have run `delete request.simulated`
+  before reading it. Freezing the aggregate alone bought nothing at the
+  boundary while the wrapper holding it still allowed `result.payment` to be
+  replaced by an unfrozen look-alike.
+- The **thrown `FailedSimulationError` is NOT frozen** — it is an extensible
+  `Error`, and the enumerated five above do not include it. It is protected
+  **per property** instead: `cancelledPayment`, `causedByAdapterDefect` and
+  `cause` are each own, non-enumerable, non-writable and non-configurable.
+  `cause` is re-declared explicitly, because `Error` installs it writable and
+  configurable; without that, the two routes the documents offer a handler —
+  branch on the discriminator, or unwrap `cause` — would not be equally
+  protected, since the locked flag could be read against a swapped cause. Both
+  descriptors are asserted by tests.
 - The module-private allowed-value sets are frozen as well — `PAYER_KINDS`,
   `PAYMENT_METHODS`, `TERMINAL_STATUSES`, `SETTLEMENT_OUTCOMES`,
   `SIMULATED_GATEWAY_OUTCOMES` and `SIMULATED_OUTCOMES`, alongside the already
@@ -82,15 +91,23 @@ financial record, or transfer funds to an Artist or any other party.
   never read from the input at all: `buildSupportPayment` hardcodes both on
   every construction, so a corrupt incoming value for either is discarded
   rather than validated.
-- Validators that reject an untrusted value report the **field name and the
-  allowed set, never the rejected value** — `campaignReference`, `payerKind`,
-  `method`, the settlement outcome, the rehydrated status, and the current
-  status in a denied transition. The enumerated `campaignReference`
-  exists so an IBAN or a PAN cannot enter through that field; echoing the
-  rejected payload into the error message would copy it into logs and error
-  aggregators, reintroducing the channel. It also keeps the assertion itself
-  safe: `String(value)` throws `TypeError` for a null-prototype object, which
-  would turn a domain denial into a programmer error.
+- **No validator in this flow echoes the value it rejected.** That is the
+  security-relevant half and it holds without exception: `assertId`,
+  `assertPending`, and every caller of `rejectUnknownValue` withhold the
+  offending value. The enumerated `campaignReference` exists so an IBAN or a
+  PAN cannot enter through that field; echoing the rejected payload into the
+  error message would copy it into logs and error aggregators, reintroducing
+  the channel. Withholding also keeps the assertion itself safe:
+  `String(value)` throws `TypeError` for a null-prototype object, which would
+  turn a domain denial into a programmer error.
+- **Naming the field and the allowed set is narrower.** Only
+  `rejectUnknownValue` does that, for `campaignReference`, `payerKind`,
+  `method`, the settlement outcome, and the rehydrated status.
+  `assertPending`'s message (`Cannot settle a SupportPayment that is not in
+  'pending' state`) names neither a field nor an allowed set — it withholds the
+  current status, which is the part that matters here and is asserted by a
+  test, but it is not an instance of the field-plus-allowed-set convention and
+  must not be cited as one.
 - `rehydrateSupportPayment` **trusts the persisted status** and re-asserts
   every caller-supplied field, so persisted or transported data cannot re-enter
   the model unvalidated. It refuses to produce `pending`, so a terminal record
@@ -129,50 +146,75 @@ financial record, or transfer funds to an Artist or any other party.
   does not rely on upstream validation: the charset pattern is unbounded, so
   without the bound an in-charset multi-megabyte id would have produced a
   multi-megabyte reference.
-- The use case rejects a gateway result that is not explicitly marked as
-  simulated, whose `receiptReference` is not a bounded `sim_`-prefixed
-  **string**, or whose `outcome` is outside the `succeeded | declined` union.
-  Each field is read off the adapter's object exactly once, into a local, and
-  the receipt and the settlement are built from those locals — an adapter
-  exposing a getter cannot return one value to the check and another to the
-  caller. The explicit `typeof` check runs before the pattern, because
-  `RegExp.test` coerces and would otherwise let `{ toString: () => "sim_ok" }`
-  land in a field typed `string`. The settlement call runs inside the guarded
-  region, so a gateway rejection, a rejected receipt, a rejected outcome, or a
-  refused settlement all cancel the pending payment. No payment is left in
-  `pending`.
+- The use case rejects a gateway result that is **absent or not an object**,
+  that is not explicitly marked as simulated, whose `receiptReference` is not a
+  bounded `sim_`-prefixed **string**, or whose `outcome` is outside the
+  `succeeded | declined` union. The shape check runs **before any property is
+  dereferenced**: an adapter resolving to `undefined` or `null` would otherwise
+  make the first read throw a bare `TypeError`, which carries no label this
+  codebase recognises, so `causedByAdapterDefect` would have reported `false`
+  for an unambiguous adapter defect. Each field is then read off the adapter's
+  object exactly once, into a local, and the receipt and the settlement are
+  built from those locals — an adapter exposing a getter cannot return one
+  value to the check and another to the caller. The explicit `typeof` check
+  runs before the pattern, because `RegExp.test` coerces and would otherwise
+  let `{ toString: () => "sim_ok" }` land in a field typed `string`.
+- The settlement call runs inside the guarded region, so **once the gateway
+  call has settled**, a gateway rejection, a malformed result, a rejected
+  receipt, a rejected outcome, or a refused settlement all cancel the pending
+  payment. That qualifier is load-bearing: `await
+  deps.paymentGateway.simulate(request)` has no timeout, so an adapter whose
+  promise never settles leaves the payment `pending` with the `catch` never
+  running. See known non-guarantee 9.
 - An adapter-contract violation raises `AdapterContractError` from
   `@application/errors`, not a `DomainError`: a gateway response is not domain
   input, and a misbehaving adapter is a defect on our side of the boundary, not
   a rejected caller operation.
 - **`AdapterContractError` never reaches `toErrorResponse` from this use
-  case.** Its only construction sites are inside `validateGatewayResult`, which
-  runs inside the guarded region whose `catch` unconditionally rethrows a
-  `FailedSimulationError`, so it is structurally incapable of escaping
-  `simulateSupportPayment` and surfaces only as `FailedSimulationError.cause`.
-  Its "falls through to a generic 500" mapping is therefore unreachable from
-  here. `FakePaymentGateway` also raises it for a request or a configuration
-  its port contract forbids; the request case is likewise wrapped by the use
-  case, and the construction-time case is raised at wiring, outside any request
-  path.
+  case.** It has **four** construction sites: two in `validateGatewayResult`,
+  plus `FakePaymentGateway`'s constructor and its `syntheticReference`. Three
+  of them are either inside the guarded region (`validateGatewayResult`) or
+  inside the adapter call that region awaits (`syntheticReference`, reached
+  from `FakePaymentGateway.simulate`), and that region's `catch`
+  unconditionally rethrows a `FailedSimulationError` — so from this use case
+  the error is structurally incapable of escaping and surfaces only as
+  `FailedSimulationError.cause`. Its "falls through to a generic 500" mapping
+  is therefore unreachable from here. The fourth site is the
+  `FakePaymentGateway` constructor, which runs when the adapter is wired,
+  before any call reaches the use case. (An earlier version of this document
+  said the error was "only ever constructed inside the guarded region" and
+  described all adapter sites as wiring-time. Both were false:
+  `syntheticReference` runs on the request path. The conclusion survives
+  because that path is awaited from inside the guarded region.)
 - `FailedSimulationError` carries `causedByAdapterDefect`, an own,
-  non-enumerable, non-writable boolean derived from whether `cause` is an
-  `AdapterContractError`. It exists because the wrapping above ERASES the
-  distinction at the thrown type: a future handler that mapped
-  `FailedSimulationError` to a non-500 business status — on the reasoning that
-  a cancelled simulation is an ordinary business outcome — would otherwise
-  report adapter DEFECTS to clients as ordinary business outcomes, which is
-  what splitting `AdapterContractError` out of the taxonomy was meant to
-  prevent. Deriving it cannot itself throw: `instanceof` performs a prototype
-  lookup a `Proxy` can trap, so the check is guarded and an unclassifiable
-  cause is conservatively reported as **not** a defect.
-- The `receiptReference` per-payment uniqueness rule is stated as an **adapter
-  obligation in the port contract**, not verified by the use case: the use case
-  checks only that the reference is a bounded, explicitly synthetic
-  `sim_`-prefixed string, so an adapter returning a constant `sim_x` for every
-  call would pass. Verifying it would couple the application layer to an
-  adapter's naming scheme. `FakePaymentGateway` discharges the obligation with
-  an injective identity mapping over the payment id.
+  non-enumerable, non-writable, non-configurable boolean derived from whether
+  `cause` is an `AdapterContractError`. It exists because the wrapping above
+  ERASES the distinction at the thrown type: a future handler that mapped
+  `FailedSimulationError` wholesale to a non-500 status would otherwise report
+  adapter DEFECTS to clients under the same status as external gateway or
+  infrastructure rejections, which is what splitting `AdapterContractError` out
+  of the taxonomy was meant to prevent. Deriving it cannot itself throw:
+  `instanceof` performs a prototype lookup a `Proxy` can trap, so the check is
+  guarded. A cause it cannot classify is reported as **not** a defect — see
+  known non-guarantee 3, which explains why that is a demotion rather than a
+  conservative default.
+- The `receiptReference` **shape** is enforced by the use case and now stated
+  in the port contract: the `sim_` prefix, the `[A-Za-z0-9_-]` charset, and the
+  132-character maximum. An adapter whose own scheme is longer or uses another
+  charset is rejected at runtime with its payment cancelled, so an implementer
+  reading only the interface had to be told. The **per-payment uniqueness**
+  rule stays an adapter obligation the use case does not verify: an adapter
+  returning a constant `sim_x` for every call passes the shape check, and
+  verifying uniqueness would couple the application layer to an adapter's
+  naming scheme. `FakePaymentGateway` discharges injectivity over payment ids
+  only — see known non-guarantee 4 for what it does not discharge.
+- `MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH` is an **independent defensive cap**
+  on adapter-supplied text, not a consequence of a derivation. The port
+  deliberately refuses to mandate how the adapter derives the reference, so no
+  assumption about its naming scheme could justify a bound. The value is
+  borrowed from the domain's id bound only because that is a known-generous
+  size; the reason to bound at all is that the value is adapter-controlled,
+  reaches the receipt and the logs, and the charset pattern is unbounded.
 - `FakePaymentGateway` reads its configured outcome off the options object
   exactly once, into a local, and both validates and stores that local — the
   same read-once contract the use case applies to gateway results. It raises
@@ -191,10 +233,23 @@ financial record, or transfer funds to an Artist or any other party.
   No HTTP status is mapped for it, because this change introduces no route;
   like any unmapped error it would fall through to a generic 500. **A handler
   that later exposes this simulation must map it explicitly, and must branch on
-  `causedByAdapterDefect` when it does.** A declined-then-cancelled simulation
-  is an ordinary business outcome, not an internal failure — but a simulation
-  cancelled by an adapter-contract violation IS an internal failure arriving in
-  the same class, and only that discriminator separates them.
+  `causedByAdapterDefect` when it does.**
+- **`FailedSimulationError` is raised for FAILURES ONLY. There is no
+  business-outcome member of this class.** A gateway `outcome: "declined"`
+  passes `validateGatewayResult`, is applied by `settleSupportPayment(payment,
+  "declined")`, and the use case **resolves normally** with a `declined`
+  payment; it never reaches this error. Every `FailedSimulationError` that can
+  be constructed therefore represents an adapter throw, an adapter-contract
+  violation, or a refused settlement. The discriminator separates an
+  adapter-contract DEFECT (a bug on our side of the boundary) from a gateway or
+  infrastructure REJECTION (an external failure) — **not** a defect from a
+  business outcome. (Earlier revisions of this document, of
+  `openspec/changes/add-simulated-support-payments/design.md`, of
+  `src/application/errors.ts`, and a test name described a "legitimate
+  decline-cancel" reaching this class. That case does not exist. Acting on the
+  old wording would have made a handler return a business status for what is
+  always an internal failure. The branch's own test, `settles with a
+  gateway-owned declined outcome`, asserts the resolving path.)
 - The failure message is derived defensively and cannot itself throw. It runs
   inside the `catch`, after the payment has already been cancelled, so a throw
   there would discard the cancelled payment and lose the cause. `message` is an
@@ -227,20 +282,34 @@ Stated here so no reader has to infer them from the absence of a claim.
    nothing to exercise. A future handler must map it, and that handler must
    bring the test with it. `AdapterContractError` is also unmapped, but that
    mapping is unreachable from `simulateSupportPayment` — see the next item.
-3. **Adapter defects are type-erased into the business-failure class at the
-   use-case boundary.** Everything thrown inside `simulateSupportPayment`'s
-   guarded region, including an `AdapterContractError`, leaves as a
-   `FailedSimulationError`. A handler therefore cannot tell an adapter defect
-   from a legitimate decline-cancel by the thrown class alone, and must branch
-   on `causedByAdapterDefect` (or unwrap `cause`) to do so. Until a handler
-   exists, no code makes that distinction, and a handler that ignores the
-   discriminator will report adapter defects as ordinary business outcomes.
-4. **Per-payment uniqueness of `receiptReference` is an unverified adapter
-   obligation.** It is stated in the `PaymentGateway` port contract, but the
-   use case validates only the reference's shape and length. An adapter
-   returning a constant `sim_x` for every call would not be detected here. The
-   obligation is discharged by `FakePaymentGateway` and asserted against that
-   adapter only.
+3. **`causedByAdapterDefect` is a PARTIAL classifier, and its `false` branch
+   silently absorbs unclassifiable failures.** It is exactly `cause instanceof
+   AdapterContractError`, so it detects only defects **this codebase itself
+   labels**. Genuine adapter defects that read `false`: an adapter throwing its
+   own error type; an `AdapterContractError` originating in another realm
+   (a worker, a `vm` context), where `instanceof` is false; and a cause behind
+   a `Proxy` whose `getPrototypeOf` traps and throws, which the guard converts
+   to `false` so that describing the failure cannot become a second failure.
+   Because the documents instruct a handler to treat `false` as the non-defect
+   branch, that guard **demotes** an unclassifiable failure instead of
+   escalating it. Read `false` as "not labelled `AdapterContractError` here",
+   never as "definitely not a defect". A result that is `undefined`, `null`, or
+   a primitive is no longer in this set: `validateGatewayResult` now labels it
+   before dereferencing, and five such shapes are asserted by tests.
+   Everything thrown inside `simulateSupportPayment`'s guarded region leaves as
+   a `FailedSimulationError`, so the thrown class alone never carries the
+   distinction, and a handler that ignores the discriminator will report
+   adapter defects under whatever status it chose for external rejections.
+4. **Neither uniqueness nor non-reuse of `receiptReference` is verified.** Both
+   are stated in the `PaymentGateway` port contract; the use case validates
+   only shape, charset and length, so an adapter returning a constant `sim_x`
+   for every call is not detected here. `FakePaymentGateway` discharges
+   **injectivity over payment ids only** — it maps `id -> sim_<id>`, asserted
+   against that adapter alone. It does **not** discharge non-reuse across
+   calls: that holds only if `IdGenerator.next()` never repeats a value.
+   `IdGenerator` now records that as an implementer obligation, but nothing
+   checks it, and the test fake `SequentialIdGenerator` restarts its counter
+   per instance and does not satisfy it.
 5. **The freeze of the module-private allowed-value sets is verified by
    inspection, not by a test.** `PAYER_KINDS`, `PAYMENT_METHODS`,
    `TERMINAL_STATUSES`, `SETTLEMENT_OUTCOMES`, `SIMULATED_GATEWAY_OUTCOMES` and
@@ -260,60 +329,78 @@ Stated here so no reader has to infer them from the absence of a claim.
    the result wrapper — holds a payment and a receipt that are each frozen in
    their own right. A future nested field would need its own freeze, and no
    check would catch its absence.
+9. **The gateway call is unbounded; "no payment is left in `pending`" holds
+   only for calls that settle.** `await deps.paymentGateway.simulate(request)`
+   has no timeout, no `AbortSignal`, and no deadline. An adapter whose promise
+   never settles leaves its payment in `pending` forever and the `catch` that
+   cancels it never runs, so the cancellation guarantee is scoped to gateway
+   calls that resolve or reject. No test covers the hang, because there is
+   nothing to observe. A timeout — and a policy for a call that completes after
+   it — is required of the first caller that can reach this over the network,
+   alongside the authentication and rate limiting in item 6.
+10. **The thrown `FailedSimulationError` is not frozen.** The error object
+    itself is extensible: a caller can add properties to it. Only
+    `cancelledPayment`, `causedByAdapterDefect` and `cause` are locked, each
+    own, non-enumerable, non-writable and non-configurable. The freeze claim
+    above covers the five enumerated objects, not this one.
 
 ## Verification performed
 
 Numbers below come from runs performed on branch `feat/support-payments`,
-against the round-5 correction applied on top of commit `d02a5d2`. They are not
+against the round-6 correction applied on top of commit `8b87e37`. They are not
 carried over from an earlier round. Every claim in this document is one these
 runs support; where a run did not establish a guarantee, the guarantee is
 listed under "Known non-guarantees" instead.
 
-- Baseline before this round (`npm run test`): **455 passed, 55 skipped**
+Round 6 was **documentation-only except for two code changes**, each written
+test-first. It corrected claims that asserted more than the code does; it added
+no security control, because the review found none missing.
+
+- Baseline before this round (`npm run test`): **473 passed, 55 skipped**
   (28 files passed, 17 skipped).
-- Test-first RED phase, round 5: the three targeted payment suites reported
-  **31 failed, 137 passed** (168 tests, 3 files failed). The failing assertions
-  covered: denial (not normalization) of a non-canonical id in both
-  `createSupportPayment` and `rehydrateSupportPayment`, bounding of the raw id
-  before normalization, `Object.isFrozen` on the receipt / the result wrapper /
-  the outbound gateway request / the `FakePaymentGateway.simulate` result,
-  bounding of the derived `FailedSimulationError.message`,
-  `causedByAdapterDefect` being `true` for an adapter-contract violation and
-  `false` for an ordinary gateway rejection, its non-writability, its survival
-  of a cause whose prototype lookup throws, the adapter reading its configured
-  outcome exactly once, and `AdapterContractError` replacing bare `Error` at
-  both `FakePaymentGateway` throw sites.
-- Targeted payment simulation suites after implementation
+- Test-first RED phase, round 6: `simulateSupportPayment.test.ts` reported
+  **3 failed, 33 passed** (36 tests). The three failures were: a gateway
+  resolving to `undefined` and one resolving to `null`, each of which produced
+  a bare `TypeError` as `cause` instead of an `AdapterContractError` (and so
+  `causedByAdapterDefect === false` for an unambiguous adapter defect); and
+  `FailedSimulationError.cause` being writable, so a caller could swap the
+  value the locked discriminator was derived from. The three `it.each` cases
+  for a string, a number and a boolean result passed already — a primitive is
+  boxed on property access, so `simulated` read as `undefined` and the existing
+  check rejected it.
+- Both changes are two-line guards:
+  `validateGatewayResult` now rejects a non-object result before dereferencing
+  it, and the `FailedSimulationError` constructor re-declares `cause` as
+  non-writable and non-configurable.
+- Targeted payment simulation suites after the change
   (`tests/unit/domain/supportPayment.test.ts`,
   `tests/unit/application/simulateSupportPayment.test.ts`,
   `tests/unit/infrastructure/fakePaymentGateway.test.ts`):
-  **168 passed, 0 failed**.
-- Independent re-check outside the committed suite, run this round: the six
-  adversarial campaign payloads all returned `DENIED (DomainValidationError)`
-  against the allowed set `["campaign-music-ward",
-  "campaign-artist-residency", "campaign-hospital-outreach",
-  "campaign-general-fund"]`, and for all six the error message did **not**
-  contain the rejected payload. In the same run, `"  support-payment-1  "`,
-  `" support-payment-1"`, `"support-payment-1 "`, `"support-payment-1\n"`,
-  `"\tsupport-payment-1"` and `"support payment"` each returned `DENIED
-  (DomainValidationError)` — none was accepted and normalized. The throwaway
-  check file was deleted after the run.
-- Full Vitest suite (`npm run test`): **473 passed, 55 skipped**
-  (28 files passed, 17 skipped) — the baseline 455 plus 18 tests added this
-  round. The skipped suites require a PostgreSQL environment not available in
-  this run.
+  **174 passed, 0 failed** (3 files) — the previous 168 plus the 6 added this
+  round.
+- Full Vitest suite (`npm run test`): **479 passed, 55 skipped**
+  (28 files passed, 17 skipped) — the baseline 473 plus the 6 added this round,
+  with no pre-existing test modified. The skipped suites require a PostgreSQL
+  environment not available in this run.
 - TypeScript: `npx tsc --noEmit --incremental false` exited 0 with no output.
 - ESLint: `npm run lint` exited 0 with no findings.
-- Static import review of `src/domain/support-payment/`,
-  `src/application/ports/PaymentGateway.ts`,
+- Carried forward from round 5 and NOT re-run this round: the independent
+  adversarial re-check of the six campaign payloads and the six non-canonical
+  id payloads outside the committed suite. Those behaviours are unchanged by
+  this round and remain covered by the committed domain suite, which passed
+  above.
+- Static import review, re-run this round over
+  `src/domain/support-payment/`, `src/application/ports/PaymentGateway.ts`,
+  `src/application/ports/IdGenerator.ts`,
   `src/application/use-cases/simulateSupportPayment.ts`,
-  `src/application/errors.ts`, and `src/infrastructure/payment/` found only
-  intra-project type and error imports (`@domain/...`, `@application/...`,
-  `../errors`), no dynamic `import()`/`require()`, and no occurrence of
-  `fetch`, `XMLHttpRequest`, `WebSocket`, `http`/`https`, `net`,
-  `PrismaClient`, or `process.env`. `FakePaymentGateway` now additionally
-  imports the value `AdapterContractError` from `@application/errors`, which is
-  an intra-project taxonomy import of the same kind.
+  `src/application/errors.ts`, and `src/infrastructure/payment/`: every import
+  statement in these files resolves inside the project (`@domain/...`,
+  `@application/...`, `../errors`) — five `import type` and five value imports,
+  the latter being the domain factories, the domain id bound, and the two error
+  classes. `IdGenerator.ts` imports nothing. There is no dynamic
+  `import()`/`require()` and no occurrence of `fetch`, `XMLHttpRequest`,
+  `WebSocket`, `http`/`https`, `net`, `PrismaClient`, or `process.env`. This
+  round added no import to any of these files.
 
 ## Non-negotiable limits
 

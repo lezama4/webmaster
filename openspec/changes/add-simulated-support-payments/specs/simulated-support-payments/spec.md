@@ -77,11 +77,15 @@ forwarded to the gateway as the request `paymentId`.
 - GIVEN a rejected `campaignReference`, `payerKind`, `method`, settlement
   outcome, or rehydrated status, or the current status of a denied transition
 - WHEN the domain denies it
-- THEN the error message MUST report the field name and the allowed set
-- AND it MUST NOT contain the rejected value, which may be a financial
-  identifier and must not reach a log or an error aggregator
+- THEN the error message MUST NOT contain the rejected value, which may be a
+  financial identifier and must not reach a log or an error aggregator
 - AND the denial MUST be a domain error even when the value's string conversion
   is hostile (a null-prototype object, a symbol, a throwing `toString`)
+- AND for the enumerated denials ONLY — `campaignReference`, `payerKind`,
+  `method`, settlement outcome, rehydrated status — the message MUST report the
+  field name and the allowed set. The denied-transition guard reports neither;
+  it withholds the current status, and that withholding is the requirement it
+  MUST satisfy.
 
 ### Requirement: Terminal-outcome immutability is delegated to persistence
 
@@ -160,15 +164,78 @@ so they are not asserted.
 
 #### Scenario: A failed simulation cancels the pending payment
 
-- GIVEN a pending payment whose gateway call rejects, whose result fails the
-  synthetic receipt check, whose result carries an outcome outside the
-  `succeeded | declined` union, or whose settlement is refused
+- GIVEN a pending payment whose gateway call rejects, whose result is absent or
+  not an object, whose result fails the synthetic receipt check, whose result
+  carries an outcome outside the `succeeded | declined` union, or whose
+  settlement is refused
 - WHEN the application handles the failure
 - THEN the payment MUST be cancelled and a `FailedSimulationError` thrown
-- AND no payment MUST be left in `pending`
+- AND no payment whose gateway call SETTLED — resolved or rejected — MUST be
+  left in `pending`. The gateway call is not bounded by a timeout, so a call
+  that never settles is outside this requirement and is recorded as a known
+  non-guarantee.
 - AND `FailedSimulationError` MUST belong to the application error taxonomy
 - AND an adapter-contract violation MUST be reported as an application-layer
   error, never as a domain error, because a gateway response is not domain input
+
+#### Scenario: A declined outcome is not a failure
+
+- GIVEN a gateway that returns a well-formed result with `outcome: "declined"`
+- WHEN the application simulates the payment
+- THEN the use case MUST resolve normally with a `declined` payment and a
+  receipt, and MUST NOT throw
+- AND `FailedSimulationError` MUST therefore be documented as covering failures
+  only, with no business-outcome member
+
+#### Scenario: A malformed gateway result is classified, not dereferenced
+
+- GIVEN an adapter whose `simulate` resolves to `undefined`, `null`, or a
+  primitive
+- WHEN the application validates the result
+- THEN it MUST raise `AdapterContractError` BEFORE reading any property, so the
+  failure carries a label this codebase recognises instead of a bare
+  `TypeError`
+- AND the wrapping `FailedSimulationError` MUST report
+  `causedByAdapterDefect` as `true`
+
+#### Scenario: An adapter defect is distinguishable from an external rejection
+
+- GIVEN a `FailedSimulationError` produced by an adapter-contract violation and
+  one produced by an adapter that threw an ordinary error
+- WHEN a caller inspects them
+- THEN `causedByAdapterDefect` MUST be `true` for the first and `false` for the
+  second
+- AND `causedByAdapterDefect` and `cause` MUST each be own, non-enumerable,
+  non-writable and non-configurable, so neither can be forged and the flag
+  cannot be read against a swapped cause
+- AND deriving the flag MUST NOT throw for a cause whose prototype lookup
+  traps; such a cause MUST report `false`
+- AND that `false` MUST be documented as "not labelled `AdapterContractError`
+  by this codebase", never as "not a defect", because the flag detects only the
+  defects this codebase labels
+
+#### Scenario: The derived failure message is bounded
+
+- GIVEN an adapter that rejects with an arbitrarily long message
+- WHEN the application derives `FailedSimulationError.message`
+- THEN the message MUST NOT exceed `MAX_FAILED_SIMULATION_MESSAGE_LENGTH`,
+  truncation marker included, because it is adapter-supplied text that reaches
+  logs
+- AND the full original value MUST survive verbatim on `cause`
+- AND a message already within the bound MUST be left untouched
+
+#### Scenario: The five handed-out objects are frozen at runtime
+
+- GIVEN a completed simulation
+- WHEN the caller receives the result
+- THEN the receipt, the result wrapper, the outbound `SimulatedGatewayRequest`,
+  and the `FakePaymentGateway` result MUST each be frozen, alongside the
+  payment aggregate, so `simulated` cannot be flipped, `request.simulated`
+  cannot be deleted before the adapter reads it, and `result.payment` cannot be
+  swapped for an unfrozen look-alike — `readonly` is erased at compile time
+- AND the thrown `FailedSimulationError` is NOT covered by this requirement: it
+  is an extensible `Error` protected per property, which MUST be recorded as a
+  known non-guarantee rather than claimed as a freeze
 
 #### Scenario: Describing a hostile rejection never discards the cancelled payment
 
@@ -217,6 +284,14 @@ or provider account.
 - AND the adapter MUST enforce the payment id's length bound as well as its
   charset, since it does not rely on upstream validation and the charset
   pattern is unbounded
+- AND the port contract MUST state the shape the use case enforces — the `sim_`
+  prefix, the `[A-Za-z0-9_-]` charset, and
+  `MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH` — because an adapter author reading
+  only the interface would otherwise meet those constraints as a runtime
+  rejection that cancels the payment
+- AND non-reuse of a reference ACROSS calls MUST be stated as a precondition on
+  `IdGenerator.next()` never repeating a value, not as something the adapter
+  discharges: the adapter discharges injectivity over payment ids only
 
 #### Scenario: The outbound request is marked as a simulation
 
