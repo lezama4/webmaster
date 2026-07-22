@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
 import { projectCoordinates } from "@ui/finder/projectCoordinates";
 import { selectMappableHospitals } from "@ui/finder/selectMappableHospitals";
+import { BALEARIC_ISLANDS, SPAIN_MAINLAND_RING, toClosedSmoothPath } from "@ui/finder/spainOutline";
 
 import { hospitalAccessibleName, hospitalKey } from "./hospitalIdentity";
 
@@ -33,6 +34,14 @@ export function HospitalMap({
   const t = useTranslations("Finder");
   const pins = selectMappableHospitals(hospitals);
 
+  // The landmass is projected through the SAME function as the pins, so the
+  // coastline and the hospitals can never drift apart — see `spainOutline`.
+  const mainland = toClosedSmoothPath(SPAIN_MAINLAND_RING.map(([lat, lng]) => projectCoordinates(lat, lng)));
+  const islands = BALEARIC_ISLANDS.map(({ centre: [lat, lng], rx, ry }) => {
+    const { x, y } = projectCoordinates(lat, lng);
+    return { cx: x, cy: y, rx, ry };
+  });
+
   return (
     <div
       role="group"
@@ -44,11 +53,22 @@ export function HospitalMap({
         focusable="false"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
-        className="absolute inset-0 h-full w-full text-border"
+        className="absolute inset-0 h-full w-full text-muted"
       >
-        <rect x="2" y="2" width="96" height="96" rx="6" fill="none" stroke="currentColor" strokeWidth="1" />
-        <line x1="2" y1="50" x2="98" y2="50" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
-        <line x1="50" y1="2" x2="50" y2="98" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
+        <g
+          fill="currentColor"
+          fillOpacity="0.13"
+          stroke="currentColor"
+          strokeOpacity="0.45"
+          strokeWidth="0.8"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        >
+          <path d={mainland} />
+          {islands.map((island) => (
+            <ellipse key={`${island.cx}-${island.cy}`} cx={island.cx} cy={island.cy} rx={island.rx} ry={island.ry} />
+          ))}
+        </g>
       </svg>
 
       {pins.map((hospital) => {

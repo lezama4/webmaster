@@ -2,7 +2,7 @@
   "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender, y por qué no, llorar, mientras disfrutan junto a sus seres queridos de momentos que no podrán olvidar.", "browseEvents": "Ver próximos eventos", "registerProfile": "Registrar un hospital o perfil",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender, y por qué no, a llorar, mientras disfrutan junto a sus seres queridos de momentos que no podréis olvidar.",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {
@@ -47,6 +47,14 @@
       "description": "Hospitales y artistas se registran en el mismo lugar. Un coordinador revisa cada perfil antes de que pueda actuar.",
       "primaryCta": "Registrar un hospital o perfil",
       "secondaryCta": "Ver próximos eventos"
+    },
+    "what": {
+      "eyebrow": "Qué es Vivetutiempo",
+      "title": "Cultura en directo para acompañar la espera.",
+      "description": "Vivetutiempo conecta hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
+      "steps": ["Los hospitales publican huecos", "Los artistas proponen actividades", "Se publica el evento"],
+      "primaryCta": "Ver próximos eventos",
+      "secondaryCta": "Cómo funciona"
     }
   },
   "Help": {
@@ -73,6 +81,50 @@
     "map": { "ariaLabel": "Mapa indicativo de hospitales participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
     "empty": { "title": "No encontramos hospitales con esa búsqueda", "description": "Probá con otro nombre, ciudad o código postal." },
     "noLocation": "Ubicación no indicada"
+  },
+  "About": {
+    "nav": "Quiénes somos",
+    "eyebrow": "Quiénes somos",
+    "title": "Una plataforma sin ánimo de lucro para llevar cultura en directo a la cama del hospital.",
+    "intro": "Aquí explicamos qué es Vivetutiempo, quién participa, cómo se protege la privacidad y por qué es gratis. Para el paso a paso de cómo publicar o proponer, visitá la Ayuda.",
+    "purpose": {
+      "title": "Nuestro propósito",
+      "description": "Las estancias hospitalarias largas aíslan. Vivetutiempo existe para que la música, el teatro y los talleres lleguen a planta sin sustituir el cuidado clínico, siempre coordinados con el hospital."
+    },
+    "roles": {
+      "title": "Quién participa",
+      "items": [
+        { "name": "Administrador", "description": "Valida cada perfil de hospital y artista antes de que pueda actuar en la plataforma." },
+        { "name": "Hospital", "description": "Publica huecos en la agenda de su planta cuando hay espacio para una actividad." },
+        { "name": "Artista", "description": "Propone una actividad para un hueco publicado, dentro de su área y disponibilidad." },
+        { "name": "Paciente y familia", "description": "Disfrutan del evento programado, sin necesidad de registrarse." }
+      ]
+    },
+    "flow": {
+      "title": "El recorrido, de un vistazo",
+      "description": "Un hueco nace en el hospital, un artista lo propone, y termina siendo un evento público. Para el detalle de cada paso, consultá la Ayuda.",
+      "stages": ["Hueco publicado", "Propuesta de artista", "Evento confirmado"]
+    },
+    "validation": {
+      "title": "Perfiles validados",
+      "description": "Ningún hospital ni artista puede actuar en la plataforma hasta que un administrador revisa y aprueba su perfil. Esa validación es lo que mantiene Vivetutiempo seguro y con sentido clínico."
+    },
+    "dataStance": {
+      "title": "Qué datos publicamos, y qué no",
+      "description": "Publicamos lo necesario para encontrar un hospital o un evento: nombre, ciudad, código postal y, para hospitales, una ubicación aproximada en el mapa.",
+      "excludedTitle": "Deliberadamente, nunca publicamos:",
+      "excluded": [
+        "La sala o planta exacta donde ocurre un evento",
+        "El contenido de las propuestas entre hospitales y artistas",
+        "Direcciones de correo electrónico o identificadores internos de la base de datos",
+        "Cualquier relación visible entre un hospital concreto y sus eventos"
+      ],
+      "note": "El directorio de hospitales y el listado de eventos se mantienen deliberadamente sin enlazar entre sí: ver un hospital nunca revela qué eventos ha tenido, y ver un evento nunca revela en qué hospital ocurrió."
+    },
+    "funding": {
+      "title": "Por qué es gratis",
+      "description": "Vivetutiempo es una iniciativa sin ánimo de lucro. Hospitales, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
+    }
   },
   "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en hospitales participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada planta.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los hospitales aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
   "Login": { "title": "Te damos la bienvenida", "description": "Iniciá sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tenés una cuenta?", "register": "Registrar un hospital o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },

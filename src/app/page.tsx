@@ -15,11 +15,20 @@ export default async function Home() {
   const patrons = t.raw("trust.patrons") as string[];
   const artists = t.raw("artists.items") as ArtistItem[];
   const reviews = t.raw("reviews.items") as ReviewItem[];
+  const whatSteps = t.raw("what.steps") as string[];
 
   return (
     <div className="flex flex-col">
-      {/* 1. Hero — large, full-bleed image with a big serif statement overlaid. */}
-      <section className="relative isolate flex min-h-[75vh] items-end overflow-hidden sm:min-h-[88vh]">
+      {/* 1. Hero — large, full-bleed image with a big serif statement overlaid.
+          Deliberately short of a full viewport: the "what this is" block below
+          must break the fold, or a first-time visitor sees only the emotional
+          statement and never learns what the platform does. Sized so the next
+          section's eyebrow and heading are READ, not merely glimpsed: its own
+          top padding is 112px, so the hero has to stop well short of the
+          viewport for any of that section's text to clear the fold. The hero
+          carries no call to action — the ones that matter live in the block
+          below, where the reader already knows what they are choosing. */}
+      <section className="relative isolate flex min-h-[54vh] items-end overflow-hidden sm:min-h-[58vh]">
         <Image
           src="/images/hero-cello-community-v2.png"
           alt={t("hero.imageAlt")}
@@ -39,19 +48,44 @@ export default async function Home() {
             {t("title.secondLine")}
           </h1>
           <p className="max-w-[52ch] text-lg leading-relaxed text-on-scrim/85">{t("description")}</p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-2">
-            <Link href="/events" className={primaryButton}>
-              {t("browseEvents")}
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-medium text-on-scrim/90 underline underline-offset-4 transition-colors duration-150 hover:text-on-scrim"
-            >
-              {t("registerProfile")}
-            </Link>
-          </div>
         </div>
       </section>
+
+      {/* 1.5 What we do — the clarity block. States what the platform does,
+          that it's free/non-profit, and the 3-step flow; links to
+          /quienes-somos for depth. Sits between Hero (h1) and Mission (h2),
+          so its own heading is an h2 — no skipped level. */}
+      <Reveal className="border-t border-border">
+        <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-20 sm:px-6 md:py-28">
+          <div className="flex flex-col gap-4 md:max-w-2xl">
+            <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("what.eyebrow")}</span>
+            <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
+              {t("what.title")}
+            </h2>
+            <p className="max-w-[56ch] text-lg leading-relaxed text-muted">{t("what.description")}</p>
+          </div>
+          <ol className="grid gap-6 border-t border-border pt-8 sm:grid-cols-3">
+            {whatSteps.map((step, index) => (
+              <li key={step} className="flex flex-col gap-2">
+                <span className="font-mono text-sm text-primary">{String(index + 1).padStart(2, "0")}</span>
+                <span className="font-medium">{step}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link href="/events" className={primaryButton}>
+              {t("what.primaryCta")}
+            </Link>
+            <Link
+              href="/quienes-somos"
+              className="text-sm font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-accent"
+            >
+              {t("what.secondaryCta")}
+              <span aria-hidden="true"> →</span>
+            </Link>
+          </div>
+        </section>
+      </Reveal>
 
       {/* 2. Mission — the emotional "why". */}
       <Reveal className="border-t border-border">

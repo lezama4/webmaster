@@ -45,18 +45,28 @@ function BrandMark() {
 function SiteHeader({
   eventsLabel,
   finderLabel,
+  aboutLabel,
   helpLabel,
   loginLabel,
   registerLabel,
-}: Record<"eventsLabel" | "finderLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
+}: Record<"eventsLabel" | "finderLabel" | "aboutLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
+  // Pinned only once the nav fits on one line. Wrapped across two or three
+  // rows the header stands about 120px tall, and permanently reserving that
+  // much of a phone screen costs more than a pinned header is worth — so on
+  // small viewports it scrolls away like any other content.
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="z-40 border-b border-border bg-background/85 backdrop-blur sm:sticky sm:top-0">
+      {/* The row wraps instead of holding a fixed height. Six links plus the
+          language selector overflow a phone-width viewport, and an unwrapped
+          flex row does not clip — it widens the document, so the ENTIRE page
+          scrolls sideways. Wrapping keeps every destination reachable and
+          keyboard-navigable at any width; the header simply grows taller. */}
+      <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <BrandMark />
           <span>Vivetutiempo</span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
           <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {eventsLabel}
           </Link>
@@ -65,6 +75,12 @@ function SiteHeader({
             className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
           >
             {finderLabel}
+          </Link>
+          <Link
+            href="/quienes-somos"
+            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
+          >
+            {aboutLabel}
           </Link>
           <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {helpLabel}
@@ -97,9 +113,10 @@ function SiteFooter({ description, helpLabel }: { description: string; helpLabel
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [t, tFinder, locale, messages] = await Promise.all([
+  const [t, tFinder, tAbout, locale, messages] = await Promise.all([
     getTranslations("Layout"),
     getTranslations("Finder"),
+    getTranslations("About"),
     getLocale(),
     getMessages(),
   ]);
@@ -111,6 +128,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <SiteHeader
             eventsLabel={t("nav.events")}
             finderLabel={tFinder("nav")}
+            aboutLabel={tAbout("nav")}
             helpLabel={t("nav.help")}
             loginLabel={t("nav.login")}
             registerLabel={t("nav.register")}
