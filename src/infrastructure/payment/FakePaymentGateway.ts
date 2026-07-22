@@ -4,9 +4,24 @@ import type {
   SimulatedGatewayResult,
 } from "@application/ports/PaymentGateway";
 
+type SimulatedOutcome = SimulatedGatewayResult["outcome"];
+
 export interface FakePaymentGatewayOptions {
   /** Trusted test/server configuration, never caller-controlled request data. */
-  readonly outcome: "succeeded" | "declined";
+  readonly outcome: SimulatedOutcome;
+}
+
+const SIMULATED_OUTCOMES: readonly SimulatedOutcome[] = ["succeeded", "declined"];
+
+/**
+ * Derives an obviously synthetic, per-payment receipt reference. Deriving it
+ * from the payment id (instead of a per-instance counter) keeps it unique and
+ * traceable across gateway instances — two fresh gateways must never both
+ * claim `sim_1`. Characters outside the synthetic-reference charset are
+ * replaced so the result always stays recognizable as a simulation.
+ */
+function syntheticReference(paymentId: string): string {
+  return `sim_${paymentId.replace(/[^A-Za-z0-9_-]/g, "-")}`;
 }
 
 /**
@@ -14,21 +29,32 @@ export interface FakePaymentGatewayOptions {
  * stores no financial data, and returns only an explicitly synthetic receipt.
  */
 export class FakePaymentGateway implements PaymentGateway {
-  private sequence = 0;
+  /**
+   * The outcome is captured as a scalar at construction, never read back off
+   * the caller's options object: holding that reference would let a later
+   * mutation of the configuration flip an already-wired simulated outcome.
+   */
+  private readonly outcome: SimulatedOutcome;
 
-  constructor(private readonly options: FakePaymentGatewayOptions) {}
+  constructor(options: FakePaymentGatewayOptions) {
+    if (!SIMULATED_OUTCOMES.includes(options?.outcome)) {
+      throw new Error(
+        "FakePaymentGateway must be configured with a 'succeeded' or 'declined' simulated outcome",
+      );
+    }
+    this.outcome = options.outcome;
+  }
 
   async simulate(
     request: SimulatedGatewayRequest,
   ): Promise<SimulatedGatewayResult> {
-    // The request is deliberately not used to decide success or decline.
-    // Keeping that outcome in trusted adapter configuration prevents a caller
-    // from turning the simulation into a client-controlled "payment success".
-    void request;
-    this.sequence += 1;
+    // Only the payment id is read, and only to derive the receipt reference.
+    // The request never decides success or decline: keeping that outcome in
+    // trusted adapter configuration prevents a caller from turning the
+    // simulation into a client-controlled "payment success".
     return {
-      outcome: this.options.outcome,
-      receiptReference: `sim_${this.sequence}`,
+      outcome: this.outcome,
+      receiptReference: syntheticReference(request.paymentId),
       simulated: true,
     };
   }

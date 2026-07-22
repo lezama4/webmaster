@@ -1,5 +1,6 @@
 import { DomainValidationError } from "@domain/errors";
 import {
+  cancelSupportPayment,
   createSupportPayment,
   settleSupportPayment,
   type SimulatedPaymentMethod,
@@ -7,7 +8,10 @@ import {
   type SupportPayment,
 } from "@domain/support-payment/SupportPayment";
 import type { IdGenerator } from "@application/ports/IdGenerator";
-import type { PaymentGateway } from "@application/ports/PaymentGateway";
+import type {
+  PaymentGateway,
+  SimulatedGatewayResult,
+} from "@application/ports/PaymentGateway";
 
 export interface SimulateSupportPaymentInput {
   readonly campaignReference: string;
@@ -29,6 +33,30 @@ export interface SimulateSupportPaymentDeps {
 export interface SimulateSupportPaymentResult {
   readonly payment: SupportPayment;
   readonly receipt: SimulatedPaymentReceipt;
+}
+
+/**
+ * A simulation that never reached a settlement carries the payment it left
+ * behind, cancelled. Without it a gateway rejection or a rejected receipt
+ * would abandon the created payment in `pending` forever, and the documented
+ * `pending -> cancelled` arm would have no driver in the application layer.
+ */
+export type FailedSimulationError = Error & {
+  readonly cancelledPayment: SupportPayment;
+};
+
+export function isFailedSimulationError(
+  error: unknown,
+): error is FailedSimulationError {
+  return error instanceof Error && "cancelledPayment" in error;
+}
+
+function withCancelledPayment(
+  error: unknown,
+  cancelledPayment: SupportPayment,
+): FailedSimulationError {
+  const failure = error instanceof Error ? error : new Error(String(error));
+  return Object.assign(failure, { cancelledPayment });
 }
 
 function assertSyntheticReceipt(reference: string, simulated: boolean): void {
@@ -55,15 +83,26 @@ export async function simulateSupportPayment(
     method: input.method,
   });
 
-  const gatewayResult = await deps.paymentGateway.simulate({
-    paymentId: payment.id,
-    campaignReference: payment.campaignReference,
-    amountCents: payment.amountCents,
-    currency: payment.currency,
-    payerKind: payment.payerKind,
-    method: payment.method,
-  });
-  assertSyntheticReceipt(gatewayResult.receiptReference, gatewayResult.simulated);
+  let gatewayResult: SimulatedGatewayResult;
+  try {
+    gatewayResult = await deps.paymentGateway.simulate({
+      paymentId: payment.id,
+      campaignReference: payment.campaignReference,
+      amountCents: payment.amountCents,
+      currency: payment.currency,
+      simulated: true,
+      payerKind: payment.payerKind,
+      method: payment.method,
+    });
+    assertSyntheticReceipt(
+      gatewayResult.receiptReference,
+      gatewayResult.simulated,
+    );
+  } catch (error) {
+    // Cancellation is the documented failure path: never leave the payment
+    // stranded in `pending` because the adapter or its receipt failed.
+    throw withCancelledPayment(error, cancelSupportPayment(payment));
+  }
 
   return {
     payment: settleSupportPayment(payment, gatewayResult.outcome),

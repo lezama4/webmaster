@@ -26,3 +26,15 @@
 - [x] 4.2 Run TypeScript typecheck and ESLint.
 - [x] 4.3 Review imports and confirm no real-payment identifier, network call,
   provider SDK, or financial persistence was introduced.
+
+## 5. Post-review hardening — test first
+
+- [x] 5.1 Constrain `campaignReference` to a slug charset and bound/trim `id`,
+  so neither field can carry financial or control-character data.
+- [x] 5.2 Add `rehydrateSupportPayment`, build every payment field by field,
+  and freeze it so terminal states and `simulated` hold at runtime.
+- [x] 5.3 Validate and capture the fake adapter outcome at construction, and
+  derive the synthetic receipt reference from the payment id.
+- [x] 5.4 Mark the gateway request `simulated: true` and cancel the pending
+  payment when the gateway call or its receipt check fails.
+- [x] 5.5 Regenerate the security approval evidence from an actual run.

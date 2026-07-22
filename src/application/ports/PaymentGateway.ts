@@ -9,6 +9,12 @@ export interface SimulatedGatewayRequest {
   readonly campaignReference: string;
   readonly amountCents: number;
   readonly currency: "EUR";
+  /**
+   * Carried on the request, not only on the response: this is the one object
+   * handed to a foreign adapter, so it must never be byte-for-byte
+   * indistinguishable from a real charge request.
+   */
+  readonly simulated: true;
   readonly payerKind: SupportPayerKind;
   readonly method: SimulatedPaymentMethod;
 }
