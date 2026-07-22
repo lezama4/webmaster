@@ -64,6 +64,16 @@
       ]
     }
   },
+  "Finder": {
+    "nav": "Encuentra tu hospital",
+    "title": "Encuentra tu hospital",
+    "description": "Consultá los hospitales que ya forman parte de Vivetutiempo y comprobá si el tuyo está entre ellos.",
+    "search": { "label": "Buscar por nombre, ciudad o código postal", "placeholder": "Por ejemplo: Bilbao, 48013…" },
+    "resultCount": { "all": "{count} hospitales encontrados", "partial": "{count} hospitales encontrados · {mappable} en el mapa" },
+    "map": { "ariaLabel": "Mapa indicativo de hospitales participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
+    "empty": { "title": "No encontramos hospitales con esa búsqueda", "description": "Probá con otro nombre, ciudad o código postal." },
+    "noLocation": "Ubicación no indicada"
+  },
   "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en hospitales participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada planta.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los hospitales aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
   "Login": { "title": "Te damos la bienvenida", "description": "Iniciá sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tenés una cuenta?", "register": "Registrar un hospital o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
   "Register": { "title": "Registrarse", "description": "Hospitales y artistas se unen aquí. Cada perfil se revisa antes de poder actuar.", "email": "Correo electrónico", "password": "Contraseña", "passwordHint": "Al menos 8 caracteres.", "submit": "Crear perfil", "submitting": "Enviando…", "alreadyRegistered": "¿Ya estás registrado?", "login": "Iniciar sesión", "role": { "label": "Quiero registrar un", "hospital": "Hospital", "artist": "Artista" }, "name": { "hospital": "Nombre del hospital", "artist": "Nombre artístico" }, "location": { "city": "Ciudad", "postalCode": "Código postal", "addressLine": "Dirección", "hint": "Opcional. Ayuda a las familias a encontrar el hospital en el mapa." }, "errors": { "duplicateEmail": "Ya existe una cuenta con ese correo electrónico.", "failure": "No se ha podido completar el registro. Revisá tus datos y volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." }, "success": { "title": "Solicitud recibida", "description": "Tu perfil está pendiente de revisión por parte de un coordinador. Podés iniciar sesión cuando se apruebe.", "action": "Ir al inicio de sesión" } },
