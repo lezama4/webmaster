@@ -1,6 +1,21 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { buildPageMetadata } from "@/app/metadata";
+
 type RoleItem = { name: string; description: string };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, tHome] = await Promise.all([getTranslations("About"), getTranslations("Home")]);
+  return buildPageMetadata({
+    // The short nav label ("Quiénes somos"), not the long editorial H1 —
+    // keeps the <title> tag concise instead of duplicating a full sentence.
+    pageTitle: t("nav"),
+    description: t("intro"),
+    path: "/quienes-somos",
+    imageAlt: tHome("hero.imageAlt"),
+  });
+}
 
 /**
  * Static, public `/quienes-somos` page (spec: public-information). Mirrors

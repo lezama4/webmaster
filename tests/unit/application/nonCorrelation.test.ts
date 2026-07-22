@@ -24,6 +24,22 @@ import {
   FakePublicEventProjectionQuery,
   FakePublicHospitalDirectoryQuery,
 } from "./support/fakes";
+import en from "../../../messages/en.json";
+import es from "../../../messages/es.json";
+import eu from "../../../messages/eu.json";
+// Not imported from prisma/seed.ts for the same reason e2e/support/helpers.ts
+// itself isn't: that file's top-level `main().then(...)` runs a real seeding
+// side effect on import. e2e/support/helpers.ts is the existing, side-effect-
+// free mirror of those constants (see its own file comment) and is already
+// the single source `e2e/non-correlation.spec.ts` uses for this exact check
+// at the browser boundary — reusing it here keeps both halves of the D10
+// suite asserting against the SAME concrete names.
+import {
+  SEED_ACTIVE_HOSPITALS,
+  SEED_COMPLETED_EVENT_TITLE,
+  SEED_PENDING_HOSPITAL_NAME,
+  SEED_PUBLISHED_EVENT_TITLE,
+} from "../../../e2e/support/helpers";
 
 const HOSPITAL_ALLOW_LISTED_FIELDS = [
   "city",
@@ -227,5 +243,77 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     const [first, second] = result;
     expect(Object.keys(first).sort()).toEqual(Object.keys(second).sort());
     expect(Object.keys(first).sort()).toEqual(HOSPITAL_ALLOW_LISTED_FIELDS);
+  });
+});
+
+/**
+ * D10 extends past the DTOs above to the STATIC UI COPY layered on top of
+ * them (share affordance + Open Graph metadata, task: share-and-metadata).
+ * Share text and OG descriptions are hand-written strings in
+ * `messages/*.json`, not derived from any query — nothing above stops a
+ * future edit from writing "Concierto en el Hospital San Juan" as a
+ * WhatsApp share message. `/events` and `/encuentra-tu-momento` both reuse
+ * their own on-page `description` string as BOTH the Open Graph description
+ * AND the share message (see `src/app/metadata.ts`'s `buildPageMetadata`
+ * and the `ShareRow` call sites in each page) — deliberately, so there is
+ * ONE string per page to audit here, not two independently-drifting ones.
+ */
+describe("D10 — static UI copy (share text & Open Graph description) must not correlate hospital <-> event", () => {
+  const LOCALES = [
+    { label: "es", messages: es },
+    { label: "en", messages: en },
+    { label: "eu", messages: eu },
+  ] as const;
+
+  it("Events.description (reused as OG description + share text) never names a seeded hospital, city, or postal code, in any locale", () => {
+    const forbidden = [
+      ...SEED_ACTIVE_HOSPITALS.flatMap((hospital) => [hospital.name, hospital.city, hospital.postalCode]),
+      SEED_PENDING_HOSPITAL_NAME,
+    ];
+
+    for (const { label, messages } of LOCALES) {
+      const description = messages.Events.description;
+      for (const value of forbidden) {
+        expect(description, `${label} Events.description must not contain "${value}"`).not.toContain(value);
+      }
+    }
+  });
+
+  it("Finder.description (reused as OG description + share text) never names a seeded event title, in any locale", () => {
+    const forbidden = [SEED_PUBLISHED_EVENT_TITLE, SEED_COMPLETED_EVENT_TITLE];
+
+    for (const { label, messages } of LOCALES) {
+      const description = messages.Finder.description;
+      for (const value of forbidden) {
+        expect(description, `${label} Finder.description must not contain "${value}"`).not.toContain(value);
+      }
+    }
+  });
+
+  /**
+   * Beyond named seed values: the product instruction for this surface is
+   * categorical — Finder-surface copy must not mention events, scheduled
+   * activities, or anything event-derived AT ALL, not just avoid one
+   * specific seeded title. There is no DTO shape to allow-list against for
+   * hand-authored copy, so a curated, per-locale term list is the concrete
+   * way to assert that categorically (mirrors this file's own allow-list
+   * philosophy, applied to prose instead of object keys).
+   */
+  const EVENT_INDICATING_TERMS: Record<(typeof LOCALES)[number]["label"], readonly string[]> = {
+    es: ["evento", "eventos", "concierto", "actuaci", "actividad", "artista", "programad"],
+    en: ["event", "concert", "performance", "activit", "artist", "scheduled"],
+    eu: ["ekitaldi", "kontzertu", "jarduera", "artista", "programa"],
+  };
+
+  it("Finder.description contains no event-indicating term, in any locale", () => {
+    for (const { label, messages } of LOCALES) {
+      const description = messages.Finder.description.toLowerCase();
+      for (const term of EVENT_INDICATING_TERMS[label]) {
+        expect(
+          description,
+          `${label} Finder.description must not contain event-indicating term "${term}"`,
+        ).not.toContain(term);
+      }
+    }
   });
 });

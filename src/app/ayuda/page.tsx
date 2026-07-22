@@ -1,6 +1,26 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { buildPageMetadata } from "@/app/metadata";
+
 type FaqItem = { question: string; answer: string };
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Help has no own short "nav" key — Layout.nav.help is the label already
+  // used for this page in the header, reused here for the same reason
+  // About uses its own `nav` key (a concise <title> tag, not the longer H1).
+  const [tLayout, t, tHome] = await Promise.all([
+    getTranslations("Layout"),
+    getTranslations("Help"),
+    getTranslations("Home"),
+  ]);
+  return buildPageMetadata({
+    pageTitle: tLayout("nav.help"),
+    description: t("intro"),
+    path: "/ayuda",
+    imageAlt: tHome("hero.imageAlt"),
+  });
+}
 
 export default async function HelpPage() {
   const t = await getTranslations("Help");

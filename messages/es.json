@@ -1,6 +1,18 @@
 {
   "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
+  "Share": {
+    "heading": "Compartí esta página",
+    "footerLabel": "Compartí Vivetutiempo",
+    "nativeShare": "Compartir esta página",
+    "whatsapp": "Compartir por WhatsApp",
+    "telegram": "Compartir por Telegram",
+    "linkedin": "Compartir en LinkedIn",
+    "email": "Compartir por correo electrónico",
+    "copyLink": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "copyError": "No se pudo copiar el enlace"
+  },
   "Home": {
     "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender, y por qué no, a llorar, mientras disfrutan junto a sus seres queridos de momentos que no podréis olvidar.",
     "ariaRating": "{rating} de 5 estrellas",

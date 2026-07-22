@@ -97,8 +97,12 @@ export function HospitalFinder({
 
       {/* ADR D11: client-side filtering mutates the DOM with no navigation
           to announce — without this, a screen-reader user gets silence
-          while pins/cards appear or vanish. */}
-      <p aria-live="polite" aria-atomic="true" className="text-sm text-muted">
+          while pins/cards appear or vanish. `id` lets e2e target THIS live
+          region specifically — the page-level and footer ShareRow (task:
+          share-and-metadata) each render their own `aria-live="polite"`
+          copy-announcement region too, so the bare attribute selector is no
+          longer unique on this page. */}
+      <p id="hospital-result-count" aria-live="polite" aria-atomic="true" className="text-sm text-muted">
         {mappableCount < filtered.length
           ? t("resultCount.partial", { count: filtered.length, mappable: mappableCount })
           : t("resultCount.all", { count: filtered.length })}

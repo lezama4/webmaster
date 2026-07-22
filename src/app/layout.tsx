@@ -3,8 +3,10 @@ import Link from "next/link";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { ShareRow } from "@ui/share/ShareRow";
 import "./globals.css";
 import { LanguageSelector } from "./LanguageSelector";
+import { absoluteUrl, buildPageMetadata, metadataBase, SITE_NAME } from "./metadata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,11 +25,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Vivetutiempo — live moments for hospital stays",
-  description:
-    "A non-profit platform that helps hospitals and artists bring live performances to patients and their families during long stays.",
-};
+/**
+ * Home has no single title/description string of its own (the H1 is split
+ * across `Home.title.firstLine`/`secondLine`) — everything else composes
+ * `Metadata` from its own page's already-translated `title`/`description`
+ * via `buildPageMetadata` (see `src/app/metadata.ts`).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Home");
+  return {
+    metadataBase,
+    ...(await buildPageMetadata({
+      pageTitle: `${t("title.firstLine")} ${t("title.secondLine")}`,
+      description: t("what.description"),
+      path: "/",
+      imageAlt: t("hero.imageAlt"),
+    })),
+  };
+}
 
 function BrandMark() {
   return (
@@ -98,7 +113,17 @@ function SiteHeader({
   );
 }
 
-function SiteFooter({ description, helpLabel }: { description: string; helpLabel: string }) {
+function SiteFooter({
+  description,
+  helpLabel,
+  shareHeading,
+  shareUrl,
+}: {
+  description: string;
+  helpLabel: string;
+  shareHeading: string;
+  shareUrl: string;
+}) {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:px-6">
@@ -107,16 +132,26 @@ function SiteFooter({ description, helpLabel }: { description: string; helpLabel
         <Link href="/ayuda" className="w-fit underline underline-offset-4 transition-colors hover:text-foreground">
           {helpLabel}
         </Link>
+        {/* One quiet line sharing the SITE itself — deliberately separate
+            from the page-level rows on /events and /encuentra-tu-momento
+            (product decision, task brief). Reuses the mission statement
+            already shown above as the share message: single source of
+            copy, nothing new to author or audit. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs">
+          <span>{shareHeading}</span>
+          <ShareRow url={shareUrl} title={SITE_NAME} text={description} compact />
+        </div>
       </div>
     </footer>
   );
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [t, tFinder, tAbout, locale, messages] = await Promise.all([
+  const [t, tFinder, tAbout, tShare, locale, messages] = await Promise.all([
     getTranslations("Layout"),
     getTranslations("Finder"),
     getTranslations("About"),
+    getTranslations("Share"),
     getLocale(),
     getMessages(),
   ]);
@@ -134,7 +169,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             registerLabel={t("nav.register")}
           />
           <main className="flex-1">{children}</main>
-          <SiteFooter description={t("footer.description")} helpLabel={t("footer.help")} />
+          <SiteFooter
+            description={t("footer.description")}
+            helpLabel={t("footer.help")}
+            shareHeading={tShare("footerLabel")}
+            shareUrl={absoluteUrl("/")}
+          />
         </NextIntlClientProvider>
       </body>
     </html>

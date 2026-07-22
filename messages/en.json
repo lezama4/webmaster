@@ -4,6 +4,18 @@
     "footer": { "description": "A non-profit initiative bringing live performances to patients during hospital stays. Free for hospitals, artists, and families.", "help": "Help" }
   },
   "LanguageSelector": { "label": "Language selector" },
+  "Share": {
+    "heading": "Share this page",
+    "footerLabel": "Share Vivetutiempo",
+    "nativeShare": "Share this page",
+    "whatsapp": "Share via WhatsApp",
+    "telegram": "Share via Telegram",
+    "linkedin": "Share on LinkedIn",
+    "email": "Share via email",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "copyError": "The link could not be copied"
+  },
   "Home": {
     "badge": "Non-profit · free for everyone involved",
     "title": { "firstLine": "We help keep life", "secondLine": "from standing still." },
