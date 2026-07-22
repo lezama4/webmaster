@@ -317,6 +317,215 @@ describe("SupportPayment (simulation-only domain)", () => {
       settleSupportPayment(pendingPayment(), "refunded" as never),
     ).toThrow(DomainValidationError);
   });
+
+  describe("rejection reporting", () => {
+    /**
+     * Values whose string conversion is hostile. `String(value)` is NOT a
+     * sufficient guard: it throws `TypeError` for a null-prototype object, so
+     * a validator that interpolates the rejected value at all reports a
+     * programmer error instead of a domain denial.
+     */
+    const HOSTILE_VALUES: ReadonlyArray<[string, unknown]> = [
+      ["null-prototype object", Object.create(null) as unknown],
+      ["symbol", Symbol("hostile")],
+      [
+        "object with a throwing toString",
+        {
+          toString() {
+            throw new Error("toString exploded");
+          },
+        },
+      ],
+    ];
+
+    it.each(HOSTILE_VALUES)(
+      "denies a hostile campaignReference (%s) as a domain violation",
+      (_name, value) => {
+        expect(() =>
+          createSupportPayment({
+            id: "payment-hostile-campaign",
+            campaignReference: value as never,
+            amountCents: 100,
+            payerKind: "individual",
+            method: "card",
+          }),
+        ).toThrow(DomainValidationError);
+      },
+    );
+
+    it.each(HOSTILE_VALUES)(
+      "denies a hostile payerKind (%s) as a domain violation",
+      (_name, value) => {
+        expect(() =>
+          createSupportPayment({
+            id: "payment-hostile-payer",
+            campaignReference: "campaign-music-ward",
+            amountCents: 100,
+            payerKind: value as never,
+            method: "card",
+          }),
+        ).toThrow(DomainValidationError);
+      },
+    );
+
+    it.each(HOSTILE_VALUES)(
+      "denies a hostile method (%s) as a domain violation",
+      (_name, value) => {
+        expect(() =>
+          createSupportPayment({
+            id: "payment-hostile-method",
+            campaignReference: "campaign-music-ward",
+            amountCents: 100,
+            payerKind: "individual",
+            method: value as never,
+          }),
+        ).toThrow(DomainValidationError);
+      },
+    );
+
+    it.each(HOSTILE_VALUES)(
+      "denies a hostile settlement outcome (%s) as a domain violation",
+      (_name, value) => {
+        expect(() =>
+          settleSupportPayment(pendingPayment(), value as never),
+        ).toThrow(DomainValidationError);
+      },
+    );
+
+    /**
+     * `assertPending` is the first guard a transition runs, and it runs against
+     * cast input too, so it is a sibling of the enumerated validators: a
+     * hostile `status` must produce a transition denial, not a `TypeError`
+     * raised while building the message.
+     */
+    it.each(HOSTILE_VALUES)(
+      "denies a transition on a payment with a hostile status (%s)",
+      (_name, value) => {
+        expect(() =>
+          settleSupportPayment(
+            corruptPendingPayment({ status: value }),
+            "succeeded",
+          ),
+        ).toThrow(InvalidTransitionError);
+
+        expect(() =>
+          cancelSupportPayment(corruptPendingPayment({ status: value })),
+        ).toThrow(InvalidTransitionError);
+      },
+    );
+
+    it("never echoes the current status when denying a transition", () => {
+      const payload = "4111111111111111";
+
+      expect(() =>
+        cancelSupportPayment(corruptPendingPayment({ status: payload })),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+    });
+
+    it.each(HOSTILE_VALUES)(
+      "denies a hostile rehydrated status (%s) as a domain violation",
+      (_name, value) => {
+        expect(() =>
+          rehydrateSupportPayment({
+            id: "support-payment-1",
+            campaignReference: "campaign-music-ward",
+            amountCents: 5000,
+            payerKind: "institution",
+            method: "bizum",
+            status: value as never,
+          }),
+        ).toThrow(DomainValidationError);
+      },
+    );
+
+    /**
+     * The enumerated campaign set exists precisely so an IBAN or a PAN never
+     * enters through this field. Echoing the rejected value into the error
+     * message would copy it straight into logs and error aggregators, which is
+     * the very leak the enumeration removes. `assertId` already withholds its
+     * value; every sibling validator must too.
+     */
+    it("never echoes a rejected campaignReference into the error message", () => {
+      const payload = "es9121000418450200051332";
+
+      expect(() =>
+        createSupportPayment({
+          id: "payment-leak-campaign",
+          campaignReference: payload as never,
+          amountCents: 100,
+          payerKind: "individual",
+          method: "card",
+        }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+    });
+
+    it("never echoes a rejected payerKind or method into the error message", () => {
+      const payload = "4111111111111111";
+
+      expect(() =>
+        createSupportPayment({
+          id: "payment-leak-payer",
+          campaignReference: "campaign-music-ward",
+          amountCents: 100,
+          payerKind: payload as never,
+          method: "card",
+        }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+
+      expect(() =>
+        createSupportPayment({
+          id: "payment-leak-method",
+          campaignReference: "campaign-music-ward",
+          amountCents: 100,
+          payerKind: "individual",
+          method: payload as never,
+        }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+    });
+
+    it("never echoes a rejected settlement outcome or rehydrated status", () => {
+      const payload = "ES91 2100 0418 4502 0005 1332";
+
+      expect(() =>
+        settleSupportPayment(pendingPayment(), payload as never),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+
+      expect(() =>
+        rehydrateSupportPayment({
+          id: "support-payment-1",
+          campaignReference: "campaign-music-ward",
+          amountCents: 5000,
+          payerKind: "institution",
+          method: "bizum",
+          status: payload as never,
+        }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining(payload) as unknown as string,
+        }),
+      );
+    });
+  });
 });
 
 describe("rehydrateSupportPayment", () => {
@@ -348,13 +557,33 @@ describe("rehydrateSupportPayment", () => {
   });
 
   it.each(["succeeded", "declined", "cancelled"] as const)(
-    "rebuilds a %s payment",
+    "trusts the persisted status and rebuilds a %s payment",
     (status) => {
       expect(rehydrateSupportPayment({ ...persisted(), status }).status).toBe(
         status,
       );
     },
   );
+
+  /**
+   * Stated as a known non-guarantee, not as a feature. `rehydrateSupportPayment`
+   * is a pure function: it has no prior state to compare against, so it cannot
+   * detect that the same persisted record was previously read as `declined`.
+   * Terminal-outcome immutability is a PERSISTENCE-LAYER invariant, and this
+   * change ships no persistence. Whatever repository later stores these rows
+   * must enforce it (a status column that only ever moves out of `pending`,
+   * once).
+   */
+  it("does not prevent a declined record from being re-read as succeeded (persistence-layer invariant, not implemented here)", () => {
+    const record = persisted();
+
+    expect(rehydrateSupportPayment({ ...record, status: "declined" }).status).toBe(
+      "declined",
+    );
+    expect(
+      rehydrateSupportPayment({ ...record, status: "succeeded" }).status,
+    ).toBe("succeeded");
+  });
 
   it("ignores unknown persisted properties", () => {
     const payment = rehydrateSupportPayment({
@@ -366,7 +595,7 @@ describe("rehydrateSupportPayment", () => {
     expect(Object.keys(payment).sort()).toEqual(SUPPORT_PAYMENT_KEYS);
   });
 
-  it("cannot reopen a terminal payment by rehydrating it as pending", () => {
+  it("refuses to forge a pending payment out of persisted data", () => {
     expect(() =>
       rehydrateSupportPayment({ ...persisted(), status: "pending" } as never),
     ).toThrow(DomainValidationError);

@@ -115,8 +115,9 @@ export interface RehydrateSupportPaymentInput {
   readonly method: SimulatedPaymentMethod;
   /**
    * Terminal only. A `pending` payment is produced by `createSupportPayment`
-   * from its own inputs, so rehydration can never be used as an exported
-   * status setter that reopens a settled or cancelled payment.
+   * from its own inputs, so rehydration cannot forge an unsettled payment out
+   * of a stored record. It does NOT constrain WHICH terminal status is
+   * presented — see `rehydrateSupportPayment`.
    */
   readonly status: SupportPaymentTerminalStatus;
 }
@@ -135,8 +136,10 @@ interface SupportPaymentFields {
  * (never a spread of the previous value) is what stops a cast or deserialized
  * object from laundering unknown properties — a smuggled `pan`, `cvv`, `iban`,
  * or `payoutAccount` — into a settled payment. `Object.freeze` makes the
- * `readonly` state machine hold at runtime too, so a terminal payment cannot
- * be reopened and `simulated` cannot be flipped to `false`.
+ * `readonly` modifiers hold at runtime too: an existing payment OBJECT cannot
+ * have its `status` reassigned back to `pending` and `simulated` cannot be
+ * flipped to `false`. That is a guarantee about this instance, not about which
+ * statuses `rehydrateSupportPayment` will accept for a stored record.
  */
 function buildSupportPayment(fields: SupportPaymentFields): SupportPayment {
   return Object.freeze({
@@ -180,22 +183,40 @@ function assertId(value: string): string {
   return id;
 }
 
+/**
+ * Reports a rejected enumerated value by naming the FIELD and the allowed set,
+ * never the value itself. Two reasons, both load-bearing:
+ *
+ * 1. Leak. The enumerated `campaignReference` exists precisely so an IBAN or a
+ *    PAN can never enter through it. Echoing the rejected value into the
+ *    message would copy that same payload into every log line and error
+ *    aggregator the message reaches — reintroducing the channel the
+ *    enumeration removed. `assertId` already withholds its value.
+ * 2. Robustness. These assertions run on cast or deserialized input. Any
+ *    interpolation of an untrusted value can itself throw: `String(value)`
+ *    raises `TypeError` for a null-prototype object or an object with a
+ *    throwing `toString`, turning a domain denial into a programmer error.
+ *
+ * The allowed set is safe to include: it is system-issued, closed, and public.
+ */
+function rejectUnknownValue(field: string, allowed: readonly string[]): never {
+  throw new DomainValidationError(
+    `SupportPayment ${field} is not one of the allowed values (${allowed.join(", ")})`,
+  );
+}
+
 function assertCampaignReference(
   value: SupportCampaignReference,
 ): SupportCampaignReference {
   if (!SUPPORT_CAMPAIGN_REFERENCES.includes(value)) {
-    throw new DomainValidationError(
-      `SupportPayment campaignReference '${String(value)}' is not a known campaign identifier`,
-    );
+    rejectUnknownValue("campaignReference", SUPPORT_CAMPAIGN_REFERENCES);
   }
   return value;
 }
 
 function assertTerminalStatus(status: SupportPaymentTerminalStatus): void {
   if (!TERMINAL_STATUSES.includes(status)) {
-    throw new DomainValidationError(
-      `SupportPayment cannot be rehydrated into status '${String(status)}'; only ${TERMINAL_STATUSES.join(", ")} are terminal`,
-    );
+    rejectUnknownValue("rehydrated status", TERMINAL_STATUSES);
   }
 }
 
@@ -213,31 +234,39 @@ function assertAmountCents(amountCents: number): void {
 
 function assertPayerKind(payerKind: SupportPayerKind): void {
   if (!PAYER_KINDS.includes(payerKind)) {
-    throw new DomainValidationError(
-      `SupportPayment payerKind '${payerKind}' is invalid`,
-    );
+    rejectUnknownValue("payerKind", PAYER_KINDS);
   }
 }
 
 function assertMethod(method: SimulatedPaymentMethod): void {
   if (!PAYMENT_METHODS.includes(method)) {
-    throw new DomainValidationError(
-      `SupportPayment method '${method}' is invalid`,
-    );
+    rejectUnknownValue("method", PAYMENT_METHODS);
   }
 }
 
+/**
+ * The first guard a transition runs, and it runs against cast input too, so it
+ * withholds the current status for the same two reasons as
+ * `rejectUnknownValue`: the value is untrusted, and interpolating it can throw
+ * a `TypeError` instead of denying the transition.
+ */
 function assertPending(payment: SupportPayment, transition: string): void {
   if (payment.status !== "pending") {
     throw new InvalidTransitionError(
-      `Cannot ${transition} a SupportPayment in '${payment.status}' state (requires 'pending')`,
+      `Cannot ${transition} a SupportPayment that is not in 'pending' state`,
     );
   }
 }
 
 /**
- * Re-runs every non-status assertion and returns the normalized values.
- * Transitions use it too: checking `status` alone would let a cast or
+ * Re-asserts the five caller-supplied fields — `id`, `campaignReference`,
+ * `amountCents`, `payerKind`, `method` — and returns their normalized values.
+ * `currency` and `simulated` are deliberately NOT asserted: they are never
+ * read off the input, because `buildSupportPayment` hardcodes them on every
+ * construction, so a corrupt incoming value for either is discarded rather
+ * than validated.
+ *
+ * Transitions use this too: checking `status` alone would let a cast or
  * deserialized object carrying a corrupt known value — a negative amount, an
  * IBAN in a field, an unknown method — emerge as a frozen, valid-looking
  * terminal payment.
@@ -282,10 +311,33 @@ export function createSupportPayment(
 
 /**
  * Rebuilds a SupportPayment from persisted or transported data in one of its
- * terminal statuses. It re-runs every assertion so corrupt data fails fast,
- * copies only known fields so no extra property survives the round trip, and
- * rejects `pending` so it cannot be used to reopen a terminal payment and
- * settle it again to the opposite outcome.
+ * terminal statuses.
+ *
+ * What it guarantees:
+ * - It TRUSTS the persisted status and re-asserts every caller-supplied field
+ *   (`id`, `campaignReference`, `amountCents`, `payerKind`, `method`), so
+ *   corrupt stored data fails fast instead of re-entering the model.
+ * - It copies only known fields, so no extra property survives the round trip.
+ * - It refuses to produce `pending`, so a terminal record cannot be
+ *   reconstructed as an unsettled one and then driven through
+ *   `settleSupportPayment` a second time.
+ *
+ * What it explicitly does NOT guarantee — terminal-outcome immutability.
+ * A record persisted as `declined` can be rehydrated as `succeeded`:
+ *
+ *     rehydrateSupportPayment({ ...declinedFields, status: "succeeded" })
+ *
+ * returns a frozen, valid `succeeded` payment. This is not an oversight and
+ * it is not fixable here. This is a PURE function: it receives one input and
+ * has no prior state to compare the presented status against, so the check is
+ * not merely absent, it is impossible at this signature.
+ *
+ * Terminal-outcome immutability is a PERSISTENCE-LAYER invariant, and this
+ * change ships no persistence. Whatever repository later stores these records
+ * MUST enforce it — a status column that leaves `pending` exactly once and is
+ * never rewritten afterwards, enforced by the store (a conditional update
+ * guarded on the current status, or an append-only event log), not by this
+ * function.
  */
 export function rehydrateSupportPayment(
   input: RehydrateSupportPaymentInput,
@@ -315,9 +367,7 @@ export function settleSupportPayment(
   assertPending(payment, "settle");
   const fields = assertKnownFields(payment);
   if (!SETTLEMENT_OUTCOMES.includes(outcome)) {
-    throw new DomainValidationError(
-      `SupportPayment settlement outcome '${String(outcome)}' is invalid`,
-    );
+    rejectUnknownValue("settlement outcome", SETTLEMENT_OUTCOMES);
   }
   return buildSupportPayment({
     id: fields.id,

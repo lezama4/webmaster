@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MAX_SUPPORT_PAYMENT_ID_LENGTH } from "@domain/support-payment/SupportPayment";
 import { FakePaymentGateway } from "@infrastructure/payment/FakePaymentGateway";
 
 const request = {
@@ -123,4 +124,30 @@ describe("FakePaymentGateway", () => {
       );
     },
   );
+
+  /**
+   * The adapter enforces the charset itself rather than trusting upstream
+   * validation, so it must enforce the bound itself too: an in-charset id of
+   * unbounded length is accepted by the pattern and yields an equally
+   * unbounded receipt reference.
+   */
+  it("refuses to derive a reference from an in-charset but unbounded payment id", async () => {
+    const gateway = new FakePaymentGateway({ outcome: "succeeded" });
+
+    await expect(
+      gateway.simulate({
+        ...request,
+        paymentId: "a".repeat(MAX_SUPPORT_PAYMENT_ID_LENGTH + 1),
+      }),
+    ).rejects.toThrow(Error);
+  });
+
+  it("still accepts a payment id at the bound", async () => {
+    const gateway = new FakePaymentGateway({ outcome: "succeeded" });
+    const paymentId = "a".repeat(MAX_SUPPORT_PAYMENT_ID_LENGTH);
+
+    expect((await gateway.simulate({ ...request, paymentId })).receiptReference).toBe(
+      `sim_${paymentId}`,
+    );
+  });
 });

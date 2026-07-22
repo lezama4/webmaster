@@ -60,15 +60,49 @@ forwarded to the gateway as the request `paymentId`.
 
 - GIVEN a stored simulated payment in a terminal status
 - WHEN the system rebuilds it
-- THEN every invariant MUST be re-checked and corrupt data denied
+- THEN every caller-supplied field (`id`, `campaignReference`, `amountCents`,
+  `payerKind`, `method`) MUST be re-asserted and corrupt data denied
 - AND only known fields MUST survive the round trip
+- AND the persisted `status` MUST be trusted, not re-derived
 
-#### Scenario: Rehydration cannot reopen a terminal payment
+#### Scenario: Rehydration cannot forge a pending payment
 
 - GIVEN a stored simulated payment presented with status `pending`
 - WHEN the system attempts to rebuild it
-- THEN the domain MUST deny it, so rehydration cannot be used to reopen a
-  terminal payment and settle it again to the opposite outcome
+- THEN the domain MUST deny it, so a terminal record cannot be reconstructed as
+  an unsettled one and then driven through settlement a second time
+
+#### Scenario: Rejecting an enumerated value MUST NOT echo it
+
+- GIVEN a rejected `campaignReference`, `payerKind`, `method`, settlement
+  outcome, or rehydrated status, or the current status of a denied transition
+- WHEN the domain denies it
+- THEN the error message MUST report the field name and the allowed set
+- AND it MUST NOT contain the rejected value, which may be a financial
+  identifier and must not reach a log or an error aggregator
+- AND the denial MUST be a domain error even when the value's string conversion
+  is hostile (a null-prototype object, a symbol, a throwing `toString`)
+
+### Requirement: Terminal-outcome immutability is delegated to persistence
+
+`rehydrateSupportPayment` is a pure function. It has no prior state to compare
+a presented status against, so it MUST NOT be documented, tested, or reviewed
+as preventing an outcome flip. Rejecting `pending` closes only the two-step
+route (reopen, then settle); the one-step route — presenting a `declined`
+record as `succeeded` — is open and is NOT a defect at this layer.
+
+Any repository that later persists these records MUST enforce terminal-outcome
+immutability itself: a status that leaves `pending` exactly once and is never
+rewritten afterwards, enforced by the store through a conditional update
+guarded on the current status or an append-only event log.
+
+#### Scenario: A persisted terminal outcome can be re-read as another terminal outcome
+
+- GIVEN a record persisted as `declined`
+- WHEN it is rehydrated with status `succeeded`
+- THEN the domain MUST return a valid frozen `succeeded` payment
+- AND this MUST be recorded as a known non-guarantee of this layer, with the
+  invariant assigned to the future persistence layer
 
 ### Requirement: Only the fake gateway determines a simulated outcome
 
@@ -95,8 +129,11 @@ by client input.
 A `pending` payment MAY transition to `succeeded`, `declined`, or `cancelled`.
 Every terminal state MUST deny any later transition, at runtime and not only
 through compile-time types. A transition MUST copy only the known payment
-fields, never an arbitrary set of properties from its input, and MUST re-run
-every field assertion before rebuilding.
+fields, never an arbitrary set of properties from its input, and MUST re-assert
+every caller-supplied field (`id`, `campaignReference`, `amountCents`,
+`payerKind`, `method`) before rebuilding. `currency` and `simulated` are
+hardcoded on every construction and are therefore never read from the input,
+so they are not asserted.
 
 #### Scenario: A succeeded payment cannot be settled again
 
@@ -129,6 +166,27 @@ every field assertion before rebuilding.
 - WHEN the application handles the failure
 - THEN the payment MUST be cancelled and a `FailedSimulationError` thrown
 - AND no payment MUST be left in `pending`
+- AND `FailedSimulationError` MUST belong to the application error taxonomy
+- AND an adapter-contract violation MUST be reported as an application-layer
+  error, never as a domain error, because a gateway response is not domain input
+
+#### Scenario: Describing a hostile rejection never discards the cancelled payment
+
+- GIVEN an adapter that rejects with a value whose `message` throws, is a
+  symbol, or is a null-prototype object
+- WHEN the application builds the failure message
+- THEN it MUST fall back to a description that cannot throw
+- AND the cancelled payment and the original `cause` MUST both survive
+
+#### Scenario: The gateway result is read exactly once
+
+- GIVEN an adapter exposing `receiptReference` or `outcome` as a getter that
+  returns a different value on a second read
+- WHEN the application validates and then uses the result
+- THEN the returned receipt and the settled status MUST be the values that were
+  validated
+- AND a `receiptReference` that is not a bounded string MUST be denied, because
+  `RegExp.test` coerces and would admit `{ toString: () => "sim_ok" }`
 
 #### Scenario: A failed simulation never mutates the thrown error
 
@@ -156,6 +214,9 @@ or provider account.
 - AND the derivation from the payment id is injective, so two distinct payment
   ids always yield two distinct references — not a per-gateway-instance counter
   and not a lossy rewrite that collapses distinct ids onto one reference
+- AND the adapter MUST enforce the payment id's length bound as well as its
+  charset, since it does not rely on upstream validation and the charset
+  pattern is unbounded
 
 #### Scenario: The outbound request is marked as a simulation
 

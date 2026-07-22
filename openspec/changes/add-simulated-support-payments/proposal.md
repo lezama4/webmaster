@@ -46,7 +46,18 @@ validate payment credentials.
 4. The model MUST accept only categorical payer/method data. It MUST NOT
    contain card, CVV, PAN, IBAN, bank account, Bizum phone number, or external
    provider credential fields.
-5. A settled payment MUST be terminal. There is no payout side effect.
+5. A settled payment MUST be terminal **within the in-memory state machine**:
+   `settleSupportPayment` and `cancelSupportPayment` deny any transition out of
+   a terminal state, and every payment is frozen so the guarantee holds at
+   runtime. There is no payout side effect.
+6. Terminal-outcome immutability across a store-and-reload cycle is explicitly
+   **NOT** delivered by this change. `rehydrateSupportPayment` refuses to
+   produce `pending`, so a terminal record cannot be reconstructed as an
+   unsettled one; it does not and cannot constrain which terminal status is
+   presented, because it is a pure function with no prior state to compare
+   against. That invariant belongs to the persistence layer, which this change
+   deliberately does not include (see "Out of scope"), and is a hard
+   requirement on whatever repository later stores these records.
 
 ## Success criteria
 

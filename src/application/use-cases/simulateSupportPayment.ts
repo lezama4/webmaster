@@ -1,5 +1,5 @@
-import { DomainValidationError } from "@domain/errors";
 import {
+  MAX_SUPPORT_PAYMENT_ID_LENGTH,
   cancelSupportPayment,
   createSupportPayment,
   settleSupportPayment,
@@ -8,6 +8,10 @@ import {
   type SupportPayerKind,
   type SupportPayment,
 } from "@domain/support-payment/SupportPayment";
+import {
+  AdapterContractError,
+  FailedSimulationError,
+} from "@application/errors";
 import type { IdGenerator } from "@application/ports/IdGenerator";
 import type {
   PaymentGateway,
@@ -39,53 +43,16 @@ export interface SimulateSupportPaymentResult {
 const SIMULATED_GATEWAY_OUTCOMES: readonly SimulatedGatewayResult["outcome"][] =
   ["succeeded", "declined"];
 
-/**
- * Describes a rejection without ever throwing itself. `String(value)` would
- * yield `"[object Object]"` for a plain object and can throw outright for a
- * `Symbol` or a `toString`-less object, so only `typeof` — which cannot
- * fail — is consulted. The original value is never lost: it is always
- * attached as `cause`.
- */
-function describeCause(cause: unknown): string {
-  if (cause instanceof Error) {
-    return cause.message;
-  }
-  if (typeof cause === "string") {
-    return cause;
-  }
-  return `gateway simulation rejected with a non-Error value of type '${typeof cause}'`;
-}
+const SYNTHETIC_RECEIPT_PATTERN = /^sim_[A-Za-z0-9_-]+$/;
 
 /**
- * A simulation that never reached a settlement carries the payment it left
- * behind, cancelled. Without it a gateway rejection, a rejected receipt, or a
- * refused settlement would abandon the created payment in `pending` forever,
- * and the documented `pending -> cancelled` arm would have no driver in the
- * application layer.
- *
- * It is a dedicated class rather than a property assigned onto the caught
- * error: adapters commonly throw a module-level error constant, and writing to
- * that shared object would make two concurrent failures overwrite each other's
- * cancelled payment — and would throw outright if the adapter froze it.
+ * `sim_` plus the longest payment id the domain will issue. The reference is
+ * derived from the payment id, so the domain bound is the honest bound; an
+ * adapter returning anything longer is not producing a reference for one of
+ * our payments.
  */
-export class FailedSimulationError extends Error {
-  /**
-   * Own, non-enumerable, non-writable: `readonly` must hold at runtime, and a
-   * structured log of this error must not serialize the whole aggregate.
-   */
-  declare readonly cancelledPayment: SupportPayment;
-
-  constructor(cancelledPayment: SupportPayment, cause: unknown) {
-    super(describeCause(cause), { cause });
-    this.name = "FailedSimulationError";
-    Object.defineProperty(this, "cancelledPayment", {
-      value: cancelledPayment,
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
-  }
-}
+export const MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH =
+  "sim_".length + MAX_SUPPORT_PAYMENT_ID_LENGTH;
 
 export function isFailedSimulationError(
   error: unknown,
@@ -93,20 +60,64 @@ export function isFailedSimulationError(
   return error instanceof FailedSimulationError;
 }
 
-function assertSyntheticReceipt(result: SimulatedGatewayResult): void {
+/** The gateway fields after validation — read from the adapter exactly once. */
+interface ValidatedGatewayResult {
+  readonly outcome: SimulatedGatewayResult["outcome"];
+  readonly receiptReference: string;
+}
+
+/**
+ * Validates the adapter's response and returns the values it validated.
+ *
+ * Every field is read off the adapter object EXACTLY ONCE, into a local. An
+ * adapter may expose these as getters, so checking `result.receiptReference`
+ * and then returning `result.receiptReference` to the caller would let a
+ * second read yield a different value than the one that passed the check.
+ * The caller must therefore build its receipt and settle its payment from the
+ * locals returned here, never from the original result object.
+ *
+ * `RegExp.test` coerces its argument, so `{ toString: () => "sim_ok" }` would
+ * pass the pattern and land in a field typed `string`; the explicit `typeof`
+ * check runs first. The length bound is checked here too, because the pattern
+ * itself is unbounded.
+ *
+ * These are adapter-contract violations, not domain-invariant violations: a
+ * gateway response is not domain input, so it raises an application-layer
+ * error.
+ */
+function validateGatewayResult(
+  result: SimulatedGatewayResult,
+): ValidatedGatewayResult {
+  const simulated: unknown = result.simulated;
+  const receiptReference: unknown = result.receiptReference;
+  const outcome: unknown = result.outcome;
+
   if (
-    !result.simulated ||
-    !/^sim_[A-Za-z0-9_-]+$/.test(result.receiptReference)
+    simulated !== true ||
+    typeof receiptReference !== "string" ||
+    receiptReference.length > MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH ||
+    !SYNTHETIC_RECEIPT_PATTERN.test(receiptReference)
   ) {
-    throw new DomainValidationError(
-      "PaymentGateway must return an explicit synthetic simulation receipt",
+    throw new AdapterContractError(
+      "PaymentGateway must return an explicit synthetic simulation receipt: a bounded 'sim_'-prefixed string reference with simulated set to true",
     );
   }
-  if (!SIMULATED_GATEWAY_OUTCOMES.includes(result.outcome)) {
-    throw new DomainValidationError(
-      `PaymentGateway returned an outcome outside the simulated union: '${String(result.outcome)}'`,
+  if (
+    !SIMULATED_GATEWAY_OUTCOMES.includes(
+      outcome as SimulatedGatewayResult["outcome"],
+    )
+  ) {
+    // The rejected value is deliberately not echoed: it is untrusted adapter
+    // data, and interpolating it can itself throw.
+    throw new AdapterContractError(
+      `PaymentGateway returned an outcome outside the simulated union (${SIMULATED_GATEWAY_OUTCOMES.join(", ")})`,
     );
   }
+
+  return {
+    outcome: outcome as SimulatedGatewayResult["outcome"],
+    receiptReference,
+  };
 }
 
 /**
@@ -135,15 +146,16 @@ export async function simulateSupportPayment(
       payerKind: payment.payerKind,
       method: payment.method,
     });
-    assertSyntheticReceipt(gatewayResult);
+    const validated = validateGatewayResult(gatewayResult);
 
     // Settlement stays inside the guarded region: it is the last step that can
     // still reject, and a rejection outside it would strand the payment in
-    // `pending` with no cancellation.
+    // `pending` with no cancellation. Both values come from `validated`, never
+    // from a second read of the adapter's own object.
     return {
-      payment: settleSupportPayment(payment, gatewayResult.outcome),
+      payment: settleSupportPayment(payment, validated.outcome),
       receipt: {
-        reference: gatewayResult.receiptReference,
+        reference: validated.receiptReference,
         simulated: true,
       },
     };

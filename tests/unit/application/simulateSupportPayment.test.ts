@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainValidationError } from "@domain/errors";
+import {
+  AdapterContractError,
+  ApplicationError,
+  FailedSimulationError,
+} from "@application/errors";
 import type {
   PaymentGateway,
   SimulatedGatewayRequest,
 } from "@application/ports/PaymentGateway";
 import {
-  FailedSimulationError,
+  MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH,
   isFailedSimulationError,
   simulateSupportPayment,
 } from "@application/use-cases/simulateSupportPayment";
@@ -129,7 +133,7 @@ describe("simulateSupportPayment", () => {
 
     expect(error).toBeInstanceOf(FailedSimulationError);
     expect((error as FailedSimulationError).cause).toBeInstanceOf(
-      DomainValidationError,
+      AdapterContractError,
     );
   });
 
@@ -170,7 +174,7 @@ describe("simulateSupportPayment", () => {
 
     expect(error).toBeInstanceOf(FailedSimulationError);
     expect((error as FailedSimulationError).cause).toBeInstanceOf(
-      DomainValidationError,
+      AdapterContractError,
     );
     expect((error as FailedSimulationError).cancelledPayment.status).toBe(
       "cancelled",
@@ -192,7 +196,7 @@ describe("simulateSupportPayment", () => {
 
     expect(error).toBeInstanceOf(FailedSimulationError);
     expect((error as FailedSimulationError).cause).toBeInstanceOf(
-      DomainValidationError,
+      AdapterContractError,
     );
     expect((error as FailedSimulationError).cancelledPayment.status).toBe(
       "cancelled",
@@ -272,5 +276,155 @@ describe("simulateSupportPayment", () => {
     });
 
     expect(isFailedSimulationError(impostor)).toBe(false);
+  });
+
+  it("belongs to the application error taxonomy", async () => {
+    const paymentGateway: PaymentGateway = {
+      async simulate() {
+        throw new Error("gateway unavailable");
+      },
+    };
+
+    const error = (await caught(run(paymentGateway))) as FailedSimulationError;
+
+    expect(error).toBeInstanceOf(ApplicationError);
+    expect(error.name).toBe("FailedSimulationError");
+  });
+
+  describe("a hostile rejection cannot discard the cancelled payment", () => {
+    /**
+     * Describing the failure must never become a second failure. Reading an
+     * arbitrary `message` accessor happens INSIDE the catch block, after the
+     * payment has already been cancelled — a throw there would discard that
+     * cancelled payment and lose the original cause entirely.
+     */
+    class ThrowingMessageError extends Error {
+      override get message(): string {
+        throw new Error("message getter exploded");
+      }
+    }
+
+    const HOSTILE_REJECTIONS: ReadonlyArray<[string, () => unknown]> = [
+      ["an Error whose message getter throws", () => new ThrowingMessageError()],
+      [
+        "an Error whose message is a symbol",
+        () =>
+          Object.defineProperty(new Error("placeholder"), "message", {
+            value: Symbol("hostile"),
+          }),
+      ],
+      [
+        "an Error whose message is a null-prototype object",
+        () =>
+          Object.defineProperty(new Error("placeholder"), "message", {
+            value: Object.create(null) as unknown,
+          }),
+      ],
+    ];
+
+    it.each(HOSTILE_REJECTIONS)("still cancels the payment for %s", async (
+      _name,
+      makeRejection,
+    ) => {
+      const rejection = makeRejection();
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          throw rejection;
+        },
+      };
+
+      const error = await caught(run(paymentGateway));
+
+      expect(isFailedSimulationError(error)).toBe(true);
+      expect((error as FailedSimulationError).cause).toBe(rejection);
+      expect((error as FailedSimulationError).cancelledPayment).toMatchObject({
+        id: "support-payment-1",
+        status: "cancelled",
+      });
+      expect(typeof (error as FailedSimulationError).message).toBe("string");
+    });
+  });
+
+  describe("the receipt reference is validated once and used once", () => {
+    it("rejects a receipt reference that is not a string", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          return {
+            outcome: "succeeded",
+            receiptReference: { toString: () => "sim_ok" },
+            simulated: true,
+          } as never;
+        },
+      };
+
+      const error = await caught(run(paymentGateway));
+
+      expect((error as FailedSimulationError).cause).toBeInstanceOf(
+        AdapterContractError,
+      );
+      expect((error as FailedSimulationError).cancelledPayment.status).toBe(
+        "cancelled",
+      );
+    });
+
+    it("rejects an unbounded receipt reference", async () => {
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          return {
+            outcome: "succeeded",
+            receiptReference: `sim_${"a".repeat(
+              MAX_SIMULATED_RECEIPT_REFERENCE_LENGTH,
+            )}`,
+            simulated: true,
+          } as never;
+        },
+      };
+
+      const error = await caught(run(paymentGateway));
+
+      expect((error as FailedSimulationError).cause).toBeInstanceOf(
+        AdapterContractError,
+      );
+    });
+
+    it("returns the value it validated, not a second read of the adapter's getter", async () => {
+      let reads = 0;
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          return {
+            outcome: "succeeded",
+            get receiptReference() {
+              reads += 1;
+              return reads === 1 ? "sim_validated" : "real-looking-reference";
+            },
+            simulated: true,
+          } as never;
+        },
+      };
+
+      const result = await run(paymentGateway);
+
+      expect(result.receipt.reference).toBe("sim_validated");
+    });
+
+    it("settles the outcome it validated, not a second read of the adapter's getter", async () => {
+      let reads = 0;
+      const paymentGateway: PaymentGateway = {
+        async simulate() {
+          return {
+            get outcome() {
+              reads += 1;
+              return reads === 1 ? "declined" : "succeeded";
+            },
+            receiptReference: "sim_validated",
+            simulated: true,
+          } as never;
+        },
+      };
+
+      const result = await run(paymentGateway);
+
+      expect(result.payment.status).toBe("declined");
+    });
   });
 });

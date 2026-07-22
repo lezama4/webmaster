@@ -18,6 +18,16 @@ donation certificate. It is an explicit simulation record returned to the
 caller. The feature has no repository and no migration because persistence
 would falsely imply financial durability before a real financial design exists.
 
+Because there is no persistence, one invariant a reader might expect is
+deliberately absent: **terminal-outcome immutability across a store-and-reload
+cycle**. `rehydrateSupportPayment` rejects `pending`, so a stored terminal
+record cannot be reconstructed as an unsettled one; it does not constrain which
+terminal status is presented, and cannot, because a pure function has no prior
+state to compare against. This is assigned to the future persistence layer: the
+repository that stores these records must enforce a status that leaves
+`pending` exactly once and is never rewritten afterwards, via a conditional
+update guarded on the current status or an append-only event log.
+
 ## Domain model
 
 ```text
@@ -50,6 +60,13 @@ import `fetch`, Node networking APIs, or a provider SDK.
 ## Security decisions
 
 - The receipt contains `simulated: true` and a `sim_` reference prefix.
+- A misbehaving adapter raises `AdapterContractError` from the application
+  error taxonomy, never a `DomainError`: a gateway response is not domain
+  input, and an adapter defect is not a rejected caller operation.
+- Denials of enumerated values report the field name and the allowed set,
+  never the rejected value. Echoing it would copy a financial identifier into
+  logs — the very channel the enumeration exists to remove — and interpolating
+  an untrusted value can itself throw.
 - Client input never includes an outcome, gateway token, payment URL, or
   provider identifier.
 - No amount is represented by `number` with a fractional semantic; the domain

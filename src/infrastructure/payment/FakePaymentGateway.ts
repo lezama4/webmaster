@@ -3,6 +3,7 @@ import type {
   SimulatedGatewayRequest,
   SimulatedGatewayResult,
 } from "@application/ports/PaymentGateway";
+import { MAX_SUPPORT_PAYMENT_ID_LENGTH } from "@domain/support-payment/SupportPayment";
 
 type SimulatedOutcome = SimulatedGatewayResult["outcome"];
 
@@ -28,11 +29,20 @@ const OPAQUE_PAYMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
  * `pay+1` all collapse to the same reference, so a rejected request is
  * preferred over a silent collision. The adapter enforces this itself rather
  * than trusting the caller to have validated the id upstream.
+ *
+ * That self-reliance has to cover the LENGTH as well as the charset: the
+ * pattern is unbounded, so an in-charset multi-megabyte id would otherwise
+ * produce a multi-megabyte reference. The bound is the domain's own id bound,
+ * because a longer id is not one this system issued.
  */
 function syntheticReference(paymentId: string): string {
-  if (!OPAQUE_PAYMENT_ID_PATTERN.test(paymentId)) {
+  if (
+    typeof paymentId !== "string" ||
+    paymentId.length > MAX_SUPPORT_PAYMENT_ID_LENGTH ||
+    !OPAQUE_PAYMENT_ID_PATTERN.test(paymentId)
+  ) {
     throw new Error(
-      "FakePaymentGateway requires an opaque payment id of letters, digits, hyphens, and underscores to derive a collision-free synthetic reference",
+      `FakePaymentGateway requires an opaque payment id of letters, digits, hyphens, and underscores, at most ${MAX_SUPPORT_PAYMENT_ID_LENGTH} characters, to derive a collision-free synthetic reference`,
     );
   }
   return `sim_${paymentId}`;

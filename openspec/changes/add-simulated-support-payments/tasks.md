@@ -54,8 +54,12 @@
 - [x] 6.3 Re-run every field assertion inside `settleSupportPayment` and
   `cancelSupportPayment`, so a corrupt known value cannot reach a terminal
   state through a cast or a deserializer.
+  **Wording corrected by 7.8: the five caller-supplied fields are re-asserted;
+  `currency` and `simulated` are hardcoded and never asserted.**
 - [x] 6.4 Restrict `rehydrateSupportPayment` to terminal statuses, so it cannot
   reopen a settled payment as `pending`.
+  **Claim narrowed by 7.1: this closes the two-step reopen-then-settle route
+  only. It does NOT prevent an outcome flip — see below.**
 - [x] 6.5 Replace the `Object.assign`-onto-the-caught-error failure path with a
   `FailedSimulationError` class carrying the original as `cause` and the
   cancelled payment as a non-enumerable, non-writable own property, and replace
@@ -68,3 +72,42 @@
 - [x] 6.8 Align the security approval, the aggregate doc comment, and this spec
   with what the code demonstrably enforces, and regenerate the evidence numbers
   from an actual run.
+
+## 7. Round-4 correction — retract an unearned claim, then fix
+
+Rounds 1-3 each narrowed a control and then strengthened the prose to claim a
+whole class of attack was closed. Round 4 stops that pattern. 7.1 is a
+documentation correction with no behavioural change; it was taken as a product
+decision *not* to add the control.
+
+- [x] 7.1 Retract the outcome-immutability claim from the aggregate doc
+  comment, the security approval, this spec, and the proposal safety contract.
+  Rejecting `pending` closes only the two-step route (reopen, then settle); the
+  one-step route — `rehydrateSupportPayment({ ...declinedFields, status:
+  "succeeded" })` — was never closed, and cannot be at that signature, because
+  a pure function has no prior status to compare against. Record it as a
+  persistence-layer invariant required of any future repository, and rename the
+  tests that implied the removed guarantee.
+- [x] 7.2 Derive the failure message defensively: reading an arbitrary
+  `message` accessor inside the `catch` could throw and discard the already
+  cancelled payment.
+- [x] 7.3 Move `FailedSimulationError` into `@application/errors` and extend
+  `ApplicationError`, so it sits inside the documented error taxonomy and takes
+  its `name` from the `new.target.name` convention.
+- [x] 7.4 Raise `AdapterContractError` (application layer) instead of
+  `DomainValidationError` for a gateway-contract violation.
+- [x] 7.5 Stop echoing rejected untrusted values in domain validator messages,
+  for `campaignReference`, `payerKind`, `method`, settlement outcome,
+  rehydrated status, and the current status in `assertPending`. This subsumes
+  the narrower `String(value)` fix: `String()` itself throws `TypeError` on a
+  null-prototype object, and echoing the value leaks it into logs.
+- [x] 7.6 Read `receiptReference` and `outcome` off the gateway result exactly
+  once, assert `typeof receiptReference === "string"`, bound its length, and
+  build both the receipt and the settlement from the validated locals.
+- [x] 7.7 Enforce the payment id length bound in `FakePaymentGateway`, not only
+  its charset.
+- [x] 7.8 Reword `assertKnownFields` and the security approval: `currency` and
+  `simulated` are hardcoded by `buildSupportPayment` and never asserted, so
+  "re-runs every field assertion" was inaccurate.
+- [x] 7.9 Regenerate the evidence numbers from an actual run and add an explicit
+  "Known non-guarantees" section to the security approval.
