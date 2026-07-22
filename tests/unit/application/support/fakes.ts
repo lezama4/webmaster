@@ -39,6 +39,8 @@ import type {
 import type { ProposalRepository } from "@application/ports/ProposalRepository";
 import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
+import type { PublicHospitalDirectoryQuery } from "@application/ports/PublicHospitalDirectoryQuery";
+import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
 import type {
   RegistrationWork,
   RegistrationUnitOfWork,
@@ -412,6 +414,22 @@ export class FakePublicEventProjectionQuery
 {
   constructor(private readonly items: readonly PublicEventProjection[]) {}
   async listPublished(): Promise<readonly PublicEventProjection[]> {
+    return this.items;
+  }
+}
+
+/**
+ * `PublicHospitalDirectoryQuery` fake (D9, Phase 1.1) — mirrors
+ * `FakePublicEventProjectionQuery`'s shape: a plain in-memory list, no
+ * filtering logic (the fake trusts caller-supplied data is already
+ * ACTIVE+HOSPITAL-filtered, exactly like the real Prisma adapter's `where`
+ * clause is the port's implementation detail, not the fake's job).
+ */
+export class FakePublicHospitalDirectoryQuery
+  implements PublicHospitalDirectoryQuery
+{
+  constructor(private readonly items: readonly PublicHospitalProjection[]) {}
+  async listActive(): Promise<readonly PublicHospitalProjection[]> {
     return this.items;
   }
 }
