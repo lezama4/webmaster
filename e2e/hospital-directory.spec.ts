@@ -154,7 +154,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     await page.goto("/encuentra-tu-momento");
     const pins = page.getByTestId("hospital-pin");
     const cards = page.getByRole("heading", { level: 2 });
-    const liveRegion = page.locator('[aria-live="polite"]');
+    const liveRegion = page.locator('#hospital-result-count');
 
     // Self-consistency check: whatever the live region CLAIMS is found/
     // mappable must equal what is actually in the DOM — robust to how many
@@ -225,7 +225,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
 
   test("the aria-live region announces the filtered result count", async ({ page }) => {
     await page.goto("/encuentra-tu-momento");
-    const liveRegion = page.locator('[aria-live="polite"]');
+    const liveRegion = page.locator('#hospital-result-count');
 
     // Initial state: any non-empty result-count announcement (a fixed
     // number is not asserted — see the file-level note on shared-database

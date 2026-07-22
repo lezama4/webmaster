@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { listPublishedEvents } from "@application/use-cases/listPublishedEvents";
@@ -10,8 +11,26 @@ import { getCurrentActorReadOnly } from "@infrastructure/http/sessionCookie";
 import { audienceBadgeClasses, EmptyState, secondaryButton } from "@ui/components/ui";
 import { StarRating } from "../StarRating";
 import { RateEventControl } from "./RateEventControl";
+import { ShareRow } from "@ui/share/ShareRow";
+import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, tHome] = await Promise.all([getTranslations("Events"), getTranslations("Home")]);
+  return buildPageMetadata({
+    pageTitle: t("title"),
+    // Reuses the on-page description verbatim (D10): it already mentions
+    // "participating hospitals" only as a generic category, never a named
+    // one — introducing a SEPARATE OG/share string here would just be a
+    // new surface to re-audit for the same non-correlation invariant.
+    // See tests/unit/application/nonCorrelation.test.ts and
+    // e2e/non-correlation.spec.ts for the enforcement.
+    description: t("description"),
+    path: "/events",
+    imageAlt: tHome("hero.imageAlt"),
+  });
+}
 
 function formatDuration(minutes: number, t: Awaited<ReturnType<typeof getTranslations>>): string {
   if (minutes < 60) return t("duration.minutes", { minutes });
@@ -21,10 +40,11 @@ function formatDuration(minutes: number, t: Awaited<ReturnType<typeof getTransla
 }
 
 export default async function EventsPage() {
-  const [events, t, tAudience, locale, actor] = await Promise.all([
+  const [events, t, tAudience, tShare, locale, actor] = await Promise.all([
     listPublishedEvents(publicDeps()),
     getTranslations("Events"),
     getTranslations("Audience"),
+    getTranslations("Share"),
     getLocale(),
     getCurrentActorReadOnly(),
   ]);
@@ -76,6 +96,15 @@ export default async function EventsPage() {
           ))}
         </ul>
       )}
+
+      {/* Discreet, page-level share row (product decision — page-level
+          only, not per-event: PublicEventProjection carries no public id
+          to deep-link to, see ADR D10). Reuses Events.description as the
+          share message — same D10 rationale as generateMetadata above. */}
+      <div className="mt-16 flex flex-col gap-3 border-t border-border pt-8">
+        <p className="text-sm font-medium text-foreground">{tShare("heading")}</p>
+        <ShareRow url={absoluteUrl("/events")} title={`${SITE_NAME} — ${t("title")}`} text={t("description")} />
+      </div>
     </div>
   );
 }

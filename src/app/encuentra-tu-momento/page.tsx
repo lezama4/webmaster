@@ -1,11 +1,30 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { listPublicHospitals } from "@application/use-cases/listPublicHospitals";
 import { hospitalDirectoryDeps } from "@infrastructure/composition/container";
+import { ShareRow } from "@ui/share/ShareRow";
+import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
 
 import { HospitalFinder } from "./HospitalFinder";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, tHome] = await Promise.all([getTranslations("Finder"), getTranslations("Home")]);
+  return buildPageMetadata({
+    pageTitle: t("title"),
+    // Reuses the on-page description verbatim (D10): it never mentions
+    // events, scheduled activities, or anything event-derived — a
+    // separate OG/share string would just be a new surface to re-audit
+    // for the same non-correlation invariant. See
+    // tests/unit/application/nonCorrelation.test.ts and
+    // e2e/non-correlation.spec.ts for the enforcement.
+    description: t("description"),
+    path: "/encuentra-tu-momento",
+    imageAlt: tHome("hero.imageAlt"),
+  });
+}
 
 /**
  * Normalises `searchParams.q` (Next 16: a Promise resolving to
@@ -23,9 +42,10 @@ export default async function HospitalFinderPage({
 }: {
   searchParams: Promise<{ q?: string | string[] }>;
 }) {
-  const [hospitals, t, resolvedSearchParams] = await Promise.all([
+  const [hospitals, t, tShare, resolvedSearchParams] = await Promise.all([
     listPublicHospitals(hospitalDirectoryDeps()),
     getTranslations("Finder"),
+    getTranslations("Share"),
     searchParams,
   ]);
 
@@ -36,6 +56,20 @@ export default async function HospitalFinderPage({
         <p className="max-w-[52ch] text-muted">{t("description")}</p>
       </header>
       <HospitalFinder hospitals={hospitals} initialQuery={normaliseQ(resolvedSearchParams.q)} />
+
+      {/* Discreet, page-level share row (product decision — page-level
+          only, not per-hospital: PublicHospitalProjection carries no
+          public id to deep-link to, see ADR D10). Reuses Finder.description
+          as the share message — same D10 rationale as generateMetadata
+          above: it never mentions events or scheduled activities. */}
+      <div className="mt-16 flex flex-col gap-3 border-t border-border pt-8">
+        <p className="text-sm font-medium text-foreground">{tShare("heading")}</p>
+        <ShareRow
+          url={absoluteUrl("/encuentra-tu-momento")}
+          title={`${SITE_NAME} — ${t("title")}`}
+          text={t("description")}
+        />
+      </div>
     </div>
   );
 }

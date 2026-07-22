@@ -1,6 +1,18 @@
 {
   "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Ospitaleko egonaldietan pazienteei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena. Doakoa ospitaleentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
+  "Share": {
+    "heading": "Partekatu orrialde hau",
+    "footerLabel": "Partekatu Vivetutiempo",
+    "nativeShare": "Partekatu orrialde hau",
+    "whatsapp": "Partekatu WhatsApp bidez",
+    "telegram": "Partekatu Telegram bidez",
+    "linkedin": "Partekatu LinkedIn-en",
+    "email": "Partekatu helbide elektronikoz",
+    "copyLink": "Kopiatu esteka",
+    "copied": "Esteka kopiatu da",
+    "copyError": "Ezin izan da esteka kopiatu"
+  },
   "Home": {
     "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten eta, zergatik ez, negar egiten, maite dituzten pertsonekin batera ahaztuko ez dituzuen uneak gozatzen dituzten bitartean.",
     "ariaRating": "{rating} / 5 izar",

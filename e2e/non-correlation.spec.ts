@@ -57,6 +57,71 @@ test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-eve
   });
 });
 
+test.describe("/encuentra-tu-momento's Open Graph metadata and share affordance carry NO event data (D10, share-and-metadata)", () => {
+  // Both directions reuse the page's own on-page `description` string as
+  // BOTH the Open Graph description AND the share message (see
+  // src/app/metadata.ts + each page's ShareRow call site) — these tests
+  // assert that reused string never leaks through either surface, in
+  // BROWSER-RENDERED output, not just the JSON source (already covered by
+  // tests/unit/application/nonCorrelation.test.ts's static-copy checks).
+
+  test("og:description and the meta description never name a seeded event title", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    const ogDescription = await page.locator('meta[property="og:description"]').getAttribute("content");
+    const metaDescription = await page.locator('meta[name="description"]').getAttribute("content");
+
+    for (const title of [SEED_PUBLISHED_EVENT_TITLE, SEED_COMPLETED_EVENT_TITLE]) {
+      expect(ogDescription, `og:description must not contain "${title}"`).not.toContain(title);
+      expect(metaDescription, `meta description must not contain "${title}"`).not.toContain(title);
+    }
+  });
+
+  test("the fallback share links (WhatsApp/Telegram/email) never carry a seeded event title", async ({ page }) => {
+    // Deterministically force the non-native-share branch, regardless of
+    // whether this browser/OS exposes `navigator.share` — the point is to
+    // inspect the concrete href values ShareRow builds.
+    await page.addInitScript(() => {
+      Object.defineProperty(window.navigator, "share", { value: undefined, configurable: true });
+    });
+    await page.goto("/encuentra-tu-momento");
+
+    const hrefs = await Promise.all(
+      [/whatsapp/i, /telegram/i, /email/i].map((name) => page.getByRole("main").getByRole("link", { name }).getAttribute("href")),
+    );
+    const decoded = hrefs.map((href) => decodeURIComponent(href ?? ""));
+
+    for (const title of [SEED_PUBLISHED_EVENT_TITLE, SEED_COMPLETED_EVENT_TITLE]) {
+      for (const href of decoded) {
+        expect(href, `a share link must not contain "${title}"`).not.toContain(title);
+      }
+    }
+  });
+
+  test("the native-share payload (title/text/url) never carries a seeded event title", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window.navigator, "share", {
+        configurable: true,
+        value: (data: unknown) => {
+          (window as typeof window & { __lastShare?: unknown }).__lastShare = data;
+          return Promise.resolve();
+        },
+      });
+    });
+    await page.goto("/encuentra-tu-momento");
+
+    await page.getByRole("main").getByRole("button", { name: /share/i }).click();
+    const shared = await page.evaluate(
+      () => (window as typeof window & { __lastShare?: Record<string, string> }).__lastShare,
+    );
+    const serialised = JSON.stringify(shared);
+
+    for (const title of [SEED_PUBLISHED_EVENT_TITLE, SEED_COMPLETED_EVENT_TITLE]) {
+      expect(serialised, `native share payload must not contain "${title}"`).not.toContain(title);
+    }
+  });
+});
+
 test.describe("/events exposes NO hospital data (D10, event-to-hospital direction)", () => {
   test("GET /api/events carries only the D6 allow-list keys and no seeded hospital name/city/postal code", async () => {
     const ctx = await request.newContext({ baseURL });
@@ -86,6 +151,70 @@ test.describe("/events exposes NO hospital data (D10, event-to-hospital directio
       await expect(page.getByText(hospital.name)).toHaveCount(0);
       await expect(page.getByText(hospital.city, { exact: false })).toHaveCount(0);
       await expect(page.getByText(hospital.postalCode)).toHaveCount(0);
+    }
+  });
+});
+
+test.describe("/events' Open Graph metadata and share affordance carry NO hospital data (D10, share-and-metadata)", () => {
+  test("og:description and the meta description never name a seeded hospital, city, or postal code", async ({ page }) => {
+    await page.goto("/events");
+
+    const ogDescription = await page.locator('meta[property="og:description"]').getAttribute("content");
+    const metaDescription = await page.locator('meta[name="description"]').getAttribute("content");
+
+    for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      for (const value of [hospital.name, hospital.city, hospital.postalCode]) {
+        expect(ogDescription, `og:description must not contain "${value}"`).not.toContain(value);
+        expect(metaDescription, `meta description must not contain "${value}"`).not.toContain(value);
+      }
+    }
+  });
+
+  test("the fallback share links (WhatsApp/Telegram/email) never carry a seeded hospital name, city, or postal code", async ({ page }) => {
+    // Deterministically force the non-native-share branch, regardless of
+    // whether this browser/OS exposes `navigator.share` — the point is to
+    // inspect the concrete href values ShareRow builds.
+    await page.addInitScript(() => {
+      Object.defineProperty(window.navigator, "share", { value: undefined, configurable: true });
+    });
+    await page.goto("/events");
+
+    const hrefs = await Promise.all(
+      [/whatsapp/i, /telegram/i, /email/i].map((name) => page.getByRole("main").getByRole("link", { name }).getAttribute("href")),
+    );
+    const decoded = hrefs.map((href) => decodeURIComponent(href ?? ""));
+
+    for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      for (const value of [hospital.name, hospital.city, hospital.postalCode]) {
+        for (const href of decoded) {
+          expect(href, `a share link must not contain "${value}"`).not.toContain(value);
+        }
+      }
+    }
+  });
+
+  test("the native-share payload (title/text/url) never carries a seeded hospital name, city, or postal code", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window.navigator, "share", {
+        configurable: true,
+        value: (data: unknown) => {
+          (window as typeof window & { __lastShare?: unknown }).__lastShare = data;
+          return Promise.resolve();
+        },
+      });
+    });
+    await page.goto("/events");
+
+    await page.getByRole("main").getByRole("button", { name: /share/i }).click();
+    const shared = await page.evaluate(
+      () => (window as typeof window & { __lastShare?: Record<string, string> }).__lastShare,
+    );
+    const serialised = JSON.stringify(shared);
+
+    for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      for (const value of [hospital.name, hospital.city, hospital.postalCode]) {
+        expect(serialised, `native share payload must not contain "${value}"`).not.toContain(value);
+      }
     }
   });
 });
