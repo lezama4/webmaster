@@ -2,14 +2,41 @@
 
 ## Scope, status, and method
 
+**Revision assessed:** `482aefd` on `main`. **Last updated:** 2026-07-22.
+
 This document is a design- and code-informed threat model for Vivetutiempo
-Block 1. It is deliberately limited to the stable planning artefacts,
-`src/domain/**`, `src/application/**`, and prior adversarial reviews. The
-Prisma schema, migrations, `src/infrastructure/**`, infrastructure tests,
-route handlers, and deployment configuration were **not read** because they
-are under active construction. Controls assigned **Pending verification** are
-therefore requirements for the infrastructure review, not claims about the
-running system.
+Block 1. An earlier revision was limited to the planning artefacts,
+`src/domain/**` and `src/application/**`, and explicitly did **not** read the
+Prisma schema, migrations, `src/infrastructure/**`, infrastructure tests, route
+handlers or deployment configuration. That limitation no longer applies: for
+this revision every one of those was read, and each threat status below was
+re-derived from the current source rather than carried forward.
+
+Control statuses now distinguish three levels of confidence, and the difference
+is load-bearing:
+
+- **Mitigated** — the control is implemented, integrated into the request path,
+  and a test covering it **executed** on this revision. Every use of this word
+  cites the run.
+- **Implemented, evidence pending** — the control exists in source and is wired
+  in, but no executed test demonstrates the specific property claimed. Code
+  reading alone never earns "Mitigated" in this document.
+- **Partial/open gap**, **Designed**, **Pending verification**, **Not currently
+  applicable** — as before.
+
+The executed evidence referenced throughout is CI run
+[29905717933](https://github.com/lezama4/webmaster/actions/runs/29905717933)
+on `482aefd`: the `test` job ran 360 tests with 0 skipped (unit plus the
+PostgreSQL 16 integration and concurrency suites, serial, migrations applied in
+a global setup), and the `e2e` job ran 12 Playwright tests against real
+PostgreSQL 16 and the seeded demo dataset. Both jobs were green.
+
+**What this document still does not certify.** The deployment at
+<https://webmaster-lemon.vercel.app> has **no security response headers, no
+Content Security Policy, no application logging and no dependency scanning**.
+Those are not oversights in the review; they are genuinely absent from the
+codebase, and T-16, T-17 and T-18 record them as open. A green test suite is
+not production hardening.
 
 The model uses the current [OWASP Top 10:2025](https://owasp.org/Top10/2025/)
 as its primary taxonomy and cross-references the still widely used
@@ -23,10 +50,9 @@ production telemetry:
 - **Impact:** effect on confidentiality, integrity, availability, patient and
   hospital trust, or operational safety.
 - **Likelihood:** feasibility before the stated control is fully verified.
-- **Control status:** **Implemented (reviewed layers only)**, **Designed**,
-  **Partial/open gap**, **Pending verification**, or **Not currently
-  applicable**. “Implemented” never means that cookies, database transactions,
-  production configuration, or deployment behaviour have been verified.
+- **Control status:** as defined in the scope note above. "Mitigated" is
+  reserved for controls with an executed test on this revision; it still never
+  means that production configuration or deployment hardening has been verified.
 
 The security-critical product decisions used in the analysis are DB-backed
 cookie sessions (D1), lock-first matching (D4), an explicit public allow-list
@@ -119,8 +145,14 @@ checks, and Proposal-to-Slot linkage checks. See
 [`shared/guards.ts`](../src/application/use-cases/shared/guards.ts) and the
 coordination specification’s ownership scenarios
 ([`slot-proposal-coordination/spec.md`](../openspec/changes/bootstrap-vivetutiempo-platform/specs/slot-proposal-coordination/spec.md)).
-The conversion from HTTP request and cookie to `Actor` has not been reviewed;
-therefore it remains a critical unverified boundary.
+
+The conversion from HTTP request and cookie to `Actor` has now been reviewed. It
+is implemented in [`sessionCookie.ts`](../src/infrastructure/http/sessionCookie.ts):
+`getCurrentActor` resolves the opaque cookie token through `SessionPort`,
+clears the cookie when the session is absent, expired or fails the conditional
+`touch`, and derives role and profile from the database — never from the request
+body. Guards additionally re-read live Profile status inside the mutation's own
+transaction, so a session-time snapshot is never the authority for a mutation.
 
 ## 4. Threat register
 
@@ -128,35 +160,35 @@ therefore it remains a critical unverified boundary.
 
 | ID | OWASP mapping | Asset affected | Vector | Impact | Likelihood | Expected control and status |
 | --- | --- | --- | --- | --- | --- | --- |
-| T-01 Cross-tenant Slot/Proposal decision (IDOR/BOLA) | A01:2025 / A01:2021 Broken Access Control | Slots, proposals, events, Hospital trust | A Hospital changes a Slot ID or Proposal ID to approve, reject, or close another Hospital’s resource. | High integrity and confidentiality impact. | Medium | `assertRole`, active-profile checks, ownership check, and target Proposal/Slot linkage are **Implemented (reviewed application)**. The route handler must derive `Actor` from the session and never accept role/profile ID from the body: **Pending verification**. |
-| T-02 Stale authority after rejection/deactivation | A01:2025 / A07:2025; A01/A07:2021 | Governance decisions, Slots, events | Admin changes Profile status after the actor’s initial profile read but before a Slot mutation commits. | High integrity impact; a removed Hospital can still decide an event. | Medium | The application performs a live profile read before the Slot unit of work: **Partial/open gap**. Prior review `pr2a-M1` shows this is not atomic with the Slot mutation. Require a transaction-scoped live status check with documented lock order and barrier tests. |
-| T-03 Role/Profile type confusion | A01:2025 / A01:2021 | Slot ownership and role separation | Corrupt/imported state pairs a Hospital `Actor` with an active Artist Profile; current guard checks status but not matching profile type. | Medium integrity impact. | Low to medium | Role gate and active status are **Implemented (reviewed application)**; role-to-profile-type consistency is **Partial/open gap** (`pr2a-N1`). Require `Profile.type` to match the action role. |
-| T-04 Public projection data leak | A01:2025, A06:2025 / A01, A04:2021 | Location, proposal message, emails, internal IDs | Infrastructure query or future refactor attaches extra runtime properties; `listPublishedEvents` returns the port object unchanged and JSON serialises extras. | High confidentiality and contextual-safety impact. | High once public endpoint exists | D6 and the public spec require a five-field allow-list: **Designed**. Current use case is **Partial/open gap**; `pr2a-B1` demonstrates that TypeScript typing is not runtime redaction. Build a fresh DTO field-by-field, add hostile-adapter and HTTP no-leak tests, and use a published-only query. |
-| T-05 Non-public workflow disclosure | A01:2025 / A01:2021 | Unpublished Slots, proposal state/messages, profile status | Generic repository response, cache, error, or list endpoint exposes submitted/rejected content. | High confidentiality impact. | Medium | Specification explicitly excludes non-published items and forbidden fields: **Designed**. Endpoint query, cache directives, response schemas and integration tests are **Pending verification**. |
-| T-06 Matching race produces contradictory state | A08:2025, A06:2025 / A08, A04:2021 | Slot/Proposal/Event consistency | Concurrent submit, approve, reject or close runs against stale data and leaves an actionable proposal on a non-open Slot or more than one accepted proposal. | High integrity impact. | Medium to high | Domain cascade and application use of `withLockedSlot` are **Implemented (reviewed layers)**. Actual `SELECT … FOR UPDATE`, complete in-lock reads, rollback and partial unique indexes are **Pending verification** in infrastructure. Barrier-based PostgreSQL tests are mandatory. |
-| T-07 Incomplete persisted aggregate accepted as valid | A08:2025, A06:2025 / A08, A04:2021 | Historical integrity and future decisions | A corrupted or faulty persistence snapshot has a filled Slot with no accepted Proposal, multiple accepted Proposals, or submitted Proposals on a non-open Slot. | High integrity/audit impact. | Medium | `assertValidSlotAggregate` checks linkage, duplicate IDs, and only one `open`-with-accepted contradiction: **Partial/open gap**. `codex-pr1-review.md` M1 requires a full Slot/Proposal status matrix and negative rehydration tests. |
-| T-08 Account/Profile partial registration or duplicate race | A08:2025, A10:2025 / A08:2021 | Account/profile consistency, onboarding availability | Account save succeeds but Profile save fails; or concurrent same-email registration observes no account twice. | Medium integrity and availability impact. | Medium | Domain factories are **Implemented**, but registration performs separate repository writes: **Partial/open gap** (`pr2a-M5`). Require an Account/Profile transaction, uniqueness-to-`ConflictError` mapping, and failure/concurrency tests. |
+| T-01 Cross-tenant Slot/Proposal decision (IDOR/BOLA) | A01:2025 / A01:2021 Broken Access Control | Slots, proposals, events, Hospital trust | A Hospital changes a Slot ID or Proposal ID to approve, reject, or close another Hospital’s resource. | High integrity and confidentiality impact. | Medium | **Mitigated.** `assertRole`, live-active-profile checks, `assertOwnsSlot` and Proposal→Slot linkage all run inside the locked transaction. The route handler derives `Actor` solely from the session cookie (`sessionCookie.ts:60-91`) and never reads a role or profile id from the body. `e2e/authorization-edge-cases.spec.ts` asserts 403 for a wrong-role actor and 404 for a Proposal that does not belong to the target Slot — executed in CI. |
+| T-02 Stale authority after rejection/deactivation | A01:2025 / A07:2025; A01/A07:2021 | Governance decisions, Slots, events | Admin changes Profile status after the actor’s initial profile read but before a Slot mutation commits. | High integrity impact; a removed Hospital can still decide an event. | Medium | **Mitigated.** The `pr2a-M1` gap is closed: the acting Profile is no longer read by a separate `ProfileUnitOfWork` that commits first. `withLockedSlot` locks the Slot row, then the actor's Account row, and passes the live Profile into the callback — all in the transaction that also persists the mutation (`MatchingUnitOfWork.ts:72-91`; `approveProposal.ts:41-45`). The barrier-forced `slot-auth-vs-deactivation-race.test.ts` executed in CI. |
+| T-03 Role/Profile type confusion | A01:2025 / A01:2021 | Slot ownership and role separation | Corrupt/imported state pairs a Hospital `Actor` with an active Artist Profile; current guard checks status but not matching profile type. | Medium integrity impact. | Low to medium | **Mitigated.** `assertActiveProfile(profile, expectedType)` now denies a live Profile whose `type` does not match the action's required type (`guards.ts:30-46`), and all eight mutating use cases pass an explicit `expectedType`. Unit-tested and covered end to end by the denial-matrix E2E suite executed in CI. |
+| T-04 Public projection data leak | A01:2025, A06:2025 / A01, A04:2021 | Location, proposal message, emails, internal IDs | Infrastructure query or future refactor attaches extra runtime properties; `listPublishedEvents` returns the port object unchanged and JSON serialises extras. | High confidentiality and contextual-safety impact. | High once public endpoint exists | **Mitigated.** `PrismaPublicEventProjectionQuery` uses a Prisma `select` (never `include`) and constructs a fresh object literal field by field, so widening the query cannot leak a property at runtime. `e2e/public-projection.spec.ts` asserts the exact allowed key set and that the raw response body contains no Slot location, hospital address, Proposal message, email, Slot id or Proposal id — executed in CI against the seeded dataset. |
+| T-05 Non-public workflow disclosure | A01:2025 / A01:2021 | Unpublished Slots, proposal state/messages, profile status | Generic repository response, cache, error, or list endpoint exposes submitted/rejected content. | High confidentiality impact. | Medium | **Mitigated for content; cache directives pending.** The query filters `status: "PUBLISHED"`, and the E2E suite asserts that a `completed` Event does not appear on `/events` or in `GET /api/events`. HTTP cache directives for the public endpoint are still **Pending verification** — no `Cache-Control` policy is set. |
+| T-06 Matching race produces contradictory state | A08:2025, A06:2025 / A08, A04:2021 | Slot/Proposal/Event consistency | Concurrent submit, approve, reject or close runs against stale data and leaves an actionable proposal on a non-open Slot or more than one accepted proposal. | High integrity impact. | Medium to high | **Mitigated.** `PrismaMatchingUnitOfWork` issues `SELECT … FOR UPDATE` on the Slot row before any decision-informing read, loads the full Proposal set in the same transaction, and persists atomically. Nine barrier-forced race files (`submit-approve`, `submit-close`, `approve-close`, `approve-reject`, `close-reject`, `matching-race`, `duplicate-submission`, `login-vs-deactivation`, `slot-auth-vs-deactivation`) executed in CI against real PostgreSQL, plus partial unique indexes proven by `partial-index-catalog` and `duplicate-submission`. |
+| T-07 Incomplete persisted aggregate accepted as valid | A08:2025, A06:2025 / A08, A04:2021 | Historical integrity and future decisions | A corrupted or faulty persistence snapshot has a filled Slot with no accepted Proposal, multiple accepted Proposals, or submitted Proposals on a non-open Slot. | High integrity/audit impact. | Medium | **Partial/open gap — unchanged.** Re-read on this revision: `assertValidSlotAggregate` still checks only linkage, duplicate ids and the single `open`-with-accepted contradiction (`aggregate.ts:37-44`). A `filled` Slot with no accepted Proposal, two accepted Proposals, or submitted Proposals on a non-open Slot still rehydrate successfully. `codex-pr1-review.md` M1 remains open: the full status matrix and negative rehydration tests are still required. Note this is a defence-in-depth gap against *corrupt persisted data* — the write paths themselves are lock-protected (T-06). |
+| T-08 Account/Profile partial registration or duplicate race | A08:2025, A10:2025 / A08:2021 | Account/profile consistency, onboarding availability | Account save succeeds but Profile save fails; or concurrent same-email registration observes no account twice. | Medium integrity and availability impact. | Medium | **Mitigated.** `PrismaRegistrationUnitOfWork` holds one transaction across the uniqueness check, Account creation and Profile creation/reactivation. Existing accounts are locked with `SELECT … FOR UPDATE`; a first registration (no row to lock) takes `pg_advisory_xact_lock` on the normalised email and re-reads under `FOR UPDATE` (`RegistrationUnitOfWork.ts:85-93`). `registration-race.test.ts` executed in CI. |
 
 ### 4.2 Authentication, sessions, and request forgery
 
 | ID | OWASP mapping | Asset affected | Vector | Impact | Likelihood | Expected control and status |
 | --- | --- | --- | --- | --- | --- | --- |
-| T-09 Re-registration without proving account control | A07:2025 / A07:2021 Authentication Failures | Profile lifecycle, Admin review queue | An attacker who knows a rejected Hospital/Artist email triggers `rejected → pending`; the current existing-account branch ignores the supplied password. | High governance and account-integrity impact. | Medium | Same-Profile re-registration and audit timestamp are **Implemented in domain / Designed in schema**. Credential verification, role match and an atomic flow are **Partial/open gaps** (`pr2a-B2`). Require password verification or a separately verified recovery flow before reactivation. |
-| T-10 Credential stuffing, brute force, and account enumeration | A07:2025 / A07:2021 | Accounts and availability | Repeated login attempts, distributed attacks, or timing comparison between unknown-email and wrong-password paths. | High account compromise impact. | High on a public login endpoint | Generic message and `LoginRateLimiter` port are **Implemented (reviewed application)**. `login` passes only email, not the designed client hash, and unknown accounts skip password verification: **Partial/open gap** (`pr2a-M2`). Require trusted client context, shared atomic limits, a dummy argon2id verification for unknown accounts, generic response, short telemetry retention, and tests. |
-| T-11 Session theft, fixation, expiry or failed revocation | A04:2025, A07:2025 / A02, A07:2021 | Authenticated identity and all role actions | XSS, network/configuration error, database leak, session fixation, stale cookie, logout/deactivation race. | Critical impact. | Medium | D1/D7 require `HttpOnly`, `Secure`, `SameSite=Lax`, fresh CSPRNG ID on login, token-hash storage, absolute/idle expiry, logout deletion and revoke-all. Session port/profile unit-of-work contracts are **Implemented (reviewed application interfaces and orchestration)**. Cookie creation, CSPRNG, hashing, expiry enforcement, `touch`, database deletion and transactional guarantees are **Pending verification**. |
-| T-12 Login/deactivation race | A01:2025, A07:2025, A08:2025 / A01, A07, A08:2021 | Session validity and revoked privileges | Login and deactivation interleave; a session is issued after or concurrently with deactivation. | High integrity impact. | Medium | `ProfileUnitOfWork.withLockedProfile` is **Designed/implemented as a port contract** and use cases call it. The reviewed fake covers only deactivation-first ordering: **Partial/open gap** (`pr2a-M3`, `pr2a-M4`). Verify both linearisation orders and final session state against PostgreSQL. |
-| T-13 CSRF on login or authenticated mutations | A01:2025 / A01:2021 | Sessions, Slots, profile governance | A hostile site causes a victim’s browser to POST login, publish, approve, reject, close, validate, or deactivate using cookies. | High integrity impact. | Medium | D7 defines canonical configured-origin validation, `Referer` fallback, fail-closed behaviour, no mutation over GET, and login in scope: **Designed**. HTTP implementation, proxy handling and negative tests are **Pending verification**. SameSite alone is insufficient. |
+| T-09 Re-registration without proving account control | A07:2025 / A07:2021 Authentication Failures | Profile lifecycle, Admin review queue | An attacker who knows a rejected Hospital/Artist email triggers `rejected → pending`; the current existing-account branch ignores the supplied password. | High governance and account-integrity impact. | Medium | **Mitigated.** The `pr2a-B2` gap is closed: any existing email must prove control by supplying the account's current password, verified with argon2id before any transition, and the requested role must match the stored `Account.role` (`registerProfile.ts:88-106`). Both checks run inside `withLockedRegistration`. Negative unit tests plus `registration-race.test.ts` executed in CI. |
+| T-10 Credential stuffing, brute force, and account enumeration | A07:2025 / A07:2021 | Accounts and availability | Repeated login attempts, distributed attacks, or timing comparison between unknown-email and wrong-password paths. | High account compromise impact. | High on a public login endpoint | **Mitigated for the single-instance/known-vector cases.** The `pr2a-M2` gaps are closed: attempts are keyed by both email and a client key (`x-forwarded-for`, hashed and truncated at the boundary — `login/route.ts:34-40`); consumption is one atomic `INSERT … ON CONFLICT … RETURNING` per key inside a single transaction, failing closed on DB error (`loginRateLimiter.ts:99-155`); an unknown email burns an equivalent argon2id verification against a fixed dummy hash (`login.ts:112-116`); and unknown-account, wrong-password and locked-out all raise the same generic 401. `login-rate-limiter.test.ts` executed in CI. **Residual:** 5 failures / 15 min is not calibrated against distributed attacks, the `x-forwarded-for` client key is only as trustworthy as the platform proxy (documented in the route), and the retention purge job for `login_attempt_windows` is backlog. |
+| T-11 Session theft, fixation, expiry or failed revocation | A04:2025, A07:2025 / A02, A07:2021 | Authenticated identity and all role actions | XSS, network/configuration error, database leak, session fixation, stale cookie, logout/deactivation race. | Critical impact. | Medium | **Mitigated at the application and persistence layers.** The cookie is `httpOnly`, `secure` in production, `SameSite=Lax`, path-scoped (`sessionCookie.ts:19-27`). Tokens are `randomBytes` CSPRNG values, always freshly generated on login (no fixation), and the row stores **only** `sha256(token)` — `session-lifecycle.test.ts:165-183` asserts against the persisted row that neither the row id nor the stored hash can authenticate. Absolute and idle expiry, conditional `touch`, logout deletion and `revokeAllForAccount` are covered by `session-lifecycle` and `profile-transition-session-revocation`, executed in CI. **Residual:** the XSS vector is only partly addressed — `httpOnly` blocks token theft, but there is **no CSP** (see T-16). |
+| T-12 Login/deactivation race | A01:2025, A07:2025, A08:2025 / A01, A07, A08:2021 | Session validity and revoked privileges | Login and deactivation interleave; a session is issued after or concurrently with deactivation. | High integrity impact. | Medium | **Mitigated.** The live status check and session creation happen inside the same `withLockedProfile` transaction (`login.ts:137-150`). Both linearisation orders are covered: a login committing first may return a session, but the deactivation's own `revokeAllForAccount` cascade revokes it immediately; a login reaching the lock afterwards observes the committed status and is denied. The barrier-forced `login-vs-deactivation-race.test.ts` executed in CI against real PostgreSQL. The decision is documented explicitly at `login.ts:77-86`. |
+| T-13 CSRF on login or authenticated mutations | A01:2025 / A01:2021 | Sessions, Slots, profile governance | A hostile site causes a victim’s browser to POST login, publish, approve, reject, close, validate, or deactivate using cookies. | High integrity impact. | Medium | **Mitigated.** `assertCsrfSafe` is invoked by **all eleven** mutating route handlers, including `POST /api/auth/login`. It compares `Origin`/`Referer` only against the configured `APP_ORIGIN` — never the request's own `Host` — and fails closed: an unset variable yields an empty canonical origin that matches nothing (`csrfGuard.ts:14-21`). `e2e/authorization-edge-cases.spec.ts` asserts that a missing `Origin` returns 403 *before* authentication is even attempted — executed in CI. SameSite=Lax is present but is explicitly documented as insufficient on its own. |
 
 ### 4.3 Input handling, configuration, operational security, and resilience
 
 | ID | OWASP mapping | Asset affected | Vector | Impact | Likelihood | Expected control and status |
 | --- | --- | --- | --- | --- | --- | --- |
-| T-14 SQL injection or unsafe migration execution | A05:2025 / A03:2021 Injection | Database integrity/confidentiality | Dynamic SQL in repositories or misapplied raw SQL for the required partial indexes. | Critical impact. | Low to medium | The intended partial-index SQL is static migration material, not user input: **Designed**. Parameterisation of all runtime queries, exact identifier/enumeration correctness, least-privilege DB account, migration review, and empty-schema test are **Pending verification**. Prior plan review B1 identified an identifier mismatch risk. |
-| T-15 Stored XSS, oversized content, and rendering abuse | A05:2025, A10:2025 / A03, A05:2021 | Visitor browser, database/log availability, public trust | User-controlled Slot title/description, Profile name, or Proposal message is rendered as HTML, logged unsafely, or made arbitrarily large. | High impact if script executes; medium availability impact. | Medium | Slot fields have domain bounds: **Implemented (reviewed domain)**. Profile name and Proposal message are unbounded in the reviewed domain: **Partial/open gap** (`codex-pr1-review.md` M2). Require server request-size limits, normalisation and bounds, text-only rendering/no unsafe HTML, output encoding, CSP, and log encoding. |
-| T-16 Security misconfiguration and secret exposure | A02:2025 / A05:2021 | Secrets, database, sessions, HTTP responses | Weak/placeholder session secret, debug mode, permissive headers/CORS, exposed `.env`, TLS/HSTS gaps, publicly reachable local database, or trusted-host mistakes. | Critical impact. | Medium | D7's canonical origin is **Designed**. Environment validation, secret management, TLS, headers, cookie flags, CORS, production-safe errors and database networking are **Pending verification**. Prior review identified `.env*` and local Compose exposure concerns; current infrastructure/configuration is intentionally out of scope here. |
-| T-17 Dependency or build supply-chain compromise | A03:2025 / A06:2021 Vulnerable and Outdated Components | Entire application and deployment | Vulnerable or malicious dependency, lockfile drift, compromised CI/deployment credentials. | Critical impact. | Medium | No dependency/CI artefact was reviewed. SBOM or lockfile policy, automated vulnerability monitoring, dependency updates, protected deployment credentials and provenance checks are **Pending verification**. |
-| T-18 Logging, alerting, and forensic gaps | A09:2025 / A09:2021 | Incident detection, privacy, governance evidence | Failed logins, authorisation denials, Admin actions, revocations or transaction failures are neither recorded nor actionable; alternatively logs record tokens/passwords/messages. | High detection and privacy impact. | Medium | No logging implementation was reviewed: **Pending verification**. Log security-relevant events with request/correlation ID, actor/account pseudonym where appropriate, outcome and reason code; never log passwords, session values, raw IPs, proposal text, exact locations, or full personal data. Define alerts and retention. |
-| T-19 Unsafe exceptional-condition handling | A10:2025 / related A05/A09:2021 | Availability, data integrity, sensitive diagnostics | Failed adapter save, deadlock, unique violation, malformed request or dependency failure leaks a stack trace, retries unsafely, or leaves partial state. | High impact. | Medium | Application errors distinguish unauthenticated/forbidden/conflict/not-found: **Implemented (reviewed application)**. HTTP error mapping, transactional rollback, deadlock retry policy, idempotency decisions and safe production diagnostics are **Pending verification**. |
+| T-14 SQL injection or unsafe migration execution | A05:2025 / A03:2021 Injection | Database integrity/confidentiality | Dynamic SQL in repositories or misapplied raw SQL for the required partial indexes. | Critical impact. | Low to medium | **Mitigated for injection; least privilege still pending.** Every raw statement is a parameterised `Prisma.sql` template — the locking reads, the advisory lock and the rate-limiter upsert all interpolate values as bind parameters, never string concatenation. The plan-review B1 identifier-mismatch risk is closed by `partial-index-catalog.test.ts`, which asserts the real PostgreSQL catalog identifiers, and `schema-migration.test.ts`, which applies the full migration history to an empty database — both executed in CI. **Residual: Pending verification** — the production database account's privileges have not been reviewed and are not least-privilege by evidence. |
+| T-15 Stored XSS, oversized content, and rendering abuse | A05:2025, A10:2025 / A03, A05:2021 | Visitor browser, database/log availability, public trust | User-controlled Slot title/description, Profile name, or Proposal message is rendered as HTML, logged unsafely, or made arbitrarily large. | High impact if script executes; medium availability impact. | Medium | **Partial/open gap — largely unchanged.** Slot `title`/`description`/`location` have domain bounds (`assertTextBounds`). Re-read on this revision, **Profile name and Proposal message are still unbounded**: `Proposal`'s `assertFields` validates only the three ids and never touches `message` (`Proposal.ts:55-59`), and `Profile` applies only `assertNonEmpty("name", …)`. `codex-pr1-review.md` M2 remains open. React escapes interpolated text by default and no `dangerouslySetInnerHTML` appears in `src/`, which limits the reflected-script path — but there is **no CSP**, no request body-size limit, and no normalisation. |
+| T-16 Security misconfiguration and secret exposure | A02:2025 / A05:2021 | Secrets, database, sessions, HTTP responses | Weak/placeholder session secret, debug mode, permissive headers/CORS, exposed `.env`, TLS/HSTS gaps, publicly reachable local database, or trusted-host mistakes. | Critical impact. | Medium | **Partial/open gap — the most significant remaining exposure.** Closed: the canonical origin is implemented and fails closed (T-13); `.env*` is git-ignored and `.env.example` documents every required secret and its purpose; the rate-limiter secret fails loud at first use rather than degrading to an unkeyed hash; cookies carry correct production flags; TLS is provided by the platform. **Open, verified absent on this revision:** there are **no security response headers at all** — no Content-Security-Policy, no HSTS, no `frame-ancestors`/`X-Frame-Options`, no referrer or permissions policy. There is no `middleware.ts` and no `headers()` block in `next.config.ts`. There is also **no centralised environment validation** (a placeholder `SESSION_SECRET` will not fail startup), and `docker-compose.yml` still publishes `5432:5432` on all interfaces with a predictable dev password (local-only, but unchanged). |
+| T-17 Dependency or build supply-chain compromise | A03:2025 / A06:2021 Vulnerable and Outdated Components | Entire application and deployment | Vulnerable or malicious dependency, lockfile drift, compromised CI/deployment credentials. | Critical impact. | Medium | **Pending verification — verified absent.** Closed: the lockfile is committed and CI uses `npm ci` with npm pinned to the version that generated it, so lockfile drift cannot silently occur. **Open:** `.github/` contains only `ci.yml` — there is no Dependabot configuration, no `npm audit` or scanning step in either CI job, no SBOM, and no documented dependency-update ownership. Deployment credential protection and provenance have not been reviewed. |
+| T-18 Logging, alerting, and forensic gaps | A09:2025 / A09:2021 | Incident detection, privacy, governance evidence | Failed logins, authorisation denials, Admin actions, revocations or transaction failures are neither recorded nor actionable; alternatively logs record tokens/passwords/messages. | High detection and privacy impact. | Medium | **Pending verification — verified absent.** A search of `src/application/**` and `src/infrastructure/**` on this revision found **no logging implementation of any kind**: no logger, no security-event emission, no correlation id. Nothing is recorded for failed logins, authorisation denials, Admin decisions, revocations or transaction failures. The one positive is negative-by-construction — because nothing logs, nothing leaks credentials or messages into logs. Requirements unchanged: privacy-safe security events with correlation id, actor pseudonym, outcome and reason code; never passwords, session values, raw IPs, proposal text or exact locations; plus alerting and retention. |
+| T-19 Unsafe exceptional-condition handling | A10:2025 / related A05/A09:2021 | Availability, data integrity, sensitive diagnostics | Failed adapter save, deadlock, unique violation, malformed request or dependency failure leaks a stack trace, retries unsafely, or leaves partial state. | High impact. | Medium | **Mitigated for diagnostics leakage and rollback; retry policy still open.** `toErrorResponse` is the single HTTP error boundary and always returns a short generic `{ error }` body — never the caught message or stack — mapping the application taxonomy to 401/403/404/409, `DomainError` to 422 and everything unmapped to a generic 500 (`httpErrors.ts`). The E2E denial matrix asserts each status code in CI. Partial state is prevented by the unit-of-work transactions (T-06, T-08), and unique violations surface as `ConflictError`. **Residual: Pending verification** — there is no deadlock retry policy, no idempotency decision for repeated mutations, and no request body-size limit. |
 | T-20 SSRF and uncontrolled egress | A01:2025 (SSRF is included under access control) / A10:2021 SSRF | Internal network, cloud metadata, third-party credentials | Future URL preview, image fetch, webhook, EHR or payment integration fetches an attacker-controlled URL. | Critical if introduced. | Not currently applicable | No outbound fetch capability was observed in the permitted scope: **Not currently applicable**. Before any external integration, add URL allow-lists, DNS/IP revalidation, egress restrictions, timeouts, response-size limits, redirect controls and dedicated SSRF tests. |
 | T-21 Privacy-retention and backup overcollection | A01/A02/A09:2025 / A01/A05/A09:2021 | Personal/context-sensitive data and backups | Indefinite storage of profiles, messages, client telemetry, logs or backups; deletion only from primary tables; public caches retain withdrawn data. | High privacy and trust impact. | Medium | The current artefacts specify minimisation but no approved retention/deletion schedule: **Pending product, legal and infrastructure decision**. See Section 6. |
 
@@ -168,16 +200,16 @@ coverage to readers using either 2021 or 2025 terminology.
 
 | OWASP Top 10:2025 | Related 2021 category | Vivetutiempo focus and required evidence |
 | --- | --- | --- |
-| A01 Broken Access Control | A01 Broken Access Control; 2021 A10 SSRF is now included here | Ownership of Slot decisions, role/profile checks, live status, public data projection, CSRF, and future SSRF controls. Test every denied role and cross-Hospital ID case at HTTP and application levels. |
-| A02 Security Misconfiguration | A05 Security Misconfiguration | Production cookie/header/TLS/CORS/origin settings, secret validation, environment isolation, non-public database access, safe error mode. Verify deployment rather than relying on defaults. |
-| A03 Software Supply Chain Failures | A06 Vulnerable and Outdated Components | Locked dependencies, SBOM/monitoring, security update process, CI and deployment credential protection. No evidence was reviewed yet. |
-| A04 Cryptographic Failures | A02 Cryptographic Failures | Argon2id configuration, CSPRNG session values, token-hash-at-rest, TLS, secret rotation and no credential logging. Ports/design are insufficient until adapters are tested. |
-| A05 Injection | A03 Injection | Prisma parameterisation, static reviewed raw migrations, request validation, output encoding, log encoding, and a ban on unsafe HTML rendering. |
-| A06 Insecure Design | A04 Insecure Design | State machines, allow-list projection, re-registration proof of account control, abuse cases, concurrency model, retention decisions, and threat-model review before new integrations. |
-| A07 Authentication Failures | A07 Identification and Authentication Failures | Database-backed session lifecycle, fixation prevention, expiry/revocation, rate limiting, timing-resistant login, CSRF on login, and protected password recovery if added. |
-| A08 Software or Data Integrity Failures | A08 Software and Data Integrity Failures | Atomic account/profile registration, lock-first matching, partial unique indexes, transactional cascades, migration integrity, and secure build pipeline. |
-| A09 Security Logging & Alerting Failures | A09 Security Logging and Monitoring Failures | Privacy-safe events, alerting, incident response and evidence for Admin/revocation actions. No implementation has been reviewed. |
-| A10 Mishandling of Exceptional Conditions | Related to 2021 A05/A09 operational failure modes | Safe errors, rollback, conflict/unique violation mapping, deadlock handling, availability limits, and no leakage through diagnostics. |
+| A01 Broken Access Control | A01 Broken Access Control; 2021 A10 SSRF is now included here | **Covered with executed evidence.** Ownership, role, profile-type and live-status checks run inside the mutation transaction; the public projection is a runtime allow-list; CSRF is enforced on all eleven mutating routes. The denial matrix and the no-leak contract are asserted over real HTTP in CI. SSRF is not applicable (no egress). |
+| A02 Security Misconfiguration | A05 Security Misconfiguration | **Weakest category.** Cookie flags, canonical origin, secret documentation and TLS are in place, but there are **no security response headers, no CSP and no environment validation**. See T-16. |
+| A03 Software Supply Chain Failures | A06 Vulnerable and Outdated Components | **Largely uncovered.** The lockfile is committed and CI installs with `npm ci` under a pinned npm, preventing drift. There is no SBOM, no vulnerability monitoring, no audit step and no documented update ownership. See T-17. |
+| A04 Cryptographic Failures | A02 Cryptographic Failures | **Covered with executed evidence.** Argon2id parameters are pinned explicitly (`m=19456,t=2,p=1`, v0x13) with upgrade-on-login; session values are CSPRNG; only `sha256(token)` is persisted, asserted directly against the row in CI; rate-limiter keys are server-keyed HMAC. Secret *rotation* procedure is documented for the limiter key only. |
+| A05 Injection | A03 Injection | **Covered for SQL.** All raw statements are parameterised `Prisma.sql` templates; migration identifiers are verified against the live catalog in CI. React escapes output by default and no unsafe HTML rendering exists. Not covered: request body-size limits and Profile/Proposal text bounds (T-15). |
+| A06 Insecure Design | A04 Insecure Design | **Covered.** Explicit state machines, allow-list projection, credential-verified re-registration, lock-first concurrency model, and adversarial review rounds recorded as artefacts. Retention decisions remain an open product/legal item (T-21). |
+| A07 Authentication Failures | A07 Identification and Authentication Failures | **Covered with executed evidence.** DB-backed session lifecycle with fresh token per login (no fixation), absolute and idle expiry, conditional touch, logout deletion and revoke-all; atomic rate limiting keyed by account and client; timing-parity login; CSRF on login. No password recovery flow exists — if one is added it needs its own analysis. |
+| A08 Software or Data Integrity Failures | A08 Software and Data Integrity Failures | **Covered with executed evidence** for atomic registration, lock-first matching, partial unique indexes, transactional cascades and migration integrity, all proven by the PostgreSQL suite in CI. Build-pipeline security is not covered (see A03). |
+| A09 Security Logging & Alerting Failures | A09 Security Logging and Monitoring Failures | **Not covered.** No logging implementation exists in the codebase. See T-18. |
+| A10 Mishandling of Exceptional Conditions | Related to 2021 A05/A09 operational failure modes | **Mostly covered.** A single error boundary returns generic bodies with correct status codes and never leaks a stack; transactions roll back and unique violations map to conflicts. Deadlock retry policy, idempotency and availability limits remain open (T-19). |
 
 The mapping follows the official [2025 list](https://owasp.org/Top10/2025/0x00_2025-Introduction/)
 and the official [2021 list](https://owasp.org/Top10/2021/). In particular,
@@ -212,8 +244,8 @@ production use. The following are minimum engineering requirements.
 
 | Data class | Minimum requirement | Status |
 | --- | --- | --- |
-| Live sessions | Delete on logout/revoke; expire on absolute or idle expiry; clean expired rows. | Designed in D7; persistence behaviour pending verification. |
-| Login-rate records | Use only short rolling-window retention; purge automatically; store no raw IP in application storage. | Designed in D7; exact duration and adapter pending. |
+| Live sessions | Delete on logout/revoke; expire on absolute or idle expiry; clean expired rows. | **Implemented and executed.** Logout and revoke-all delete rows; `resolveValid`/`touch` delete rows they find expired. Covered by `session-lifecycle` and `profile-transition-session-revocation` in CI. No periodic sweep for rows never touched again. |
+| Login-rate records | Use only short rolling-window retention; purge automatically; store no raw IP in application storage. | **Partially implemented.** The window is 15 minutes; rows reset in place when it lapses and are deleted on successful login; keys are HMAC pseudonyms and no raw IP is stored (the boundary hashes and truncates it). **Open:** an account never successfully logged into keeps one row per scoped key indefinitely — the periodic purge job is backlog, documented in the adapter. |
 | Rejected/deactivated profiles | Define whether they are retained for governance/audit, anonymised after a period, or deleted on request subject to documented obligations. Re-registration traceability must not create indefinite data by accident. | Policy decision pending. |
 | Proposals and messages | Define operational retention after rejection, closure and event completion. Messages should not survive indefinitely merely because they are convenient. | Policy decision pending. |
 | Published events | Define correction/withdrawal behaviour, cache invalidation, and whether historical event data is anonymised. | Policy and HTTP-cache implementation pending. |
@@ -227,73 +259,108 @@ proposal message, password data, session bearer value, or exact location.
 
 ## 7. Infrastructure verification gate
 
-When the concurrent infrastructure work is complete, a separate read-only
-security review must verify at least the following before the MVP is exposed:
+This gate was written while infrastructure was under construction. It has now
+been walked. Each item below is annotated with its outcome on `482aefd`:
+**[met]** (verified, with executed evidence where the item demands behaviour),
+**[partly met]**, or **[not met]**.
 
 ### Authentication, session, and CSRF
 
-- Cookies are `HttpOnly`, `Secure` in production, appropriately scoped, and
-  use the documented SameSite setting; no session token appears in HTML, URL,
-  logs, or API JSON.
-- Session values are CSPRNG-generated, only a one-way hash is persisted, and
-  lookup compares safely enough for the implementation chosen.
-- Absolute expiry, idle expiry and `touch` are enforced; logout/rejection/
-  deactivation delete the intended rows; expired rows are cleaned up.
-- Profile transition plus revoke-all and login profile check plus session
-  creation are in the same database transaction/lock discipline.
-- Login rate limits are shared and atomic across instances, use a trusted
-  privacy-preserving client key, have cleanup, and return indistinguishable
-  responses. Unknown-account and wrong-password paths should have equivalent
-  password-verification work.
-- Every mutation, including login, fails closed on missing/malformed/cross-site
-  Origin/Referer and compares only to configured canonical origin(s), never
-  attacker-supplied `Host`.
+- **[met]** Cookies are `HttpOnly`, `Secure` in production, path-scoped and
+  `SameSite=Lax`; the login response body carries only the role, never the
+  token, and no token appears in HTML, URL or API JSON.
+- **[met]** Session values are CSPRNG-generated (`randomBytes`) and only
+  `sha256(token)` is persisted — asserted directly against the row in CI.
+- **[met]** Absolute expiry, idle expiry and conditional `touch` are enforced,
+  and logout/rejection/deactivation delete the intended rows. **[partly met]**
+  Expired rows are deleted when encountered, but there is no periodic sweep.
+- **[met]** Profile transition plus revoke-all, and the login profile check plus
+  session creation, are each inside one `withLockedProfile` transaction;
+  verified by a barrier-forced race test in CI.
+- **[partly met]** Login rate limits are atomic and shared through PostgreSQL
+  (so they hold across serverless instances), use an HMAC-pseudonymised client
+  key, and return indistinguishable responses with equivalent argon2id work on
+  the unknown-account path. **Not met:** automatic cleanup of stale rows.
+- **[met]** Every mutation including login fails closed on missing, malformed or
+  cross-site `Origin`/`Referer`, comparing only to the configured `APP_ORIGIN`
+  and never to an attacker-supplied `Host`; asserted in CI.
 
 ### Persistence, concurrency, and data exposure
 
-- `withLockedSlot` locks the Slot row before any decision-informing read,
-  loads the complete proposal set in the same transaction, persists all changes
-  atomically, and rolls back on every failure.
-- The partial unique indexes use the actual quoted Prisma/PostgreSQL
-  identifiers and enum values. Database exceptions are mapped safely to
-  conflicts without partial Slot/Proposal/Event state.
-- Integration tests force both orderings of submit/approve/close/reject races,
-  duplicate submissions, deactivation/login race, and storage failures.
-- Profile lifecycle migration supports `DEACTIVATED` and review-request
-  traceability; the migration applies to an empty database and has a safe
-  rollout story.
-- The public query selects only published events and only allowed columns.
-  The application/route layer creates a fresh runtime DTO and tests that
-  forbidden properties cannot reach JSON.
+- **[met]** `withLockedSlot` locks the Slot row before any decision-informing
+  read, loads the complete Proposal set in the same transaction, and persists
+  atomically.
+- **[met]** The partial unique indexes use the real quoted identifiers and enum
+  values, asserted against the PostgreSQL catalog in CI; unique violations map
+  to `ConflictError` without partial state.
+- **[partly met]** Integration tests force both orderings of the
+  submit/approve/close/reject races, duplicate submissions and the
+  deactivation/login race — nine barrier-forced files, executed in CI.
+  **Not met:** induced storage-failure/rollback tests.
+- **[met]** The Profile lifecycle migration supports `DEACTIVATED` and
+  `reviewRequestedAt`, and the full migration history applies to an empty
+  database in CI. The rollback story is documented in `docs/deployment.md`.
+- **[met]** The public query selects only published Events and only allowed
+  columns, builds a fresh runtime DTO field by field, and an E2E test asserts
+  the exact allowed key set plus the absence of every forbidden value in the
+  raw JSON.
 
 ### HTTP, deployment, and operations
 
-- Route handlers validate method, content type, schema, body size and IDs;
-  derive identity solely from a verified session; return safe, stable error
-  bodies; and disable mutation over GET.
-- Output rendering uses text/encoded values rather than unsafe HTML. CSP,
-  `frame-ancestors`, content-type, referrer, permissions and transport
-  headers are chosen and tested in the actual Next.js deployment.
-- Secrets are not committed, placeholders fail startup in production, the DB
-  account has least privilege, network exposure is intentional, and backups
-  are protected.
-- Dependency scanning/update ownership, deployment access control, privacy-safe
-  logging, alerting and incident-response procedures exist and are exercised.
+- **[partly met]** Route handlers derive identity solely from a verified
+  session, return safe generic error bodies, and mutate only over POST.
+  **Not met:** request *schema* validation and body-size limits are minimal —
+  bodies are coerced with `String(...)` rather than validated against a schema.
+- **[partly met]** Output rendering uses React's default text escaping and no
+  unsafe HTML anywhere in `src/`. **Not met:** no CSP, `frame-ancestors`,
+  referrer, permissions or transport headers are configured — there is no
+  `middleware.ts` and no `headers()` block in `next.config.ts`.
+- **[partly met]** Secrets are not committed and `.env.example` documents each
+  one; the rate-limiter secret fails loud at first use. **Not met:** a
+  placeholder `SESSION_SECRET` does not fail startup, the production DB
+  account's privileges have not been reviewed, and backup protection is
+  unverified.
+- **[not met]** No dependency scanning, no documented update ownership, no
+  logging, no alerting and no incident-response procedure exist.
+
+> **TODO (autor):** the four "not met" items above — security headers/CSP,
+> request schema and body-size validation, environment validation at startup,
+> and dependency scanning plus security logging — are the honest remaining
+> security scope. Decide whether to implement any of them before the defence or
+> to present them explicitly as the identified next hardening milestone. Either
+> choice is defensible; silently omitting them is not.
 
 ## 8. Prioritised remediation order
 
-1. **Do not publish a public endpoint** until T-04/T-05 are closed with a
-   runtime allow-list mapper and HTTP no-leak test.
-2. **Do not permit re-registration** until T-09 validates account control and
-   role/profile consistency atomically.
-3. **Do not rely on session revocation** until T-11/T-12 are verified against
-   the real session and transaction adapter.
-4. **Do not claim race safety** until T-06 is proven by deterministic
-   PostgreSQL integration tests and database constraints.
-5. Close T-10, T-13, T-15 and T-16 before any Internet-facing authentication or
-   governance route is deployed.
-6. Establish logging, retention, backup and supply-chain controls (T-17,
-   T-18, T-21) before treating the MVP as operationally defensible.
+The first four gates of the previous revision have been met and the public
+endpoint is deployed. Their outcomes:
+
+1. ✅ **T-04/T-05 closed** — runtime allow-list mapper plus an executed HTTP
+   no-leak test asserting the exact key set.
+2. ✅ **T-09 closed** — re-registration verifies the account password and the
+   role match atomically inside `withLockedRegistration`.
+3. ✅ **T-11/T-12 closed** — verified against the real session and transaction
+   adapters, including a barrier-forced login/deactivation race.
+4. ✅ **T-06 closed** — proven by nine deterministic barrier-forced PostgreSQL
+   integration tests plus enforced partial unique indexes.
+5. ⚠️ **T-10 and T-13 closed; T-15 and T-16 remain open.** The deployment is
+   already Internet-facing, so these are live residual risks rather than
+   pre-deployment gates. In mitigation: the platform provides TLS, the data is
+   entirely fictional demo data, and React's default escaping limits the T-15
+   rendering vector. This does not make them closed.
+
+Remaining priority order, for a system that is already exposed:
+
+1. **T-16 — security headers and a CSP.** The single highest-value remaining
+   control, and the one a security-literate tribunal is most likely to probe.
+2. **T-15 — bound and normalise Profile name and Proposal message**, and add a
+   request body-size limit.
+3. **T-18/T-17 — privacy-safe security logging and dependency scanning**, before
+   treating the MVP as operationally defensible.
+4. **T-07 — complete the aggregate status matrix** as defence in depth against
+   corrupt persisted data.
+5. **T-21 — agree a retention and deletion schedule** before any real (non-demo)
+   data is ever processed.
 
 ## Source evidence
 
@@ -301,6 +368,14 @@ security review must verify at least the following before the MVP is exposed:
 - [Profile onboarding specification](../openspec/changes/bootstrap-vivetutiempo-platform/specs/profile-onboarding/spec.md).
 - [Slot and Proposal coordination specification](../openspec/changes/bootstrap-vivetutiempo-platform/specs/slot-proposal-coordination/spec.md).
 - [Public event browsing specification](../openspec/changes/bootstrap-vivetutiempo-platform/specs/public-event-browsing/spec.md).
-- [`src/domain/`](../src/domain/) and [`src/application/`](../src/application/) reviewed source.
+- [`src/domain/`](../src/domain/), [`src/application/`](../src/application/),
+  [`src/infrastructure/`](../src/infrastructure/) and [`src/app/`](../src/app/)
+  reviewed source (this revision reads all four, unlike the earlier one).
+- [`prisma/schema.prisma`](../prisma/schema.prisma), the migration history,
+  [`prisma/seed.ts`](../prisma/seed.ts) and
+  [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+- CI run [29905717933](https://github.com/lezama4/webmaster/actions/runs/29905717933)
+  on `482aefd` — `test` 360/360, `e2e` 12/12.
+- [`docs/deployment.md`](deployment.md) for the production runbook and rollback path.
 - [Adversarial planning review](../openspec/changes/bootstrap-vivetutiempo-platform/reviews/codex-planning-review.md), [PR 1 review](../openspec/changes/bootstrap-vivetutiempo-platform/reviews/codex-pr1-review.md), [PR 2 plan review](../openspec/changes/bootstrap-vivetutiempo-platform/reviews/codex-pr2-plan-review.md), and [PR 2a review](../openspec/changes/bootstrap-vivetutiempo-platform/reviews/codex-pr2a-review.md).
 - [OWASP Top 10:2025](https://owasp.org/Top10/2025/) and [OWASP Top 10:2021](https://owasp.org/Top10/2021/).
