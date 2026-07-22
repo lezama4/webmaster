@@ -11,6 +11,7 @@ import type { LoginDeps } from "@application/use-cases/login";
 import type { LogoutDeps } from "@application/use-cases/logout";
 import type { PublishSlotDeps } from "@application/use-cases/publishSlot";
 import type { ListPublishedEventsDeps } from "@application/use-cases/listPublishedEvents";
+import type { ListPublicHospitalsDeps } from "@application/use-cases/listPublicHospitals";
 import type { ListPendingProfilesDeps } from "@application/use-cases/listPendingProfiles";
 import type { ListHospitalSlotsDeps } from "@application/use-cases/listHospitalSlots";
 import type { ListOpenSlotsDeps } from "@application/use-cases/listOpenSlots";
@@ -20,6 +21,7 @@ import { PrismaRegistrationUnitOfWork } from "@infrastructure/persistence/prisma
 import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
 import { PrismaPublicEventProjectionQuery } from "@infrastructure/persistence/prisma/PublicEventProjectionQuery";
+import { PrismaPublicHospitalDirectoryQuery } from "@infrastructure/persistence/prisma/PublicHospitalDirectoryQuery";
 import { PrismaPendingProfileQuery } from "@infrastructure/persistence/prisma/PendingProfileQuery";
 import { PrismaHospitalSlotBoardQuery } from "@infrastructure/persistence/prisma/HospitalSlotBoardQuery";
 import { PrismaOpenSlotListingQuery } from "@infrastructure/persistence/prisma/OpenSlotListingQuery";
@@ -103,6 +105,22 @@ export function profileRepository(): ProfileRepository {
 export function publicDeps(): ListPublishedEventsDeps {
   return {
     publicEventProjectionQuery: new PrismaPublicEventProjectionQuery(prismaClient),
+  };
+}
+
+/**
+ * `listPublicHospitals` deps (Phase 3, ADR D9/D10) — public/anonymous, no
+ * auth-related dep, exactly like `publicDeps()`. Deliberately a SEPARATE
+ * exported factory: the hospital query is NOT merged into `publicDeps()`,
+ * so no caller of `publicDeps()` gets both public surfaces in one object.
+ * Merging them would make joining the two public datasets a one-line
+ * convenience rather than a deliberate act — the composition-root
+ * reinforcement of the non-correlation invariant (D10). `publicDeps()`
+ * itself is unchanged.
+ */
+export function hospitalDirectoryDeps(): ListPublicHospitalsDeps {
+  return {
+    publicHospitalDirectoryQuery: new PrismaPublicHospitalDirectoryQuery(prismaClient),
   };
 }
 

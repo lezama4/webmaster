@@ -27,6 +27,20 @@ La aplicación está desplegada en **https://webmaster-lemon.vercel.app**
 (Vercel + PostgreSQL gestionado en Neon), con el dataset de demostración
 cargado y verificado sobre el mismo commit publicado en `main`.
 
+Además del núcleo del Bloque 1, dos rutas públicas de solo lectura completan
+la primera impresión del sitio:
+
+- **`/encuentra-tu-momento`** — directorio público de hospitales activos, con
+  búsqueda por nombre/ciudad/código postal y un mapa indicativo (no a escala).
+  No expone dirección postal, email ni ningún dato que correlacione un
+  hospital con sus Eventos.
+- **`/quienes-somos`** — página estática que explica el propósito, los cuatro
+  roles (Admin, Hospital, Artista, Paciente/Familia), el flujo de alto nivel,
+  la validación de perfiles por un Admin, qué datos se publican y cuáles se
+  excluyen deliberadamente, y por qué la plataforma es gratuita y sin ánimo de
+  lucro. El paso a paso operativo sigue viviendo en `/ayuda`; esta página no
+  lo repite.
+
 ## Stack tecnológico
 
 | Tecnología | Uso en el proyecto |
@@ -121,8 +135,11 @@ npm run db:seed
 ```
 
 El seed es idempotente y solo escribe registros ficticios y estables de demo:
-siete cuentas, cinco Slots y dos Eventos. No debe utilizarse para cargar datos
-reales de hospitales, artistas o pacientes.
+16 cuentas, cinco Slots, dos Eventos y diez hospitales `ACTIVE` (más uno
+`PENDING`, Hospital Esperanza) que alimentan `/encuentra-tu-momento`. Uno de
+los diez hospitales `ACTIVE` (Hospital del Guadiana) no tiene coordenadas: se
+lista en el buscador pero no muestra pin en el mapa. No debe utilizarse para
+cargar datos reales de hospitales, artistas o pacientes.
 
 ### 4. Arrancar la aplicación
 
@@ -149,6 +166,14 @@ activo, se puede habilitarlas explícitamente:
 $env:VIVETUTIEMPO_RUN_INTEGRATION = "true" # PowerShell
 npm run test
 ```
+
+Esa variable también habilita
+`tests/integration/public-hospital-directory-query.test.ts` (el adaptador
+Prisma de `/encuentra-tu-momento`) contra la base real. **Importante**: las
+pruebas de integración llaman a `resetDatabase()` sobre la misma base que usa
+Playwright, así que borran el dataset de demostración. Después de ejecutarlas,
+volvé a correr `npm run db:seed` antes de lanzar `npm run test:e2e`, o cada
+prueba E2E fallará por falta de datos.
 
 ## Seed credentials
 
@@ -191,10 +216,15 @@ ejecución contra el despliegue se realiza con:
 PLAYWRIGHT_BASE_URL="https://url-produccion.example" npm run test:e2e
 ```
 
-Al actualizar este documento, el workflow versionado todavía no invoca
-`npm run test:e2e`. No se debe afirmar evidencia E2E en CI hasta que se añada
-ese paso y se conserve una ejecución verde del commit de despliegue. Esta
-limitación se declara de forma explícita para no sobrestimar la evidencia.
+El workflow versionado incluye además un job `e2e` independiente que
+aprovisiona su propio PostgreSQL 16, aplica migraciones, carga el seed de
+demostración, instala Chromium y ejecuta `npm run test:e2e` contra esa base
+real. Se dispara en los mismos pushes y pull requests que el resto de la
+verificación, de modo que la evidencia E2E en CI sí puede afirmarse.
+
+Esa ejecución en CI es más fiable que una local: parte de una base limpia en
+cada intento, mientras que en local la base se comparte entre ejecuciones y las
+suites que registran perfiles no los limpian al terminar.
 
 El procedimiento de producción, variables requeridas, CSRF de origen canónico,
 rollback y comprobaciones posteriores están en
