@@ -22,9 +22,13 @@ export default async function Home() {
       {/* 1. Hero — large, full-bleed image with a big serif statement overlaid.
           Deliberately short of a full viewport: the "what this is" block below
           must break the fold, or a first-time visitor sees only the emotional
-          statement and never learns what the platform does. The overhang also
-          signals there is more to scroll. */}
-      <section className="relative isolate flex min-h-[68vh] items-end overflow-hidden sm:min-h-[72vh]">
+          statement and never learns what the platform does. Sized so the next
+          section's eyebrow and heading are READ, not merely glimpsed: its own
+          top padding is 112px, so the hero has to stop well short of the
+          viewport for any of that section's text to clear the fold. The hero
+          carries no call to action — the ones that matter live in the block
+          below, where the reader already knows what they are choosing. */}
+      <section className="relative isolate flex min-h-[54vh] items-end overflow-hidden sm:min-h-[58vh]">
         <Image
           src="/images/hero-cello-community-v2.png"
           alt={t("hero.imageAlt")}
@@ -44,17 +48,6 @@ export default async function Home() {
             {t("title.secondLine")}
           </h1>
           <p className="max-w-[52ch] text-lg leading-relaxed text-on-scrim/85">{t("description")}</p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-2">
-            <Link href="/events" className={primaryButton}>
-              {t("browseEvents")}
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-medium text-on-scrim/90 underline underline-offset-4 transition-colors duration-150 hover:text-on-scrim"
-            >
-              {t("registerProfile")}
-            </Link>
-          </div>
         </div>
       </section>
 

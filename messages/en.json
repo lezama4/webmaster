@@ -7,8 +7,7 @@
   "Home": {
     "badge": "Non-profit · free for everyone involved",
     "title": { "firstLine": "We help keep life", "secondLine": "from standing still." },
-    "description": "See them smile, be moved, sing, learn — and yes, cry — again, sharing unforgettable moments with the people they love.",
-    "browseEvents": "Browse upcoming events", "registerProfile": "Register a hospital or profile",
+    "description": "See them smile again, be moved, sing, learn — and yes, cry — sharing moments with the people they love that none of you will forget.",
     "ariaRating": "{rating} out of 5 stars",
     "hero": { "imageAlt": "A cellist performs for a group of patients and family members in a hospital common room, with a person in a wheelchair among the audience." },
     "mission": {

@@ -2,7 +2,7 @@
   "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Ospitaleko egonaldietan pazienteei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena. Doakoa ospitaleentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
   "Home": {
-    "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten eta, zergatik ez, negar egiten, maite dituzten pertsonekin batera ahaztuko ez dituzten uneak gozatzen dituzten bitartean.", "browseEvents": "Ikusi hurrengo ekitaldiak", "registerProfile": "Erregistratu ospitale edo profil bat",
+    "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten eta, zergatik ez, negar egiten, maite dituzten pertsonekin batera ahaztuko ez dituzuen uneak gozatzen dituzten bitartean.",
     "ariaRating": "{rating} / 5 izar",
     "hero": { "imageAlt": "Biolontxelo-jotzaile batek ospitaleko areto komunean pazienteentzat eta senideentzat jotzen du, gurpil-aulkian dagoen pertsona bat entzuleen artean dela." },
     "mission": {
