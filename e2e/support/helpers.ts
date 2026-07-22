@@ -127,6 +127,7 @@ export const SEED_NO_COORDINATES_HOSPITAL_NAME = "Hospital del Guadiana";
 /** The one seeded `PENDING` hospital — MUST NEVER appear in the public hospital directory (D9). */
 export const SEED_PENDING_HOSPITAL_NAME = "Hospital Esperanza";
 
+/**
  * Seeded Rating ids (Phase 3, Block 2, mirrors `prisma/seed.ts`'s
  * `IDS.ratings`) — S2's published Event has 3 ratings (Ana/Clara/Lucía)
  * averaging 4.7. Individual Rating ids AND the rater Accounts' own ids must
