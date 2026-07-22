@@ -19,7 +19,14 @@ import {
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const ALLOWED_HOSPITAL_KEYS = ["city", "latitude", "longitude", "name", "postalCode"];
-const ALLOWED_EVENT_KEYS = ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"];
+// `id`, `averageStars` and `ratingCount` were admitted by Block 2 (event
+// ratings). Each was checked against D10, not merely D6: `id` is the Event's
+// own id and never the Slot's — the Slot is what belongs to a hospital — and
+// the rating fields aggregate over the event, with individual ratings and
+// rater identity excluded. None of them lets a visitor infer where an event
+// happens. The same reasoning is recorded in tests/unit/application/
+// nonCorrelation.test.ts, which owns the unit-level half of this invariant.
+const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
 
 test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-event direction)", () => {
   test("GET /api/hospitals carries only the D9 allow-list keys and no seeded event title", async () => {
