@@ -15,16 +15,21 @@ import type { ListPublicHospitalsDeps } from "@application/use-cases/listPublicH
 import type { ListPendingProfilesDeps } from "@application/use-cases/listPendingProfiles";
 import type { ListHospitalSlotsDeps } from "@application/use-cases/listHospitalSlots";
 import type { ListOpenSlotsDeps } from "@application/use-cases/listOpenSlots";
+import type { RateEventDeps } from "@application/use-cases/rateEvent";
+import type { ListMyEventRatingsDeps } from "@application/use-cases/listMyEventRatings";
+import type { RatingRepository } from "@application/ports/RatingRepository";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaRegistrationUnitOfWork } from "@infrastructure/persistence/prisma/RegistrationUnitOfWork";
 import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
+import { PrismaEventRepository } from "@infrastructure/persistence/prisma/EventRepository";
 import { PrismaPublicEventProjectionQuery } from "@infrastructure/persistence/prisma/PublicEventProjectionQuery";
 import { PrismaPublicHospitalDirectoryQuery } from "@infrastructure/persistence/prisma/PublicHospitalDirectoryQuery";
 import { PrismaPendingProfileQuery } from "@infrastructure/persistence/prisma/PendingProfileQuery";
 import { PrismaHospitalSlotBoardQuery } from "@infrastructure/persistence/prisma/HospitalSlotBoardQuery";
 import { PrismaOpenSlotListingQuery } from "@infrastructure/persistence/prisma/OpenSlotListingQuery";
+import { PrismaRatingRepository } from "@infrastructure/persistence/prisma/RatingRepository";
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
@@ -191,5 +196,27 @@ export function openSlotsDeps(): ListOpenSlotsDeps {
     profiles: new PrismaProfileRepository(prismaClient),
     openSlotListingQuery: new PrismaOpenSlotListingQuery(prismaClient),
     clock: new SystemClock(),
+  };
+}
+
+/** Shared `RatingRepository` instance (Phase 3, Block 2). */
+export function ratingRepository(): RatingRepository {
+  return new PrismaRatingRepository(prismaClient);
+}
+
+/** `rateEvent` deps (Phase 3, Block 2) — ANY registered Account, no role restriction. */
+export function rateEventDeps(): RateEventDeps {
+  return {
+    events: new PrismaEventRepository(prismaClient),
+    ratings: ratingRepository(),
+    idGenerator: new CryptoIdGenerator(),
+    clock: new SystemClock(),
+  };
+}
+
+/** `listMyEventRatings` deps (Phase 3, Block 2) — pre-fills the caller's own star control on `/events`. */
+export function listMyEventRatingsDeps(): ListMyEventRatingsDeps {
+  return {
+    ratings: ratingRepository(),
   };
 }

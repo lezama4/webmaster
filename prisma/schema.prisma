@@ -72,6 +72,7 @@ model Account {
 
   profile  Profile?
   sessions Session[]
+  ratings  Rating[]
 
   @@map("accounts")
 }
@@ -200,5 +201,27 @@ model Event {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
+  ratings Rating[]
+
   @@map("events")
+}
+
+// Any registered Account's 1-5 star rating of a PUBLISHED Event (Phase 3,
+// Block 2). One Rating per (eventId, raterAccountId) — enforced by the
+// unique constraint below — and editable (upsert on that key, never
+// delete-then-recreate). Individual ratings and the rater's identity are
+// NEVER exposed publicly; only the aggregate average + count are (ADR D6
+// extension — see PublicEventProjection.averageStars/ratingCount).
+model Rating {
+  id             String   @id @default(cuid())
+  eventId        String
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  raterAccountId String
+  raterAccount   Account  @relation(fields: [raterAccountId], references: [id], onDelete: Cascade)
+  stars          Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([eventId, raterAccountId])
+  @@map("ratings")
 }

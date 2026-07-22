@@ -13,6 +13,7 @@ import type { Account } from "@domain/account/Account";
 import type { Event } from "@domain/event/Event";
 import type { Profile } from "@domain/profile/Profile";
 import type { Proposal } from "@domain/proposal/Proposal";
+import type { Rating } from "@domain/rating/Rating";
 import type { Clock } from "@domain/shared/Clock";
 import type { Slot } from "@domain/slot/Slot";
 import { NotFoundError } from "@application/errors";
@@ -22,6 +23,10 @@ import type {
 } from "@application/ports/AccountRepository";
 import type { EventRepository } from "@application/ports/EventRepository";
 import type { IdGenerator } from "@application/ports/IdGenerator";
+import type {
+  RatingAggregate,
+  RatingRepository,
+} from "@application/ports/RatingRepository";
 import type {
   LoginAttemptKey,
   LoginRateLimiter,
@@ -216,6 +221,53 @@ export class InMemoryEventRepository implements EventRepository {
   }
   restore(snapshot: Map<string, Event>): void {
     this.events = snapshot;
+  }
+}
+
+/**
+ * In-memory `RatingRepository` fake (Phase 3, Block 2). Keyed by
+ * `${eventId}:${raterAccountId}` — mirrors the real adapter's
+ * `@@unique([eventId, raterAccountId])` composite key, so `upsert` here has
+ * the same create-or-update-on-conflict semantics as Prisma's `upsert`.
+ */
+export class InMemoryRatingRepository implements RatingRepository {
+  private ratings = new Map<string, Rating>();
+
+  private key(eventId: string, raterAccountId: string): string {
+    return `${eventId}:${raterAccountId}`;
+  }
+
+  async findByEventAndRater(
+    eventId: string,
+    raterAccountId: string,
+  ): Promise<Rating | null> {
+    return this.ratings.get(this.key(eventId, raterAccountId)) ?? null;
+  }
+
+  async upsert(rating: Rating): Promise<void> {
+    this.ratings.set(this.key(rating.eventId, rating.raterAccountId), rating);
+  }
+
+  async listByRater(raterAccountId: string): Promise<readonly Rating[]> {
+    return [...this.ratings.values()].filter(
+      (r) => r.raterAccountId === raterAccountId,
+    );
+  }
+
+  async aggregateForEvent(eventId: string): Promise<RatingAggregate> {
+    const stars = [...this.ratings.values()]
+      .filter((r) => r.eventId === eventId)
+      .map((r) => r.stars);
+    const ratingCount = stars.length;
+    const averageStars =
+      ratingCount === 0
+        ? null
+        : Math.round((stars.reduce((sum, s) => sum + s, 0) / ratingCount) * 10) / 10;
+    return { averageStars, ratingCount };
+  }
+
+  all(): readonly Rating[] {
+    return [...this.ratings.values()];
   }
 }
 

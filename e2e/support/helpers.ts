@@ -127,6 +127,32 @@ export const SEED_NO_COORDINATES_HOSPITAL_NAME = "Hospital del Guadiana";
 /** The one seeded `PENDING` hospital — MUST NEVER appear in the public hospital directory (D9). */
 export const SEED_PENDING_HOSPITAL_NAME = "Hospital Esperanza";
 
+/**
+ * Seeded Rating ids (Phase 3, Block 2, mirrors `prisma/seed.ts`'s
+ * `IDS.ratings`) — S2's published Event has 3 ratings (Ana/Clara/Lucía)
+ * averaging 4.7. Individual Rating ids AND the rater Accounts' own ids must
+ * never leak through the public projection — only the aggregate
+ * (`averageStars`/`ratingCount`) is public (ADR D6 extension).
+ */
+export const SEED_RATING_IDS = [
+  "seed-rating-s2-ana",
+  "seed-rating-s2-clara",
+  "seed-rating-s2-lucia",
+] as const;
+
+/** The seeded rater Accounts' own ids (mirrors `IDS.accounts`) — must never leak through the public projection either (only the aggregate is public). */
+export const SEED_RATER_ACCOUNT_IDS = [
+  "seed-account-patient-ana",
+  "seed-account-artist-clara",
+  "seed-account-artist-lucia",
+] as const;
+
+/** S2's published Event's expected rating aggregate (Ana 5, Clara 4, Lucía 5 -> avg 4.7, count 3). */
+export const SEED_PUBLISHED_EVENT_RATING_AGGREGATE = {
+  averageStars: 4.7,
+  ratingCount: 3,
+} as const;
+
 /** A short, run-unique suffix for emails/titles so parallel/repeated runs never collide. */
 export function uniqueSuffix(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 100_000)}`;

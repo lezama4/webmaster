@@ -3,6 +3,7 @@ import { createAccount } from "../src/domain/account/Account";
 import { completeEvent } from "../src/domain/event/Event";
 import { approveProfile, createProfile } from "../src/domain/profile/Profile";
 import { createProposal } from "../src/domain/proposal/Proposal";
+import { createRating } from "../src/domain/rating/Rating";
 import { acceptProposal } from "../src/domain/slot/acceptProposal";
 import { closeSlot } from "../src/domain/slot/closeSlot";
 import { createSlot } from "../src/domain/slot/Slot";
@@ -11,6 +12,7 @@ import { PrismaAccountRepository } from "../src/infrastructure/persistence/prism
 import { PrismaEventRepository } from "../src/infrastructure/persistence/prisma/EventRepository";
 import { PrismaProfileRepository } from "../src/infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaProposalRepository } from "../src/infrastructure/persistence/prisma/ProposalRepository";
+import { PrismaRatingRepository } from "../src/infrastructure/persistence/prisma/RatingRepository";
 import { PrismaSlotRepository } from "../src/infrastructure/persistence/prisma/SlotRepository";
 
 const SEED_PASSWORD = "VivetuTiempo2026!";
@@ -73,6 +75,11 @@ const IDS = {
   events: {
     s2: "seed-event-s2-published",
     s5: "seed-event-s5-completed",
+  },
+  ratings: {
+    s2Ana: "seed-rating-s2-ana",
+    s2Clara: "seed-rating-s2-clara",
+    s2Lucia: "seed-rating-s2-lucia",
   },
 } as const;
 
@@ -470,6 +477,34 @@ async function main(): Promise<void> {
   });
   const s5CompletedEvent = completeEvent(s5Accepted.event);
 
+  // Real event ratings (Phase 3, Block 2, demo data) — only against S2's
+  // PUBLISHED event, per spec (`rateEvent` denies rating a non-published
+  // Event with ConflictError; S5 is `completed`, deliberately left unrated
+  // here). Raters are patient Ana and two artists NOT performing at S2
+  // (Mateo is S2's accepted performer) — any registered Account may rate,
+  // this choice is just more realistic demo data. Average: (5+4+5)/3 = 4.7.
+  const s2AnaRating = createRating({
+    id: IDS.ratings.s2Ana,
+    eventId: IDS.events.s2,
+    raterAccountId: IDS.accounts.ana,
+    stars: 5,
+    createdAt: seedNow,
+  });
+  const s2ClaraRating = createRating({
+    id: IDS.ratings.s2Clara,
+    eventId: IDS.events.s2,
+    raterAccountId: IDS.accounts.clara,
+    stars: 4,
+    createdAt: seedNow,
+  });
+  const s2LuciaRating = createRating({
+    id: IDS.ratings.s2Lucia,
+    eventId: IDS.events.s2,
+    raterAccountId: IDS.accounts.lucia,
+    stars: 5,
+    createdAt: seedNow,
+  });
+
   const passwordHasher = new Argon2PasswordHasher();
   const passwordHashes = new Map<string, string>(
     await Promise.all(
@@ -488,6 +523,7 @@ async function main(): Promise<void> {
     const slotRepository = new PrismaSlotRepository(tx);
     const proposalRepository = new PrismaProposalRepository(tx);
     const eventRepository = new PrismaEventRepository(tx);
+    const ratingRepository = new PrismaRatingRepository(tx);
 
     for (const account of accounts) {
       await accountRepository.save({
@@ -531,6 +567,10 @@ async function main(): Promise<void> {
 
     await eventRepository.save(s2Accepted.event);
     await eventRepository.save(s5CompletedEvent);
+
+    for (const rating of [s2AnaRating, s2ClaraRating, s2LuciaRating]) {
+      await ratingRepository.upsert(rating);
+    }
   });
 }
 

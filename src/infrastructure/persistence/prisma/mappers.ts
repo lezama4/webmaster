@@ -17,6 +17,7 @@ import {
 import { rehydrateSlot, type Audience, type Slot, type SlotStatus } from "@domain/slot/Slot";
 import { rehydrateProposal, type Proposal, type ProposalStatus } from "@domain/proposal/Proposal";
 import { rehydrateEvent, type Event, type EventStatus } from "@domain/event/Event";
+import { rehydrateRating, type Rating } from "@domain/rating/Rating";
 
 /**
  * Bidirectional enum maps between the domain's lowercase literal unions and
@@ -190,6 +191,15 @@ export interface EventRow {
   readonly status: PrismaEventStatus;
 }
 
+export interface RatingRow {
+  readonly id: string;
+  readonly eventId: string;
+  readonly raterAccountId: string;
+  readonly stars: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
 export function toDomainAccount(row: AccountRow): Account {
   return rehydrateAccount({
     id: row.id,
@@ -255,5 +265,16 @@ export function toDomainEvent(row: EventRow): Event {
     proposalId: row.proposalId,
     title: row.title,
     status: EVENT_STATUS_TO_DOMAIN[row.status],
+  });
+}
+
+export function toDomainRating(row: RatingRow): Rating {
+  return rehydrateRating({
+    id: row.id,
+    eventId: row.eventId,
+    raterAccountId: row.raterAccountId,
+    stars: row.stars,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   });
 }

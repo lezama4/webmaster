@@ -31,11 +31,14 @@ export async function listPublishedEvents(
 
 function toPublicEventProjection(record: PublicEventProjection): PublicEventProjection {
   return {
+    id: record.id,
     title: record.title,
     description: record.description,
     scheduledAt: record.scheduledAt,
     durationMinutes: record.durationMinutes,
     artistName: record.artistName,
     audience: record.audience,
+    averageStars: record.averageStars,
+    ratingCount: record.ratingCount,
   };
 }

@@ -7,8 +7,11 @@ import { FakePublicEventProjectionQuery } from "./support/fakes";
 const ALLOW_LISTED_FIELDS = [
   "artistName",
   "audience",
+  "averageStars",
   "description",
   "durationMinutes",
+  "id",
+  "ratingCount",
   "scheduledAt",
   "title",
 ].sort();
@@ -17,12 +20,15 @@ function aProjection(
   overrides: Partial<PublicEventProjection> = {},
 ): PublicEventProjection {
   return {
+    id: "event-1",
     title: "Acoustic guitar afternoon",
     description: "A relaxed acoustic session for the pediatric ward.",
     scheduledAt: new Date("2026-08-01T17:00:00Z"),
     durationMinutes: 60,
     artistName: "Clara",
     audience: "all_ages",
+    averageStars: null,
+    ratingCount: 0,
     ...overrides,
   };
 }
@@ -49,7 +55,7 @@ describe("listPublishedEvents (public, D6 allow-list via PublicEventProjectionQu
     expect(result).toEqual([]);
   });
 
-  it("every returned item is STRUCTURALLY limited to the D6 allow-list — no location, message, email, or internal id", async () => {
+  it("every returned item is STRUCTURALLY limited to the D6 allow-list — no location, message, email, or any id OTHER than the Event's own", async () => {
     const deps = {
       publicEventProjectionQuery: new FakePublicEventProjectionQuery([
         aProjection(),
@@ -63,9 +69,11 @@ describe("listPublishedEvents (public, D6 allow-list via PublicEventProjectionQu
       expect(item).not.toHaveProperty("location");
       expect(item).not.toHaveProperty("message");
       expect(item).not.toHaveProperty("email");
-      expect(item).not.toHaveProperty("id");
       expect(item).not.toHaveProperty("slotId");
       expect(item).not.toHaveProperty("proposalId");
+      // `id` IS allow-listed (Phase 3, Block 2) — but it must be the
+      // Event's OWN id, never a Slot/Proposal/Profile/Account id.
+      expect(item.id).toBe("event-1");
     }
   });
 
@@ -81,7 +89,6 @@ describe("listPublishedEvents (public, D6 allow-list via PublicEventProjectionQu
       location: "Ward 3, Room 12",
       message: "This is a private message between Hospital and Artist.",
       email: "artist.clara@vtt.test",
-      id: "event-secret-id",
       slotId: "slot-secret-id",
       proposalId: "proposal-secret-id",
       artistProfileId: "profile-secret-id",
@@ -102,14 +109,16 @@ describe("listPublishedEvents (public, D6 allow-list via PublicEventProjectionQu
     expect(item).not.toHaveProperty("location");
     expect(item).not.toHaveProperty("message");
     expect(item).not.toHaveProperty("email");
-    expect(item).not.toHaveProperty("id");
     expect(item).not.toHaveProperty("slotId");
     expect(item).not.toHaveProperty("proposalId");
     expect(item).not.toHaveProperty("artistProfileId");
     expect(item).not.toHaveProperty("accountId");
-    // The allow-listed fields themselves must still be forwarded correctly.
+    // The allow-listed fields themselves must still be forwarded correctly,
+    // INCLUDING the Event's own `id` (Phase 3, Block 2) — never a
+    // Slot/Proposal/Profile/Account id, only the Event's.
     expect(item.title).toBe(hostileItem.title);
     expect(item.artistName).toBe(hostileItem.artistName);
+    expect(item.id).toBe("event-1");
   });
 
   it("does not import or depend on anything beyond the PublicEventProjectionQuery port (no repository, no Prisma)", () => {

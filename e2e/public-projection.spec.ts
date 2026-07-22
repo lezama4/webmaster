@@ -5,7 +5,10 @@ import {
   SEED_LOCATIONS,
   SEED_PROPOSAL_IDS,
   SEED_PROPOSAL_MESSAGE_SAMPLE,
+  SEED_PUBLISHED_EVENT_RATING_AGGREGATE,
   SEED_PUBLISHED_EVENT_TITLE,
+  SEED_RATER_ACCOUNT_IDS,
+  SEED_RATING_IDS,
   SEED_SLOT_IDS,
 } from "./support/helpers";
 
@@ -26,7 +29,21 @@ import {
 // must not leak through this endpoint.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_KEYS = ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"];
+// Phase 3/Block 2: the projection now also carries the Event's OWN `id`
+// (needed to POST a rating) plus the read-only `averageStars`/`ratingCount`
+// aggregate. Still no Slot/Proposal/Profile/Account id, Slot `location`,
+// Proposal `message`, or any email — asserted below.
+const ALLOWED_KEYS = [
+  "artistName",
+  "audience",
+  "averageStars",
+  "description",
+  "durationMinutes",
+  "id",
+  "ratingCount",
+  "scheduledAt",
+  "title",
+];
 
 test("GET /api/events returns only published events and never leaks forbidden data (6.4)", async () => {
   const ctx = await request.newContext({ baseURL });
@@ -57,10 +74,26 @@ test("GET /api/events returns only published events and never leaks forbidden da
   for (const id of Object.values(SEED_PROPOSAL_IDS)) {
     expect(raw, "must not leak a Proposal id").not.toContain(id);
   }
+  // Phase 3/Block 2: individual Rating rows and rater identity are NEVER
+  // public — only the aggregate (averageStars/ratingCount) is. Confirms
+  // adding ratings did not widen this projection beyond the aggregate.
+  for (const id of SEED_RATING_IDS) {
+    expect(raw, "must not leak a Rating id").not.toContain(id);
+  }
+  for (const id of SEED_RATER_ACCOUNT_IDS) {
+    expect(raw, "must not leak a rater's Account id").not.toContain(id);
+  }
 
   for (const event of body.events) {
     expect(Object.keys(event).sort()).toEqual(ALLOWED_KEYS);
   }
+
+  // Positive-path check: S2's published Event DOES surface the public
+  // aggregate (average + count) computed from its 3 seeded ratings.
+  const publishedEvent = body.events.find(
+    (event) => event.title === SEED_PUBLISHED_EVENT_TITLE,
+  );
+  expect(publishedEvent).toMatchObject(SEED_PUBLISHED_EVENT_RATING_AGGREGATE);
 
   await ctx.dispose();
 });
@@ -73,5 +106,11 @@ test("the public /events page shows the published event, not the completed one, 
   await expect(page.getByText(SEED_COMPLETED_EVENT_TITLE)).toHaveCount(0);
   for (const location of SEED_LOCATIONS) {
     await expect(page.getByText(location)).toHaveCount(0);
+  }
+  // Phase 3/Block 2: the average + count aggregate IS shown (anonymous,
+  // read-only) — but never a rater's identity or a Rating/Account id.
+  await expect(page.getByText("4.7", { exact: false })).toBeVisible();
+  for (const id of SEED_RATER_ACCOUNT_IDS) {
+    await expect(page.getByText(id)).toHaveCount(0);
   }
 });

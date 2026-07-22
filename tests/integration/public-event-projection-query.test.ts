@@ -62,16 +62,31 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
     expect(results).toHaveLength(1);
     const projection = results[0]!;
     expect(projection).toEqual({
+      id: event.id,
       title: "Storytelling with Clara",
       description: slot.description,
       scheduledAt: slot.scheduledAt,
       durationMinutes: slot.durationMinutes,
       artistName: "Clara the Artist",
       audience: "all_ages",
+      averageStars: null,
+      ratingCount: 0,
     });
-    // Structural allow-list assertion: no forbidden key ever appears.
+    // Structural allow-list assertion: no forbidden key ever appears. `id`
+    // is allow-listed as of Phase 3/Block 2 (the Event's OWN id, needed to
+    // POST a rating) — never a Slot/Proposal/Profile/Account id.
     expect(Object.keys(projection).sort()).toEqual(
-      ["artistName", "audience", "description", "durationMinutes", "scheduledAt", "title"].sort(),
+      [
+        "artistName",
+        "audience",
+        "averageStars",
+        "description",
+        "durationMinutes",
+        "id",
+        "ratingCount",
+        "scheduledAt",
+        "title",
+      ].sort(),
     );
   });
 

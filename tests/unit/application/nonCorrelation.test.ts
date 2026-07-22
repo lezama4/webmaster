@@ -33,11 +33,36 @@ const HOSPITAL_ALLOW_LISTED_FIELDS = [
   "postalCode",
 ].sort();
 
+/**
+ * Every field the public Event surface may carry.
+ *
+ * Deliberately duplicated rather than derived from `PublicEventProjection`:
+ * deriving it would validate the type against itself and assert nothing, so
+ * a widening of the projection has to be typed out HERE, by a person, on
+ * purpose. That is the whole mechanism — do not "DRY" this away.
+ *
+ * The last three were added by Block 2 (event ratings) and are admitted
+ * after checking each against D10 specifically, not merely against D6:
+ *
+ * - `id` is the EVENT's own id, needed so a client can POST a rating. It is
+ *   NOT the Slot id — the Slot is what belongs to a hospital — nor the
+ *   Proposal, Profile or Account id. It reveals nothing about where the
+ *   event happens.
+ * - `averageStars` / `ratingCount` are an aggregate over the event itself.
+ *   Individual ratings and rater identity stay out, so neither can be
+ *   correlated back to a hospital or to a person.
+ *
+ * If a future field cannot survive that same paragraph, it does not belong
+ * on this list.
+ */
 const EVENT_ALLOW_LISTED_FIELDS = [
   "artistName",
   "audience",
+  "averageStars",
   "description",
   "durationMinutes",
+  "id",
+  "ratingCount",
   "scheduledAt",
   "title",
 ].sort();
@@ -86,6 +111,9 @@ function anEvent(
     durationMinutes: 60,
     artistName: "Clara",
     audience: "all_ages",
+    id: "event-1",
+    averageStars: null,
+    ratingCount: 0,
     ...overrides,
   };
 }
