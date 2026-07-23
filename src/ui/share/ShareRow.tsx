@@ -4,6 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 
 import { buildShareLinks } from "./buildShareLinks";
+import { CopyIcon, EmailIcon, LinkedInIcon, ShareIcon, TelegramIcon, WhatsAppIcon } from "./ShareIcons";
 
 type CopyState = "idle" | "copied" | "error";
 
@@ -82,36 +83,95 @@ export function ShareRow({
   }
 
   const links = buildShareLinks({ url, title, text });
-  const linkClasses = "text-muted underline underline-offset-4 transition-colors hover:text-foreground";
-  const gapClasses = compact ? "gap-x-4 gap-y-1 text-xs" : "gap-x-5 gap-y-2 text-sm";
+
+  // Circular icon buttons. The brand hue lives on hover/focus so the resting
+  // row stays calm against the page; on interaction each control adopts its
+  // network's colour. Size steps down in the compact (footer) placement.
+  const size = compact ? "h-9 w-9" : "h-10 w-10";
+  const iconSize = compact ? "h-4 w-4" : "h-5 w-5";
+  const chip =
+    "inline-flex items-center justify-center rounded-full border border-border bg-surface text-muted " +
+    "transition-colors duration-150 hover:text-on-scrim focus-visible:text-on-scrim outline-none " +
+    "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  const gapClasses = compact ? "gap-2" : "gap-2.5";
 
   return (
     <div className="flex flex-col gap-2">
-      <div className={`flex flex-wrap items-center ${gapClasses}`}>
+      <ul className={`flex flex-wrap items-center ${gapClasses}`}>
         {canNativeShare ? (
-          <button type="button" onClick={handleNativeShare} className={linkClasses}>
-            {t("nativeShare")}
-          </button>
+          <li>
+            <button
+              type="button"
+              onClick={handleNativeShare}
+              aria-label={t("nativeShare")}
+              title={t("nativeShare")}
+              className={`${chip} ${size} hover:!bg-primary hover:!border-primary`}
+            >
+              <ShareIcon className={iconSize} />
+            </button>
+          </li>
         ) : (
           <>
-            <a href={links.whatsapp} target="_blank" rel="noopener noreferrer" className={linkClasses}>
-              {t("whatsapp")}
-            </a>
-            <a href={links.telegram} target="_blank" rel="noopener noreferrer" className={linkClasses}>
-              {t("telegram")}
-            </a>
-            <a href={links.linkedin} target="_blank" rel="noopener noreferrer" className={linkClasses}>
-              {t("linkedin")}
-            </a>
-            <a href={links.email} className={linkClasses}>
-              {t("email")}
-            </a>
-            <button type="button" onClick={handleCopy} className={linkClasses}>
-              {t("copyLink")}
-            </button>
+            <li>
+              <a
+                href={links.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("whatsapp")}
+                title={t("whatsapp")}
+                className={`${chip} ${size} hover:!border-[#25D366] hover:!bg-[#25D366] focus-visible:!bg-[#25D366]`}
+              >
+                <WhatsAppIcon className={iconSize} />
+              </a>
+            </li>
+            <li>
+              <a
+                href={links.telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("telegram")}
+                title={t("telegram")}
+                className={`${chip} ${size} hover:!border-[#26A5E4] hover:!bg-[#26A5E4] focus-visible:!bg-[#26A5E4]`}
+              >
+                <TelegramIcon className={iconSize} />
+              </a>
+            </li>
+            <li>
+              <a
+                href={links.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("linkedin")}
+                title={t("linkedin")}
+                className={`${chip} ${size} hover:!border-[#0A66C2] hover:!bg-[#0A66C2] focus-visible:!bg-[#0A66C2]`}
+              >
+                <LinkedInIcon className={iconSize} />
+              </a>
+            </li>
+            <li>
+              <a
+                href={links.email}
+                aria-label={t("email")}
+                title={t("email")}
+                className={`${chip} ${size} hover:!bg-primary hover:!border-primary focus-visible:!bg-primary`}
+              >
+                <EmailIcon className={iconSize} />
+              </a>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={t("copyLink")}
+                title={t("copyLink")}
+                className={`${chip} ${size} hover:!bg-foreground hover:!border-foreground hover:!text-background focus-visible:!bg-foreground focus-visible:!text-background`}
+              >
+                <CopyIcon className={iconSize} />
+              </button>
+            </li>
           </>
         )}
-      </div>
+      </ul>
       {/* Screen-reader feedback for the copy action — a copy button with no
           announcement is silent for anyone not watching the screen. */}
       <p aria-live="polite" aria-atomic="true" className="text-xs text-muted">
