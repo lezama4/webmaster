@@ -26,6 +26,15 @@ Anything this report still marks **OPEN** was re-read in source and confirmed
 to be genuinely open; no status was upgraded on the strength of a commit
 message or a task checkbox.
 
+> **Scope note — `widen-beyond-hospitals`.** The dated evidence in this report
+> (revision `482aefd`, CI run 29905717933) is the deployed **hospital-only
+> baseline**. The subsequent `widen-beyond-hospitals` change generalises the
+> product to six centre types (ADRs D16–D20). It is implemented and verified
+> **locally against real PostgreSQL** (Neon `dev`) but is **not merged to `main`
+> and not deployed**, so it does not change the deployed readiness verdict below.
+> Its status, evidence and the **open Basque-review gate** are tracked in
+> section 1.1. No six-type claim in this report is asserted against production.
+
 > **Note on `tasks.md`.** The authoritative task list is itself stale: tasks
 > 5.9, 5.14, 5.15, 6.1–6.4, 7.1–7.3 and 7.6 are unchecked but demonstrably
 > complete (the E2E specs exist and pass in CI, `prisma/seed.ts` exists, the
@@ -112,6 +121,29 @@ on `482aefd` — `test` job 360/360, `e2e` job 12/12.
 | pr2b-N2 | MINOR | SHA-256 pseudonyms for email/IP are not strong privacy protection. | RESOLVED | Scoped keys are now server-keyed HMAC-SHA256 over `RATE_LIMIT_HMAC_SECRET` (falling back to `SESSION_SECRET`), and the adapter throws rather than degrading to an unkeyed hash (`loginRateLimiter.ts:43-54`). Rotation and retention semantics are documented in the adapter; the periodic purge job remains explicit backlog. |
 | pr2b-N3 | MINOR | Tests must prove only session token hashes are stored. | RESOLVED | `session-lifecycle.test.ts:165-183` asserts directly against the persisted row that `tokenHash !== session.id` and that neither the row id nor the stored hash can authenticate — executed in CI. |
 | block3-BLOCKER-01 | BLOCKER | Simulated patronage cannot be reviewed from this branch because its code/spec/security review are absent. | DEFERRED | Block 3 remains a separate future branch; no payment claim is made for the TFM Core. |
+
+### 1.1 `widen-beyond-hospitals` change status
+
+This change generalises the product from hospital-only to six centre types
+(hospital, nursing home, day centre, day hospital, occupational centre,
+palliative unit) via a generic `CENTRE` role plus a separate `CentreType` axis
+(ADRs D16–D20). It is **implemented on a local feature-branch chain (PR1–PR6),
+verified against real PostgreSQL (Neon `dev`), and NOT yet merged to `main` or
+deployed.** The evidence below is local/dev, not a CI run and not production.
+
+| Item | Status | Evidence / note |
+| --- | --- | --- |
+| Non-destructive enum migration, zero data loss (D17) | **Verified locally** | `tests/integration/centre-migration.test.ts` against Neon `dev`: an existing `HOSPITAL` row reads `type: CENTRE` + `centreType: hospital`, all other fields byte-identical, row counts unchanged, D4 partial unique indexes still enforce (Phase 1.9, 673/673). The documented down-path was run once against a scratch transaction that was rolled back: clean reversal with no non-hospital row present, documented coarsening with a `palliative_unit` row present (Phase 1.10). |
+| Six-type register → validate → publish through the identical guard path (D16 gradable claim) | **Verified locally** | `tests/integration/centre-lifecycle.test.ts` against Neon `dev` (Phase 2.9, 696/696). This run also caught and fixed a real pre-existing bug: `PrismaRegistrationUnitOfWork.profileData()` never mapped `centreType`, so centres had been persisting a NULL `centreType`. |
+| Public directory widening — `centreType` allow-listed, `type` still forbidden, single-value security predicate, D10 re-run both directions (D19) | **Verified locally** | Unit + integration (`public-hospital-directory-query.test.ts`, Phase 4.4, 698/698) plus e2e `hospital-directory.spec.ts` / `non-correlation.spec.ts` 32/32 against Neon `dev`. |
+| Three-language vocabulary rewrite (D20), es/en | **Done** | Narrative copy rewritten off the hospital premise; structural locale parity (key sets + ICU placeholders) green. |
+| Basque (`eu`) copy quality (Phase 6.10) | **OPEN — blocking gate** | Structural parity passes automatically, but that is **not** translation quality. Every `eu` string the change touches is a draft pending sign-off by a native Basque speaker. The change is **not merge-ready** until this is resolved. |
+| Manual "reads correctly for a residencia / day centre" reviews (Phases 6.8/6.9) | **OPEN** | Awaiting human confirmation; implementer self-assessment recorded but is not a sign-off. |
+| Merge + deploy of the chain; production evidence of the six types | **OPEN** | Not merged to `main`, not deployed. The six types are demonstrable in the seeded `dev` environment only. |
+
+Local full-suite state on the feature branch: `npm run test` → **628 passed /
+77 skipped** (integration tests skip unless `VIVETUTIEMPO_RUN_INTEGRATION=true`);
+`tsc --noEmit` and `npm run lint` clean repo-wide.
 
 ## 2. Capability readiness matrix
 
@@ -251,7 +283,7 @@ The eight items from the 2026-07-12 revision, with their current state:
 ## Final readiness decision
 
 **Block 1 may be presented as implemented, deployed and concurrency-proven,
-with two explicit qualifications.**
+with three explicit qualifications.**
 
 The core is defensible: a live URL serving seeded demo data, 360 tests passing
 against real PostgreSQL in CI including nine barrier-forced race scenarios, and
@@ -261,11 +293,17 @@ called "pending" — CSRF enforcement, atomic rate limiting, hash-only session
 storage, lock-first concurrency, the runtime public allow-list — are integrated
 and covered by executed evidence.
 
-The two qualifications must be stated plainly rather than glossed:
+The three qualifications must be stated plainly rather than glossed:
 
 1. **It is not production-hardened.** There are no security headers, no CSP, no
    logging and no dependency scanning. This is a defensible TFM MVP, not an
    Internet-ready service, and the threat model says so per control.
 2. **The repository is private**, which fails a stated delivery requirement.
+3. **The six-centre-type generalisation (`widen-beyond-hospitals`) is not yet
+   merged or deployed.** It is implemented and verified locally against real
+   PostgreSQL, but the deployed site is still the hospital-only baseline, its
+   Basque copy is a draft pending native review (Phase 6.10, blocking), and two
+   manual copy reviews remain open. It should be presented as demonstrable in
+   the seeded `dev` environment, not as live in production (see section 1.1).
 
 Blocks 2 and 3 remain future work and are claimed nowhere.
