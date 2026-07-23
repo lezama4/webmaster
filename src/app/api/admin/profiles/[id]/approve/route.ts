@@ -32,9 +32,21 @@ export async function POST(
     }
 
     const { id } = await params;
+    // PR4 wiring handoff (auditable-profile-approval): this route sends no
+    // body yet — parsing a real `basis` from the request (with a friendly
+    // early rejection) is PR4's scope (D24 route wiring, D27 role-cued
+    // copy). The domain remains the authoritative validator regardless, so
+    // this placeholder cannot silently produce a persisted review: a blank
+    // basis is rejected by `validateProfile`'s domain call before any
+    // status change. This keeps the route compiling without doing PR4's UI
+    // work.
     const profile = await validateProfile(
       actor,
-      { profileId: id, decision: "approve" },
+      {
+        profileId: id,
+        decision: "approve",
+        basis: "PR4-PENDING: route body-parsing lands with the basis textarea (D24/D27).",
+      },
       adminDeps(),
     );
 

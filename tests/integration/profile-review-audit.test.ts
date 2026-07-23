@@ -4,11 +4,23 @@ import {
   approveProfile,
   createProfile,
   deactivateProfile,
+  reactivateProfile,
   rejectProfile,
   type Profile,
 } from "@domain/profile/Profile";
+import type { Actor } from "@application/Actor";
+import { validateProfile } from "@application/use-cases/validateProfile";
+import { deactivateProfile as deactivateProfileUseCase } from "@application/use-cases/deactivateProfile";
+import type {
+  LockedProfileContext,
+  LockedProfileWork,
+  ProfileUnitOfWork,
+} from "@application/ports/ProfileUnitOfWork";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
+import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
+import { CryptoIdGenerator } from "@infrastructure/shared/idGenerator";
+import { SystemClock } from "@infrastructure/shared/clock";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 
 /**
@@ -198,6 +210,191 @@ describe.skipIf(!dbAvailable)(
       // The Profile row itself is completely unaffected by this insert.
       const rehydrated = await profiles.findById(active.id);
       expect(rehydrated).toEqual<Profile>(active);
+    });
+  },
+);
+
+/**
+ * `ProfileUnitOfWork` decorator (test-only, mirrors the unit-level
+ * `ThrowOnceOnRevokeAll implements SessionPort` pattern in
+ * `validateProfile.test.ts`/`deactivateProfile.test.ts`): wraps a REAL
+ * `PrismaProfileUnitOfWork`, replacing `ctx.saveReview` with one that always
+ * throws. Because the wrapped `work` callback still runs INSIDE the real
+ * adapter's `prisma.$transaction`, a throw here aborts that same
+ * transaction — proving that the EARLIER `ctx.saveProfile` write (the
+ * status transition) rolls back too, not just the review write (D23
+ * atomicity, "a failure between the status write and the review write
+ * leaves neither committed").
+ */
+class ThrowOnSaveReviewProfileUnitOfWork implements ProfileUnitOfWork {
+  constructor(private readonly inner: ProfileUnitOfWork) {}
+
+  withLockedProfile<T>(
+    accountId: string,
+    work: LockedProfileWork<T>,
+  ): Promise<T> {
+    return this.inner.withLockedProfile(accountId, async (ctx) => {
+      const sabotagedCtx: LockedProfileContext = {
+        ...ctx,
+        saveReview: async () => {
+          throw new Error(
+            "forced failure: after the status write, before the review commit (D23 atomicity proof)",
+          );
+        },
+      };
+      return work(sabotagedCtx);
+    });
+  }
+}
+
+/**
+ * ADR D21/D23 (`auditable-profile-approval`, Phase 3.10) — proves, against
+ * REAL Postgres and through the REAL `validateProfile`/`deactivateProfile`
+ * use cases (not the domain functions directly), that: (1) a full
+ * reject -> re-apply -> approve -> deactivate cycle on ONE profile persists
+ * exactly THREE ordered admin `ProfileReview` rows (re-apply, an applicant
+ * action per D22, produces none), none overwritten; and (2) the review write
+ * commits atomically with the status transition — a forced failure between
+ * them leaves NEITHER persisted.
+ */
+describe.skipIf(!dbAvailable)(
+  "ProfileReview persistence + atomicity through the real use cases (ADR D21/D23, Phase 3.10)",
+  () => {
+    const client = getTestPrismaClient();
+    const adminActor: Actor = { accountId: "profile-review-audit-admin", role: "admin" };
+
+    beforeEach(async () => {
+      await resetDatabase(client);
+    });
+
+    function adminDeps() {
+      return {
+        profiles: new PrismaProfileRepository(client),
+        profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
+      };
+    }
+
+    it("reject -> re-apply -> approve -> deactivate persists THREE ordered admin ProfileReview rows, in order, none overwritten (D21 cycle proof)", async () => {
+      const accounts = new PrismaAccountRepository(client);
+      const profiles = new PrismaProfileRepository(client);
+
+      const accountId = nextId("account");
+      const account = createAccount({
+        id: accountId,
+        email: `${nextId("cycle")}@vtt.test`,
+        role: "centre",
+      });
+      await accounts.save({ account, passwordHash: "unused-in-integration-test" });
+
+      const pending = createProfile({
+        id: nextId("profile"),
+        accountId,
+        type: "centre",
+        centreType: "hospital",
+        name: "Cycle Test Hospital",
+      });
+      await profiles.save(pending);
+
+      const deps = adminDeps();
+
+      const rejected = await validateProfile(
+        adminActor,
+        { profileId: pending.id, decision: "reject", basis: "no verifiable convenio" },
+        deps,
+      );
+      expect(rejected.status).toBe("rejected");
+
+      // Applicant re-registration (D22): NOT an admin decision, records NO
+      // ProfileReview row — only reviewRequestedAt is updated.
+      const reactivated = reactivateProfile(rejected, new SystemClock());
+      await profiles.save(reactivated);
+      expect(reactivated.status).toBe("pending");
+
+      const approved = await validateProfile(
+        adminActor,
+        {
+          profileId: reactivated.id,
+          decision: "approve",
+          basis: "convenio VTT-2026-014 confirmed by phone",
+        },
+        deps,
+      );
+      expect(approved.status).toBe("active");
+
+      const deactivated = await deactivateProfileUseCase(
+        adminActor,
+        { profileId: approved.id, basis: "convenio lapsed" },
+        deps,
+      );
+      expect(deactivated.status).toBe("deactivated");
+
+      const reviews = await client.profileReview.findMany({
+        where: { profileId: pending.id },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      });
+
+      expect(reviews).toHaveLength(3); // reject, approve, deactivate — re-apply added none
+      expect(reviews.map((r) => r.decision)).toEqual(["REJECT", "APPROVE", "DEACTIVATE"]);
+      expect(reviews[0].basis).toBe("no verifiable convenio");
+      expect(reviews[1].basis).toBe("convenio VTT-2026-014 confirmed by phone");
+      expect(reviews[2].basis).toBe("convenio lapsed");
+      expect(reviews.every((r) => r.adminAccountId === adminActor.accountId)).toBe(true);
+      // None overwritten — three DISTINCT ids, none sharing a row.
+      expect(new Set(reviews.map((r) => r.id)).size).toBe(3);
+    });
+
+    it("a forced failure between the status write and the review write leaves NEITHER the status change NOR the review row persisted (D23 atomicity)", async () => {
+      const accounts = new PrismaAccountRepository(client);
+      const profiles = new PrismaProfileRepository(client);
+
+      const accountId = nextId("account");
+      const account = createAccount({
+        id: accountId,
+        email: `${nextId("atomic")}@vtt.test`,
+        role: "artist",
+      });
+      await accounts.save({ account, passwordHash: "unused-in-integration-test" });
+
+      const pending = createProfile({
+        id: nextId("profile"),
+        accountId,
+        type: "artist",
+        name: "Atomicity Test Artist",
+      });
+      await profiles.save(pending);
+
+      const failingDeps = {
+        profiles,
+        profileUnitOfWork: new ThrowOnSaveReviewProfileUnitOfWork(
+          new PrismaProfileUnitOfWork(client),
+        ),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
+      };
+
+      await expect(
+        validateProfile(
+          adminActor,
+          {
+            profileId: pending.id,
+            decision: "approve",
+            basis: "valid basis, forced to fail after the status write",
+          },
+          failingDeps,
+        ),
+      ).rejects.toThrow("forced failure");
+
+      // NO partial state: the status transition rolled back with the
+      // review write inside the SAME Postgres transaction.
+      const rehydrated = await profiles.findById(pending.id);
+      expect(rehydrated?.status).toBe("pending");
+
+      const reviewRows = await client.profileReview.findMany({
+        where: { profileId: pending.id },
+      });
+      expect(reviewRows).toHaveLength(0);
     });
   },
 );

@@ -182,7 +182,11 @@ describe("approveProposal (ownership 403, cascade, lock-first, pr2a-M1 live-chec
     await deps.proposals.save(target);
     const admin = actorFor(anAccount("admin"));
 
-    const deactivation = deactivateProfile(admin, { profileId: profile.id }, deps);
+    const deactivation = deactivateProfile(
+      admin,
+      { profileId: profile.id, basis: "M1 race test — deactivated mid-flight." },
+      deps,
+    );
     const approveAttempt = approveProposal(actor, { slotId: slot.id, proposalId: target.id }, deps);
 
     await expect(deactivation).resolves.toMatchObject({ status: "deactivated" });
@@ -297,7 +301,11 @@ describe("rejectProposal (M1: guarded, lock-first, pr2a-M1 live-checked inside t
     await deps.proposals.save(target);
     const admin = actorFor(anAccount("admin"));
 
-    const deactivation = deactivateProfile(admin, { profileId: profile.id }, deps);
+    const deactivation = deactivateProfile(
+      admin,
+      { profileId: profile.id, basis: "M1 race test — deactivated mid-flight." },
+      deps,
+    );
     const rejectAttempt = rejectProposal(actor, { slotId: slot.id, proposalId: target.id }, deps);
 
     await expect(deactivation).resolves.toMatchObject({ status: "deactivated" });

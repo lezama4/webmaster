@@ -32,9 +32,16 @@ export async function POST(
     }
 
     const { id } = await params;
+    // PR4 wiring handoff (auditable-profile-approval): see approve/route.ts
+    // — real basis body-parsing lands with PR4 (D24 route wiring, D27
+    // role-cued copy). The domain remains authoritative regardless.
     const profile = await validateProfile(
       actor,
-      { profileId: id, decision: "reject" },
+      {
+        profileId: id,
+        decision: "reject",
+        basis: "PR4-PENDING: route body-parsing lands with the basis textarea (D24/D27).",
+      },
       adminDeps(),
     );
 

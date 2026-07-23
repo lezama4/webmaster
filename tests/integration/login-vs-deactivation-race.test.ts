@@ -11,6 +11,7 @@ import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/Prof
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
+import { CryptoIdGenerator } from "@infrastructure/shared/idGenerator";
 import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 
@@ -40,6 +41,8 @@ const PLACEHOLDER_REVIEW = {
   reviewId: "fixture-review",
 };
 const PLACEHOLDER_CLOCK = { now: () => new Date() };
+// PR2 (this batch): deactivateProfile now requires a real basis + idGenerator/clock deps (D23).
+const DEACTIVATE_BASIS = "Race-test deactivation — unrelated to the review audit trail itself.";
 
 describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
   const client = getTestPrismaClient();
@@ -87,8 +90,13 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
 
     const deactivatePromise = deactivateProfile(
       adminActor,
-      { profileId: profile.id },
-      { profiles, profileUnitOfWork: deactivateUoW },
+      { profileId: profile.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles,
+        profileUnitOfWork: deactivateUoW,
+        idGenerator: new CryptoIdGenerator(),
+        clock: PLACEHOLDER_CLOCK,
+      },
     );
 
     await deactivateLockAcquired.promise; // deactivation now holds the Account lock.
@@ -126,7 +134,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       where: { accountId: account.id },
     });
     expect(liveSessions).toHaveLength(0); // login never created one.
-  });
+  }, 15_000); // PR2 (D23): saveReview's extra round-trip against remote Neon dev needs headroom beyond the 5s default.
 
   /**
    * pr2b-M5: the review's second, previously-unaddressed gap — this suite
@@ -189,8 +197,13 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
 
     const deactivatePromise = deactivateProfile(
       adminActor,
-      { profileId: profile.id },
-      { profiles, profileUnitOfWork: new PrismaProfileUnitOfWork(client) },
+      { profileId: profile.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles,
+        profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: PLACEHOLDER_CLOCK,
+      },
     );
 
     await waitForPostgresLockWait(client, "accounts");
@@ -225,5 +238,5 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       const sessions = createPrismaSessionPort(client);
       expect(await sessions.resolveValid(issuedSessionId)).toBeNull();
     }
-  });
+  }, 15_000); // PR2 (D23): saveReview's extra round-trip against remote Neon dev needs headroom beyond the 5s default.
 });

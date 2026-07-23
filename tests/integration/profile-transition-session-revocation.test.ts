@@ -6,8 +6,15 @@ import { createProfile } from "@domain/profile/Profile";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
+import { CryptoIdGenerator } from "@infrastructure/shared/idGenerator";
+import { SystemClock } from "@infrastructure/shared/clock";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import { createHospitalProfile } from "./support/fixtures";
+
+// PR2 (auditable-profile-approval): every admin decision now requires and
+// records a basis (ADR D21-D24) — this suite is about session revocation,
+// not the review audit trail itself, so a fixed valid basis is enough.
+const BASIS = "Session-revocation test — unrelated to the review audit trail itself.";
 
 /**
  * Task 4.21 (M3): Admin deactivation and Admin rejection each atomically
@@ -36,8 +43,14 @@ describe.skipIf(!dbAvailable)(
       const deps = {
         profiles: new PrismaProfileRepository(client),
         profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
       };
-      const updated = await deactivateProfile(adminActor, { profileId: profile.id }, deps);
+      const updated = await deactivateProfile(
+        adminActor,
+        { profileId: profile.id, basis: BASIS },
+        deps,
+      );
 
       expect(updated.status).toBe("deactivated");
       expect(await sessions.resolveValid(session.id)).toBeNull();
@@ -63,10 +76,12 @@ describe.skipIf(!dbAvailable)(
       const deps = {
         profiles,
         profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
       };
       const updated = await validateProfile(
         adminActor,
-        { profileId: pendingProfile.id, decision: "reject" },
+        { profileId: pendingProfile.id, decision: "reject", basis: BASIS },
         deps,
       );
 
@@ -93,10 +108,12 @@ describe.skipIf(!dbAvailable)(
       const deps = {
         profiles,
         profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
       };
       await validateProfile(
         adminActor,
-        { profileId: pendingProfile.id, decision: "approve" },
+        { profileId: pendingProfile.id, decision: "approve", basis: BASIS },
         deps,
       );
 

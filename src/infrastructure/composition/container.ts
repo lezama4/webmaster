@@ -162,16 +162,24 @@ export function matchingDeps(): MatchingDeps {
 /**
  * Shared Admin deps (tasks 5.3/5.11): `validateProfile` and
  * `deactivateProfile` declare the identical Deps shape.
+ *
+ * `idGenerator`/`clock` (auditable-profile-approval PR2, D23): stamp the
+ * `ProfileReview` id and timestamp for each admin decision — same
+ * singletons every other use case's deps already use.
  */
 export interface AdminDeps {
   readonly profiles: ProfileRepository;
   readonly profileUnitOfWork: ProfileUnitOfWork;
+  readonly idGenerator: IdGenerator;
+  readonly clock: Clock;
 }
 
 export function adminDeps(): AdminDeps {
   return {
     profiles: new PrismaProfileRepository(prismaClient),
     profileUnitOfWork: new PrismaProfileUnitOfWork(prismaClient),
+    idGenerator: new CryptoIdGenerator(),
+    clock: new SystemClock(),
   };
 }
 

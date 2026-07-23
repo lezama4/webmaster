@@ -12,6 +12,7 @@ import {
   InMemoryProposalRepository,
   InMemorySlotRepository,
   SequentialIdGenerator,
+  fixedClock,
 } from "./support/fakes";
 import { actorFor, anAccount, anOpenSlot, aProfile } from "./support/builders";
 
@@ -29,6 +30,7 @@ function makeDeps() {
     matchingUnitOfWork: new FakeMatchingUnitOfWork(slots, proposals, events, profiles),
     profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
     idGenerator: new SequentialIdGenerator("proposal"),
+    clock: fixedClock,
   };
 }
 
@@ -189,7 +191,11 @@ describe("submitProposal (active-Artist gate, open-Slot only, M2 duplicate guard
     // fewer intervening awaits before reaching `withLockedProfile` than
     // submitProposal's nested check (which is preceded by the Slot lock's
     // own reads), so the deactivation reliably commits first.
-    const deactivation = deactivateProfile(admin, { profileId: actor.profileId! }, deps);
+    const deactivation = deactivateProfile(
+      admin,
+      { profileId: actor.profileId!, basis: "M1 race test — deactivated mid-flight." },
+      deps,
+    );
     const submitAttempt = submitProposal(actor, { slotId: slot.id, message: "hi" }, deps);
 
     await expect(deactivation).resolves.toMatchObject({ status: "deactivated" });

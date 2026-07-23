@@ -64,6 +64,8 @@ describe.skipIf(!dbAvailable)(
       return {
         profiles: new PrismaProfileRepository(client),
         profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
       };
     }
 
@@ -95,7 +97,11 @@ describe.skipIf(!dbAvailable)(
 
         const activated = await validateProfile(
           admin,
-          { profileId: pending.id, decision: "approve" },
+          {
+            profileId: pending.id,
+            decision: "approve",
+            basis: `Centre-lifecycle test: ${centreType} verified via convenio.`,
+          },
           adminDeps(),
         );
         expect(activated.status).toBe("active");

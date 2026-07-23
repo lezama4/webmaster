@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { InvalidTransitionError } from "@domain/errors";
+import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import { ForbiddenError, NotFoundError } from "@application/errors";
-import { deactivateProfile } from "@application/use-cases/deactivateProfile";
+import {
+  deactivateProfile,
+  type DeactivateProfileInput,
+} from "@application/use-cases/deactivateProfile";
 import type { Session, SessionPort } from "@application/ports/SessionPort";
 import {
   FakeProfileUnitOfWork,
   FakeSessionPort,
   InMemoryProfileRepository,
+  SequentialIdGenerator,
+  fixedClock,
+  NOW,
 } from "./support/fakes";
 import { actorFor, aProfile, anAccount } from "./support/builders";
+
+const AVALID_BASIS = "Convenio lapsed — centre no longer answers verification contact.";
 
 function makeDeps() {
   const profiles = new InMemoryProfileRepository();
@@ -18,6 +26,8 @@ function makeDeps() {
     profiles,
     sessions,
     profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
+    idGenerator: new SequentialIdGenerator("review"),
+    clock: fixedClock,
   };
 }
 
@@ -29,7 +39,11 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     const active = aProfile("centre", "active", { accountId: "acct-1" });
     await deps.profiles.save(active);
 
-    const result = await deactivateProfile(admin, { profileId: active.id }, deps);
+    const result = await deactivateProfile(
+      admin,
+      { profileId: active.id, basis: AVALID_BASIS },
+      deps,
+    );
 
     expect(result.status).toBe("deactivated");
     expect((await deps.profiles.findById(active.id))?.status).toBe("deactivated");
@@ -42,7 +56,7 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     await deps.sessions.create("artist-account-1");
     await deps.sessions.create("artist-account-1");
 
-    await deactivateProfile(admin, { profileId: active.id }, deps);
+    await deactivateProfile(admin, { profileId: active.id, basis: AVALID_BASIS }, deps);
 
     expect(deps.sessions.sessionsForAccount("artist-account-1")).toHaveLength(0);
   });
@@ -54,7 +68,11 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     const hospitalActor = actorFor(anAccount("centre"));
 
     await expect(
-      deactivateProfile(hospitalActor, { profileId: active.id }, deps),
+      deactivateProfile(
+        hospitalActor,
+        { profileId: active.id, basis: AVALID_BASIS },
+        deps,
+      ),
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
@@ -62,7 +80,7 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     const deps = makeDeps();
 
     await expect(
-      deactivateProfile(admin, { profileId: "missing" }, deps),
+      deactivateProfile(admin, { profileId: "missing", basis: AVALID_BASIS }, deps),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
@@ -72,7 +90,7 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     await deps.profiles.save(pending);
 
     await expect(
-      deactivateProfile(admin, { profileId: pending.id }, deps),
+      deactivateProfile(admin, { profileId: pending.id, basis: AVALID_BASIS }, deps),
     ).rejects.toBeInstanceOf(InvalidTransitionError);
   });
 
@@ -110,12 +128,84 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
     const failingDeps = { ...deps, profileUnitOfWork: failingProfileUnitOfWork };
 
     await expect(
-      deactivateProfile(admin, { profileId: active.id }, failingDeps),
+      deactivateProfile(
+        admin,
+        { profileId: active.id, basis: AVALID_BASIS },
+        failingDeps,
+      ),
     ).rejects.toThrow("simulated failure");
 
     // NO partial state: the status transition rolled back alongside the
     // failed revocation — the Profile stays 'active' and the session lives.
     expect((await deps.profiles.findById(active.id))?.status).toBe("active");
     expect(deps.sessions.sessionsForAccount("artist-account-2")).toHaveLength(1);
+    // D23: the review row rolls back too — no partial audit trail either.
+    expect(failingProfileUnitOfWork.reviewsForProfile(active.id)).toHaveLength(0);
+  });
+
+  describe("ProfileReview persistence (D21-D23, PR2)", () => {
+    it("persists a ProfileReview via saveReview in the SAME withLockedProfile call as saveProfile", async () => {
+      const deps = makeDeps();
+      const active = aProfile("centre", "active", { accountId: "acct-review-1" });
+      await deps.profiles.save(active);
+
+      await deactivateProfile(
+        admin,
+        { profileId: active.id, basis: `  ${AVALID_BASIS}  ` },
+        deps,
+      );
+
+      const reviews = deps.profileUnitOfWork.reviewsForProfile(active.id);
+      expect(reviews).toHaveLength(1);
+      expect(reviews[0]).toMatchObject({
+        profileId: active.id,
+        decision: "deactivate",
+        basis: AVALID_BASIS, // trimmed
+      });
+    });
+
+    it("records actor.accountId as the review's admin id — NOT any input-supplied value", async () => {
+      const deps = makeDeps();
+      const active = aProfile("artist", "active", { accountId: "acct-review-2" });
+      await deps.profiles.save(active);
+
+      const hostileInput = {
+        profileId: active.id,
+        basis: AVALID_BASIS,
+        adminAccountId: "spoofed-admin",
+        actorId: "also-spoofed",
+      } as unknown as DeactivateProfileInput;
+
+      await deactivateProfile(admin, hostileInput, deps);
+
+      const [review] = deps.profileUnitOfWork.reviewsForProfile(active.id);
+      expect(review.adminAccountId).toBe(admin.accountId);
+      expect(review.adminAccountId).not.toBe("spoofed-admin");
+    });
+
+    it("rejects a blank basis fail-closed: no status change, no review persisted", async () => {
+      const deps = makeDeps();
+      const active = aProfile("centre", "active", { accountId: "acct-review-3" });
+      await deps.profiles.save(active);
+
+      await expect(
+        deactivateProfile(admin, { profileId: active.id, basis: "   " }, deps),
+      ).rejects.toBeInstanceOf(DomainValidationError);
+
+      expect((await deps.profiles.findById(active.id))?.status).toBe("active");
+      expect(deps.profileUnitOfWork.reviewsForProfile(active.id)).toHaveLength(0);
+    });
+
+    it("stamps the review id from deps.idGenerator.next() and the timestamp from deps.clock.now()", async () => {
+      const deps = makeDeps();
+      const active = aProfile("centre", "active", { accountId: "acct-review-4" });
+      await deps.profiles.save(active);
+
+      await deactivateProfile(admin, { profileId: active.id, basis: AVALID_BASIS }, deps);
+
+      const [review] = deps.profileUnitOfWork.reviewsForProfile(active.id);
+      expect(review.id).toBe("review-1"); // SequentialIdGenerator("review")'s first value
+      expect(review.at).toEqual(NOW); // fixedClock
+    });
   });
 });
