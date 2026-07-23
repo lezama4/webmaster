@@ -89,6 +89,7 @@
     "title": "Aurkitu zure ospitalea",
     "description": "Ikusi Todo el tiempo cuenta-n dagoeneko parte hartzen duten ospitaleak eta begiratu zurea horien artean dagoen.",
     "search": { "label": "Bilatu izenaren, herriaren edo posta kodearen arabera", "placeholder": "Adibidez: Bilbo, 48013…" },
+    "filter": { "label": "Iragazi zentro motaren arabera", "all": "Mota guztiak" },
     "resultCount": { "all": "{count} ospitale aurkituta", "partial": "{count} ospitale aurkituta · {mappable} mapan" },
     "map": { "ariaLabel": "Parte hartzen duten ospitaleen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
     "empty": { "title": "Ez dugu bilaketa horrekin bat datorren ospitalerik aurkitu", "description": "Saiatu beste izen, herri edo posta kode batekin." },

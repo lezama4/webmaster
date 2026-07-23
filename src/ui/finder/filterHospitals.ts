@@ -1,4 +1,5 @@
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
+import type { CentreType } from "@domain/profile/Profile";
 
 /** Query is capped so a runaway string can never make matching expensive or the input field unwieldy. */
 const MAX_QUERY_LENGTH = 100;
@@ -40,18 +41,31 @@ function resolveQuery(query: string | readonly string[]): string {
  *
  * No `RegExp` is ever constructed from the query — a user-supplied pattern
  * is a ReDoS vector. Only `String.prototype.includes`/`startsWith`.
+ *
+ * `centreType` (ADR D19/D12 extension) is a second, independent predicate,
+ * combined with the text query by logical AND — a visitor narrowing to
+ * "Residencia de mayores" AND typing a city gets only rows matching BOTH.
+ * `"all"` (the default) is an explicit passthrough: every `centreType` is
+ * included, identical to omitting the argument. This stays client-side
+ * (ADR D12): the full active set already ships to the browser for the map,
+ * so a `centreType` predicate exposes no new data.
  */
 export function filterHospitals(
   hospitals: readonly PublicHospitalProjection[],
   query: string | readonly string[],
+  centreType: CentreType | "all" = "all",
 ): readonly PublicHospitalProjection[] {
   const normalisedQuery = normalise(resolveQuery(query));
 
-  if (normalisedQuery === "") {
-    return hospitals;
-  }
-
   return hospitals.filter((hospital) => {
+    if (centreType !== "all" && hospital.centreType !== centreType) {
+      return false;
+    }
+
+    if (normalisedQuery === "") {
+      return true;
+    }
+
     const nameMatch = hospital.name !== null && normalise(hospital.name).includes(normalisedQuery);
     const cityMatch = hospital.city !== null && normalise(hospital.city).includes(normalisedQuery);
     const postalCodeMatch =

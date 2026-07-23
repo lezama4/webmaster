@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { listPublicHospitals } from "@application/use-cases/listPublicHospitals";
+import { CENTRE_TYPES, type CentreType } from "@domain/profile/Profile";
 import { hospitalDirectoryDeps } from "@infrastructure/composition/container";
 import { ShareRow } from "@ui/share/ShareRow";
 import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
@@ -37,10 +38,22 @@ function normaliseQ(q: string | readonly string[] | undefined): string {
   return typeof q === "string" ? q : "";
 }
 
+/**
+ * Normalises `searchParams.type` (ADR D19/D12 extension) into a validated
+ * `CentreType | "all"` — mirrors `normaliseQ`'s array/undefined handling,
+ * but additionally rejects any value that is not one of the six known
+ * `CentreType`s (an arbitrary/manipulated `?type=` value falls back to
+ * `"all"` rather than reaching `filterHospitals` unchecked).
+ */
+function normaliseType(type: string | readonly string[] | undefined): CentreType | "all" {
+  const raw = Array.isArray(type) ? (type[0] ?? "all") : typeof type === "string" ? type : "all";
+  return (CENTRE_TYPES as readonly string[]).includes(raw) ? (raw as CentreType) : "all";
+}
+
 export default async function HospitalFinderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; type?: string | string[] }>;
 }) {
   const [hospitals, t, tShare, resolvedSearchParams] = await Promise.all([
     listPublicHospitals(hospitalDirectoryDeps()),
@@ -55,7 +68,11 @@ export default async function HospitalFinderPage({
         <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
         <p className="max-w-[52ch] text-muted">{t("description")}</p>
       </header>
-      <HospitalFinder hospitals={hospitals} initialQuery={normaliseQ(resolvedSearchParams.q)} />
+      <HospitalFinder
+        hospitals={hospitals}
+        initialQuery={normaliseQ(resolvedSearchParams.q)}
+        initialType={normaliseType(resolvedSearchParams.type)}
+      />
 
       {/* Discreet, page-level share row (product decision — page-level
           only, not per-hospital: PublicHospitalProjection carries no

@@ -89,6 +89,7 @@
     "title": "Encuentra tu hospital",
     "description": "Consultá los hospitales que ya forman parte de Todo el tiempo cuenta y comprobá si el tuyo está entre ellos.",
     "search": { "label": "Buscar por nombre, ciudad o código postal", "placeholder": "Por ejemplo: Bilbao, 48013…" },
+    "filter": { "label": "Filtrar por tipo de centro", "all": "Todos los tipos" },
     "resultCount": { "all": "{count} hospitales encontrados", "partial": "{count} hospitales encontrados · {mappable} en el mapa" },
     "map": { "ariaLabel": "Mapa indicativo de hospitales participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
     "empty": { "title": "No encontramos hospitales con esa búsqueda", "description": "Probá con otro nombre, ciudad o código postal." },

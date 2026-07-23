@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
-import { EmptyState, inputClasses } from "@ui/components/ui";
+import { audienceBadgeClasses, EmptyState, inputClasses } from "@ui/components/ui";
 import { filterHospitals } from "@ui/finder/filterHospitals";
 import { selectMappableHospitals } from "@ui/finder/selectMappableHospitals";
 
@@ -15,6 +15,27 @@ import { HospitalMap } from "./HospitalMap";
 const MAX_QUERY_LENGTH = 100;
 /** ADR D12: URL sync is debounced, not per-keystroke. */
 const URL_SYNC_DEBOUNCE_MS = 300;
+
+/**
+ * Mirrors the domain `CentreType` union (`@domain/profile/Profile`) plus the
+ * "all" filter value — kept local so this client component does not import
+ * domain code directly (same convention as `register/page.tsx`'s
+ * `CENTRE_TYPE_OPTIONS`). Labels are read from the `Register.centreType.*`
+ * i18n keys (ADR D19/D20 hand-off): those six labels already exist, in
+ * parity across all three locales, from the registration form (PR2) — this
+ * filter/tag reuses them rather than duplicating a near-identical namespace.
+ * The narrative `Finder.*` vocabulary rewrite is a later, separate phase.
+ */
+const CENTRE_TYPE_FILTER_OPTIONS = [
+  "all",
+  "hospital",
+  "nursing_home",
+  "day_centre",
+  "day_hospital",
+  "occupational_centre",
+  "palliative_unit",
+] as const;
+type CentreTypeFilter = (typeof CENTRE_TYPE_FILTER_OPTIONS)[number];
 
 /**
  * Owns search state, filtering, and pin<->card selection for
@@ -29,24 +50,31 @@ const URL_SYNC_DEBOUNCE_MS = 300;
 export function HospitalFinder({
   hospitals,
   initialQuery,
+  initialType,
 }: {
   hospitals: readonly PublicHospitalProjection[];
   initialQuery: string;
+  initialType: CentreTypeFilter;
 }) {
   const t = useTranslations("Finder");
+  const tCentreType = useTranslations("Register.centreType");
   const [query, setQuery] = useState(initialQuery);
+  const [centreType, setCentreType] = useState<CentreTypeFilter>(initialType);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const cardRefs = useRef(new Map<string, HTMLLIElement>());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isFirstRender = useRef(true);
 
-  const filtered = useMemo(() => filterHospitals(hospitals, query), [hospitals, query]);
+  const filtered = useMemo(
+    () => filterHospitals(hospitals, query, centreType),
+    [hospitals, query, centreType],
+  );
   const mappableCount = useMemo(() => selectMappableHospitals(filtered).length, [filtered]);
 
-  // ADR D12: reflect the query into the URL without a server round-trip or
-  // a history entry per keystroke. Skips the very first render so an
-  // unmodified `initialQuery` (already the current URL) doesn't trigger a
-  // redundant replaceState.
+  // ADR D12: reflect the query AND the type filter into the URL without a
+  // server round-trip or a history entry per keystroke. Skips the very
+  // first render so unmodified `initialQuery`/`initialType` (already the
+  // current URL) don't trigger a redundant replaceState.
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -60,6 +88,11 @@ export function HospitalFinder({
       } else {
         params.set("q", query);
       }
+      if (centreType === "all") {
+        params.delete("type");
+      } else {
+        params.set("type", centreType);
+      }
       const search = params.toString();
       const next = search ? `${window.location.pathname}?${search}` : window.location.pathname;
       window.history.replaceState(null, "", next);
@@ -67,7 +100,7 @@ export function HospitalFinder({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, centreType]);
 
   function handleSelect(key: string) {
     setSelectedKey(key);
@@ -93,6 +126,28 @@ export function HospitalFinder({
           placeholder={t("search.placeholder")}
           className={inputClasses}
         />
+      </div>
+
+      {/* Type filter (ADR D19/D12 extension): a real, labelled, keyboard-
+          operable `<select>` — combined with the text search above by AND
+          (`filterHospitals`'s `centreType` predicate). Reflected to the URL
+          as `?type=`, alongside `?q=`, via the same debounced effect. */}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="centre-type-filter" className="text-sm font-medium">
+          {t("filter.label")}
+        </label>
+        <select
+          id="centre-type-filter"
+          value={centreType}
+          onChange={(event) => setCentreType(event.target.value as CentreTypeFilter)}
+          className={inputClasses}
+        >
+          {CENTRE_TYPE_FILTER_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option === "all" ? t("filter.all") : tCentreType(option)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ADR D11: client-side filtering mutates the DOM with no navigation
@@ -140,6 +195,14 @@ export function HospitalFinder({
                   }`}
                 >
                   <h2 className="text-lg font-semibold tracking-tight">{hospital.name}</h2>
+                  {/* centreType tag (ADR D19/D20 hand-off): the coarse public
+                      category, visibly displayed per result, not merely
+                      present in the underlying data. Reuses the
+                      `Register.centreType.*` labels (see the component-level
+                      doc comment on `CENTRE_TYPE_FILTER_OPTIONS`). */}
+                  <span className={`${audienceBadgeClasses} w-fit`}>
+                    {tCentreType(hospital.centreType)}
+                  </span>
                   <p className="text-sm text-muted">
                     {[hospital.city, hospital.postalCode].filter(Boolean).join(" · ") || t("noLocation")}
                   </p>
