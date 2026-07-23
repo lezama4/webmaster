@@ -36,6 +36,7 @@ function toPendingProfileView(record: PendingProfileView): PendingProfileView {
   return {
     profileId: record.profileId,
     type: record.type,
+    ...(record.centreType !== undefined ? { centreType: record.centreType } : {}),
     displayName: record.displayName,
     requestedAt: record.requestedAt,
   };

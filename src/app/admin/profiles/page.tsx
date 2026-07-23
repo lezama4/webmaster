@@ -32,7 +32,11 @@ export default async function AdminProfilesPage() {
           {pending.map((profile) => (
             <li key={profile.profileId} className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1">
-                <span className="font-mono text-xs uppercase tracking-wide text-primary">{t(`types.${profile.type}`)}</span>
+                <span className="font-mono text-xs uppercase tracking-wide text-primary">
+                  {profile.type === "centre" && profile.centreType
+                    ? t(`centreType.${profile.centreType}`)
+                    : t(`types.${profile.type}`)}
+                </span>
                 <span className="text-lg font-medium">{profile.displayName}</span>
                 <span className="text-sm text-muted">{t("requested", { date: dateFormat.format(profile.requestedAt) })}</span>
               </div>

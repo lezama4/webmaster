@@ -184,13 +184,22 @@ export async function loginAsNewSession(
   return { context, page };
 }
 
-/** Registers a new Hospital/Artist profile via the real `/register` form. Leaves the profile `pending` — no session is created by registration. */
+/** Registers a new Centre/Artist profile via the real `/register` form. Leaves the profile `pending` — no session is created by registration. `centreType` defaults to the form's own default ("hospital") when the role is `centre` and no override is given (D18). */
 export async function registerViaUi(
   page: Page,
-  input: { role: "hospital" | "artist"; name: string; email: string; password: string },
+  input: {
+    role: "centre" | "artist";
+    name: string;
+    email: string;
+    password: string;
+    centreType?: string;
+  },
 ): Promise<void> {
   await page.goto("/register");
   await page.locator("#role").selectOption(input.role);
+  if (input.role === "centre" && input.centreType) {
+    await page.locator("#centreType").selectOption(input.centreType);
+  }
   await page.locator("#name").fill(input.name);
   await page.locator("#email").fill(input.email);
   await page.locator("#password").fill(input.password);

@@ -25,7 +25,7 @@ test("closing a slot with an outstanding proposal rejects it and stops accepting
   const password = "CloseSlotPass123!";
 
   const hospital = {
-    role: "hospital" as const,
+    role: "centre" as const,
     name: `Close Hospital ${runId}`,
     email: `hospital.close.${runId}@vtt.test`,
     password,

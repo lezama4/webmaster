@@ -1,5 +1,6 @@
 import type { PendingProfileView } from "@application/dto/PendingProfileView";
 import type { PendingProfileQuery } from "@application/ports/PendingProfileQuery";
+import { toDomainCentreType } from "./mappers";
 import type { PrismaClientOrTx } from "./client";
 
 const PROFILE_TYPE_TO_DOMAIN = {
@@ -28,6 +29,7 @@ export class PrismaPendingProfileQuery implements PendingProfileQuery {
       select: {
         id: true,
         type: true,
+        centreType: true,
         name: true,
         createdAt: true,
         reviewRequestedAt: true,
@@ -37,6 +39,9 @@ export class PrismaPendingProfileQuery implements PendingProfileQuery {
     const views = rows.map((row): PendingProfileView => ({
       profileId: row.id,
       type: PROFILE_TYPE_TO_DOMAIN[row.type],
+      ...(row.centreType !== null && row.centreType !== undefined
+        ? { centreType: toDomainCentreType(row.centreType) }
+        : {}),
       displayName: row.name,
       requestedAt: row.reviewRequestedAt ?? row.createdAt,
     }));
