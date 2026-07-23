@@ -30,8 +30,8 @@ async function seedHospitalActor(
   profiles: InMemoryProfileRepository,
   status: "pending" | "active" | "rejected" | "deactivated" = "active",
 ) {
-  const account = anAccount("hospital");
-  const profile = aProfile("hospital", status, { accountId: account.id });
+  const account = anAccount("centre");
+  const profile = aProfile("centre", status, { accountId: account.id });
   await profiles.save(profile);
   return { actor: actorFor(account, profile), profile };
 }
@@ -91,7 +91,7 @@ describe("listHospitalSlots (Hospital's own slot board, 5.4/5.6/5.10)", () => {
 
   it("denies an Actor whose Account role is 'hospital' but whose live Profile TYPE is 'artist' (defense-in-depth, mirrors pr2a-N1)", async () => {
     const profiles = new InMemoryProfileRepository();
-    const account = anAccount("hospital");
+    const account = anAccount("centre");
     const mismatchedProfile = aProfile("artist", "active", {
       accountId: account.id,
     });

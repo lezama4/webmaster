@@ -42,8 +42,8 @@ async function seedHospital(
   deps: ReturnType<typeof makeDeps>,
   status: "pending" | "active" | "rejected" | "deactivated",
 ) {
-  const account = anAccount("hospital");
-  const profile = aProfile("hospital", status, { accountId: account.id });
+  const account = anAccount("centre");
+  const profile = aProfile("centre", status, { accountId: account.id });
   await deps.profiles.save(profile);
   return { account, profile, actor: actorFor(account, profile) };
 }
@@ -92,7 +92,7 @@ describe("publishSlot (active-Hospital gate, atomically persisted through the Pr
 
   it("denies an Actor whose Account role is 'hospital' but whose live Profile TYPE is 'artist' (pr2a-N1)", async () => {
     const deps = makeDeps();
-    const account = anAccount("hospital");
+    const account = anAccount("centre");
     // Corrupted/imported-data scenario: role says Hospital, live Profile is an Artist Profile.
     const mismatchedProfile = aProfile("artist", "active", { accountId: account.id });
     await deps.profiles.save(mismatchedProfile);

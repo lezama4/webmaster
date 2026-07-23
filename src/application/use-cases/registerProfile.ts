@@ -28,9 +28,9 @@ export interface RegisterProfileInput {
   readonly longitude?: number;
 }
 
-/** Picks only the location fields relevant to a `hospital` registration; every other role gets none (Phase 2). */
+/** Picks only the location fields relevant to a `centre` registration; every other role gets none (Phase 2). */
 function hospitalLocationFrom(input: RegisterProfileInput) {
-  if (input.role !== "hospital") return {};
+  if (input.role !== "centre") return {};
   return {
     ...(input.city !== undefined ? { city: input.city } : {}),
     ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
@@ -38,6 +38,19 @@ function hospitalLocationFrom(input: RegisterProfileInput) {
     ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
     ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
   };
+}
+
+/**
+ * D16/D18 STOPGAP (PR1 only): every centre registered through this use case
+ * TODAY is a hospital — `RegisterProfileInput` does not yet carry a
+ * `centreType` input field (that is PR2's D18 work: a required-when-centre
+ * `centreType` field on `RegisterProfileInput`, replacing this hardcode).
+ * Until then, `createProfile`'s new D16 invariant (a `centre` Profile MUST
+ * carry a `centreType`) is satisfied by hardcoding the only kind this
+ * product has ever registered.
+ */
+function centreTypeFrom(type: ReturnType<typeof profileTypeForRole>) {
+  return type === "centre" ? ({ centreType: "hospital" } as const) : {};
 }
 
 export interface RegisterProfileDeps {
@@ -120,6 +133,7 @@ export async function registerProfile(
           id: deps.idGenerator.next(),
           accountId: ctx.existing.account.id,
           type,
+          ...centreTypeFrom(type),
           name: input.name,
           ...hospitalLocationFrom(input),
         });
@@ -137,6 +151,7 @@ export async function registerProfile(
         id: deps.idGenerator.next(),
         accountId: account.id,
         type,
+        ...centreTypeFrom(type),
         name: input.name,
         ...hospitalLocationFrom(input),
       });

@@ -85,8 +85,8 @@ describe("submitProposal (active-Artist gate, open-Slot only, M2 duplicate guard
 
   it("denies a non-Artist actor (Hospital)", async () => {
     const deps = makeDeps();
-    const account = anAccount("hospital");
-    const profile = aProfile("hospital", "active", { accountId: account.id });
+    const account = anAccount("centre");
+    const profile = aProfile("centre", "active", { accountId: account.id });
     await deps.profiles.save(profile);
     const slot = anOpenSlot();
     await deps.slots.save(slot);
@@ -103,7 +103,7 @@ describe("submitProposal (active-Artist gate, open-Slot only, M2 duplicate guard
   it("denies an Actor whose Account role is 'artist' but whose live Profile TYPE is 'hospital' (pr2a-N1)", async () => {
     const deps = makeDeps();
     const account = anAccount("artist");
-    const mismatchedProfile = aProfile("hospital", "active", { accountId: account.id });
+    const mismatchedProfile = aProfile("centre", "active", { accountId: account.id });
     await deps.profiles.save(mismatchedProfile);
     const slot = anOpenSlot();
     await deps.slots.save(slot);

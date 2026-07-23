@@ -7,7 +7,7 @@
  */
 export interface PendingProfileView {
   readonly profileId: string;
-  readonly type: "hospital" | "artist";
+  readonly type: "centre" | "artist";
   readonly displayName: string;
   /**
    * When this Profile most recently entered review — `reviewRequestedAt`

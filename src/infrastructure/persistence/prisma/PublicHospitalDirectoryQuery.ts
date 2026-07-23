@@ -27,7 +27,7 @@ export class PrismaPublicHospitalDirectoryQuery
       // Security predicate (D9) — the SOLE reason a PENDING/REJECTED/
       // DEACTIVATED profile, or an Artist profile, cannot reach the public
       // directory. Must never acquire an unrelated condition.
-      where: { type: "HOSPITAL", status: "ACTIVE" },
+      where: { type: "CENTRE", status: "ACTIVE" },
       select: {
         name: true,
         city: true,

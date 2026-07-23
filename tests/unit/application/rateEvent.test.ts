@@ -49,7 +49,7 @@ describe("rateEvent (any REGISTERED account, PUBLISHED events only, one editable
     expect(result.aggregate).toEqual({ averageStars: 4, ratingCount: 1 });
   });
 
-  it.each(["hospital", "artist", "patient", "admin"] as const)(
+  it.each(["centre", "artist", "patient", "admin"] as const)(
     "allows any role (%s) — no role restriction",
     async (role) => {
       const deps = makeDeps();
