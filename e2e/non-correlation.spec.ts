@@ -1,6 +1,7 @@
 import { expect, request, test } from "@playwright/test";
 
 import {
+  SEED_ACTIVE_CENTRE_TYPES,
   SEED_ACTIVE_HOSPITALS,
   SEED_COMPLETED_EVENT_TITLE,
   SEED_PUBLISHED_EVENT_TITLE,
@@ -153,6 +154,65 @@ test.describe("/events exposes NO hospital data (D10, event-to-hospital directio
       await expect(page.getByText(hospital.city, { exact: false })).toHaveCount(0);
       await expect(page.getByText(hospital.postalCode)).toHaveCount(0);
     }
+  });
+});
+
+test.describe("/events — centreType adds no new correlation path (D10, widen-beyond-hospitals D19 extension)", () => {
+  test("GET /api/events never carries a centreType/type key or value, including for the seed's lone rare-type city", async () => {
+    const ctx = await request.newContext({ baseURL });
+    const res = await ctx.get("/api/events");
+    const raw = await res.text();
+    const body = JSON.parse(raw) as { events: Array<Record<string, unknown>> };
+
+    // Re-asserted per-key here for the same reason as the allow-list check
+    // above: an addition of `centreType` or `type` would be a NAMED key,
+    // whatever shape it took.
+    for (const event of body.events) {
+      expect(event).not.toHaveProperty("centreType");
+      expect(event).not.toHaveProperty("type");
+    }
+
+    // León is the seed's ONLY city with an ACTIVE centre — "Unidad de
+    // Cuidados Paliativos del Bernesga", a palliative_unit, and no other
+    // centre. This is the seed's concrete instance of the "lone rare type"
+    // case (public-event-browsing spec): if any Event field revealed this
+    // centre's city, name, or centreType, a visitor could deduce that any
+    // Event naming León was hosted at the region's sole palliative unit.
+    expect(raw, "must not leak the lone rare-type centre's city").not.toContain("León");
+    expect(raw, "must not leak the lone rare-type centre's name").not.toContain("Bernesga");
+
+    // No `centreType` value of any kind appears anywhere in the Events
+    // response — the widened six-value vocabulary has no new join key to
+    // leak through, matching zero seeded Slot/Event title or description.
+    for (const centreType of SEED_ACTIVE_CENTRE_TYPES) {
+      expect(raw, `must not leak a centreType value ("${centreType}")`).not.toContain(centreType);
+    }
+
+    await ctx.dispose();
+  });
+
+  test("events from centres of two different centreType values remain indistinguishable by centre", async () => {
+    // Hospital San Juan (centreType hospital) and Residencia Urumea
+    // (centreType nursing_home) are two ACTIVE centres of different kinds.
+    // Neither their names nor cities nor centreType values appear on the
+    // Events surface — re-asserted specifically across a type BOUNDARY,
+    // not just within one type, closing the "different kinds are
+    // indistinguishable" half of the widened non-correlation invariant.
+    const ctx = await request.newContext({ baseURL });
+    const res = await ctx.get("/api/events");
+    const raw = await res.text();
+
+    const sanJuan = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital San Juan")!;
+    const urumea = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Residencia Urumea")!;
+    expect(sanJuan.centreType).not.toBe(urumea.centreType);
+
+    for (const centre of [sanJuan, urumea]) {
+      expect(raw, `must not leak "${centre.name}"`).not.toContain(centre.name);
+      expect(raw, `must not leak "${centre.city}"`).not.toContain(centre.city);
+      expect(raw, `must not leak centreType "${centre.centreType}"`).not.toContain(centre.centreType);
+    }
+
+    await ctx.dispose();
   });
 });
 

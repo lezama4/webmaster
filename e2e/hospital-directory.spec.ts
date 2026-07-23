@@ -192,12 +192,16 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
 
     // Focus the search input directly (a natural, stable starting point
     // independent of how many links a future header redesign adds), then
-    // Tab once: `<li>` cards carry no tabindex, so the very next focusable
-    // element in DOM/tab order is the first map pin (D11: tab order == list
-    // order, i.e. the D9 city-asc sort — "A Coruña"/"Hospital do Orzán"
-    // sorts first among the 10-hospital roster; Bilbao/"Hospital San Juan"
-    // was only first back when the seed had 4 ACTIVE hospitals).
+    // Tab TWICE: the centreType `<select>` (widen-beyond-hospitals PR5) is
+    // now the next focusable element after the search input, so it takes
+    // the first Tab stop; `<li>` cards carry no tabindex, so the SECOND Tab
+    // reaches the first map pin (D11: tab order == list order, i.e. the D9
+    // city-asc sort — "A Coruña"/"Hospital do Orzán" sorts first among the
+    // 10-hospital roster; Bilbao/"Hospital San Juan" was only first back
+    // when the seed had 4 ACTIVE hospitals).
     await page.locator("#hospital-search").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#centre-type-filter")).toBeFocused();
     await page.keyboard.press("Tab");
 
     const firstPin = page.getByTestId("hospital-pin").first();
@@ -267,6 +271,53 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
       const label = (await pins.nth(i).getAttribute("aria-label")) ?? "";
       expect(label).not.toContain(SEED_NO_COORDINATES_HOSPITAL_NAME);
     }
+  });
+});
+
+test.describe("/encuentra-tu-momento — centreType filter (D12/D19)", () => {
+  test("the centreType tag is visible on results, per their own type, before any filter is applied", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    // The tag's text is exact ("Hospital"/"Nursing home") — using exact:true
+    // is what keeps this collision-free against the card's own <h2>, which
+    // contains "Hospital" as a substring of a longer name ("Hospital San
+    // Juan"), not as its entire text content.
+    const sanJuanCard = page.locator("li").filter({ hasText: "Hospital San Juan" });
+    await expect(sanJuanCard.getByText("Hospital", { exact: true })).toBeVisible();
+
+    const urumeaCard = page.locator("li").filter({ hasText: "Residencia Urumea" });
+    await expect(urumeaCard.getByText("Nursing home", { exact: true })).toBeVisible();
+  });
+
+  test("selecting a type filter narrows to only that type and reflects the URL; 'all' restores the full set", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    await page.locator("#centre-type-filter").selectOption("nursing_home");
+    await expect(page).toHaveURL(/type=nursing_home/);
+    await expect(page.getByRole("heading", { level: 2, name: "Residencia Urumea" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital San Juan" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Centro de Día Monteverde" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Centro Ocupacional Aravaca" })).toHaveCount(0);
+
+    await page.locator("#centre-type-filter").selectOption("all");
+    await expect(page).not.toHaveURL(/type=/);
+    for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      await expect(page.getByRole("heading", { level: 2, name: hospital.name })).toBeVisible();
+    }
+  });
+
+  test("a type filter combines with the existing text search by AND", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    // "Hospital" type + a city search that matches a DIFFERENT centreType
+    // ("Residencia Urumea" is in Donostia-San Sebastián, not Bilbao) proves
+    // both predicates apply together, not either alone.
+    await page.locator("#centre-type-filter").selectOption("hospital");
+    await page.locator("#hospital-search").fill("bilb");
+
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital San Juan" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital Santa Clara" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Residencia Urumea" })).toHaveCount(0);
   });
 });
 

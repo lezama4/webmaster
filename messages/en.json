@@ -99,6 +99,7 @@
     "title": "Find your hospital",
     "description": "Check the hospitals that are already part of Todo el tiempo cuenta and see if yours is among them.",
     "search": { "label": "Search by name, city, or postal code", "placeholder": "For example: Bilbao, 48013…" },
+    "filter": { "label": "Filter by centre type", "all": "All types" },
     "resultCount": { "all": "{count} hospitals found", "partial": "{count} hospitals found · {mappable} shown on the map" },
     "map": { "ariaLabel": "Indicative map of participating hospitals", "caption": "Indicative map, not to scale — each point's position is approximate." },
     "empty": { "title": "No hospitals match that search", "description": "Try a different name, city, or postal code." },
