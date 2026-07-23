@@ -150,7 +150,7 @@ test.describe("/encuentra-tu-momento — listing and search (D9/D12)", () => {
     await page.locator("#hospital-search").fill("Zzzznotreal");
 
     await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
-    await expect(page.getByText("No hospitals match that search")).toBeVisible();
+    await expect(page.getByText("No centres match that search")).toBeVisible();
   });
 });
 
@@ -169,7 +169,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     // no pin, so pins <= cards, with the live region as the source of truth
     // for the expected split).
     const liveText = (await liveRegion.textContent()) ?? "";
-    const match = liveText.match(/^(\d+) hospitals? found(?: · (\d+) shown on the map)?/);
+    const match = liveText.match(/^(\d+) centres? found(?: · (\d+) shown on the map)?/);
     expect(match, `unexpected live-region text: "${liveText}"`).not.toBeNull();
     const expectedTotal = Number(match![1]);
     const expectedMappable = match![2] === undefined ? expectedTotal : Number(match![2]);
@@ -240,10 +240,10 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     // number is not asserted — see the file-level note on shared-database
     // pollution). The meaningful, deterministic assertion is AFTER a
     // collision-free search narrows to exactly one known hospital.
-    await expect(liveRegion).toHaveText(/^\d+ hospitals? found/i);
+    await expect(liveRegion).toHaveText(/^\d+ centres? found/i);
 
     await page.locator("#hospital-search").fill("HOSPITAL SAN JUAN");
-    await expect(liveRegion).toHaveText(/^1 hospitals? found/i);
+    await expect(liveRegion).toHaveText(/^1 centres? found/i);
   });
 
   test("the 'indicative map, not to scale' caption is visible", async ({ page }) => {
@@ -323,9 +323,9 @@ test.describe("/encuentra-tu-momento — centreType filter (D12/D19)", () => {
 
 test.describe("/encuentra-tu-momento — locale rendering via NEXT_LOCALE cookie (D13/D15)", () => {
   const cases = [
-    { locale: "es", title: "Encuentra tu hospital" },
-    { locale: "eu", title: "Aurkitu zure ospitalea" },
-    { locale: "en", title: "Find your hospital" },
+    { locale: "es", title: "Encuentra tu centro" },
+    { locale: "eu", title: "Aurkitu zure zentroa" },
+    { locale: "en", title: "Find your centre" },
   ] as const;
 
   for (const { locale, title } of cases) {

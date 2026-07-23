@@ -1,9 +1,10 @@
 {
   "Layout": {
     "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register" },
-    "footer": { "description": "A non-profit initiative bringing live performances to patients during hospital stays. Free for hospitals, artists, and families.", "help": "Help" }
+    "footer": { "description": "A non-profit initiative bringing live performances to the people in care centres, during long stays or days away from home. Free for centres, artists, and families.", "help": "Help" }
   },
   "LanguageSelector": { "label": "Language selector" },
+  "CentreType": { "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
   "Share": {
     "heading": "Share this page",
     "footerLabel": "Share Todo el tiempo cuenta",
@@ -25,18 +26,18 @@
     "mission": {
       "eyebrow": "Why we exist",
       "title": "One open slot in the schedule can be the best moment of the month.",
-      "description": "We don't replace treatment — we accompany it. We coordinate with each ward so music, theatre, or a workshop arrives without interrupting care, and so every performance means something to the person receiving it.",
+      "description": "We don't replace care — we accompany it. We coordinate with each centre so music, theatre, or a workshop arrives without interrupting care, and so every performance means something to the person receiving it.",
       "imageAlt": "An artist shows coloured paper cut-outs to a group of patients, a teenager, and a nurse gathered around a table covered in craft materials."
     },
     "trust": {
       "eyebrow": "Institutional backing",
-      "title": "Every slot is opened by a hospital, not an anonymous platform.",
-      "description": "Ward coordinators review and confirm proposals before they reach a patient. That's how Todo el tiempo cuenta stays safe and clinically sound.",
-      "hospitalsLabel": "Participating hospitals",
+      "title": "Every slot is opened by a care centre, not an anonymous platform.",
+      "description": "Coordinators at each centre review and confirm proposals before they reach the people in their care. That's how Todo el tiempo cuenta stays safe and meaningful.",
+      "hospitalsLabel": "Participating centres",
       "patronsLabel": "Patron organisations",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
       "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "Illustrative set for this MVP phase: it includes hospitals from the demo database and example organisations, not confirmed patronage agreements."
+      "disclaimer": "Illustrative set for this MVP phase: it includes centres from the demo database and example organisations, not confirmed patronage agreements."
     },
     "artists": {
       "eyebrow": "Top-rated artists",
@@ -61,15 +62,15 @@
     },
     "closing": {
       "title": "Ready to open the first slot, or propose the first moment?",
-      "description": "Hospitals and artists register in the same place. A coordinator reviews every profile before it can act.",
-      "primaryCta": "Register a hospital or profile",
+      "description": "Centres and artists register in the same place. A coordinator reviews every profile before it can act.",
+      "primaryCta": "Register a centre or profile",
       "secondaryCta": "Browse upcoming events"
     },
     "what": {
       "eyebrow": "What Todo el tiempo cuenta is",
       "title": "Live culture to accompany the wait.",
-      "description": "We connect hospitals with artists to fill waiting hours with music, workshops, and live performances. Free for everyone. Non-profit.",
-      "steps": ["Hospitals publish open slots", "Artists propose activities", "The event is published"],
+      "description": "We connect care centres with artists to fill waiting hours with music, workshops, and live performances. Free for everyone. Non-profit.",
+      "steps": ["Centres publish open slots", "Artists propose activities", "The event is published"],
       "primaryCta": "Browse upcoming events",
       "secondaryCta": "How it works"
     }
@@ -77,76 +78,76 @@
   "Help": {
     "eyebrow": "Help",
     "title": "How Todo el tiempo cuenta works",
-    "intro": "A quick guide to the process, for hospitals, artists, and families.",
-    "howItWorks": { "title": "How a moment comes together", "description": "Four steps, one shared afternoon. Before any of it begins, an administrator validates every hospital and every artist; after that, each step is reviewed before it reaches a patient." },
+    "intro": "A quick guide to the process, for centres, artists, and families.",
+    "howItWorks": { "title": "How a moment comes together", "description": "Four steps, one shared afternoon. Before any of it begins, an administrator validates every centre and every artist; after that, each step is reviewed before it reaches the people who'll receive it." },
     "steps": {
-      "01": { "role": "Hospitals", "text": "Open a slot in the ward's agenda — a date, a time, a place where patients could use some company." },
+      "01": { "role": "Centres", "text": "Open a slot in the centre's agenda — a date, a time, a place where the people there could use some company." },
       "02": { "role": "Artists", "text": "Browse open slots and propose an activity: music, storytelling, magic, a workshop." },
-      "03": { "role": "Hospitals", "text": "The same hospital reviews the proposals it received and confirms one. The moment becomes a scheduled event." },
-      "04": { "role": "Families", "text": "Patients and their families see what's coming up, and share how it went." }
+      "03": { "role": "Centres", "text": "The same centre reviews the proposals it received and confirms one. The moment becomes a scheduled event." },
+      "04": { "role": "Families", "text": "The people there and their families see what's coming up, and share how it went." }
     },
     "faq": {
       "title": "Frequently asked questions",
       "items": [
         { "question": "How are events and artists rated?", "answer": "Registered users can rate a published event 1–5 stars, and each event shows its average. The testimonial quotes on the homepage remain illustrative examples, not verified reviews." },
-        { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a hospital publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
-        { "question": "How is patient location protected?", "answer": "Todo el tiempo cuenta never publishes patient personal data. A slot's ward or room is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No patient's name, room number, or reason for admission is recorded on the platform at all." }
+        { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a centre publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
+        { "question": "How is people's location protected?", "answer": "Todo el tiempo cuenta never publishes personal data. A slot's room or space is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No one's name, exact location, or reason for their stay is recorded on the platform at all." }
       ]
     }
   },
   "Finder": {
-    "nav": "Find your hospital",
-    "title": "Find your hospital",
-    "description": "Check the hospitals that are already part of Todo el tiempo cuenta and see if yours is among them.",
+    "nav": "Find your centre",
+    "title": "Find your centre",
+    "description": "Check the centres that are already part of Todo el tiempo cuenta and see if yours is among them.",
     "search": { "label": "Search by name, city, or postal code", "placeholder": "For example: Bilbao, 48013…" },
     "filter": { "label": "Filter by centre type", "all": "All types" },
-    "resultCount": { "all": "{count} hospitals found", "partial": "{count} hospitals found · {mappable} shown on the map" },
-    "map": { "ariaLabel": "Indicative map of participating hospitals", "caption": "Indicative map, not to scale — each point's position is approximate." },
-    "empty": { "title": "No hospitals match that search", "description": "Try a different name, city, or postal code." },
+    "resultCount": { "all": "{count} centres found", "partial": "{count} centres found · {mappable} shown on the map" },
+    "map": { "ariaLabel": "Indicative map of participating centres", "caption": "Indicative map, not to scale — each point's position is approximate." },
+    "empty": { "title": "No centres match that search", "description": "Try a different name, city, or postal code." },
     "noLocation": "Location not provided"
   },
   "About": {
     "nav": "About us",
     "eyebrow": "About us",
-    "title": "A non-profit platform bringing live culture to the hospital bedside.",
+    "title": "A non-profit platform bringing live culture to the places where care keeps people away from home.",
     "intro": "Here we explain what Todo el tiempo cuenta is, who takes part, how privacy is protected, and why it's free. For a step-by-step of how to publish or propose, visit Help.",
     "purpose": {
       "title": "Our purpose",
-      "description": "Long hospital stays isolate. Todo el tiempo cuenta exists so music, theatre, and workshops reach the ward without replacing clinical care, always coordinated with the hospital."
+      "description": "Long stays and days away from home isolate. Todo el tiempo cuenta exists so music, theatre, and workshops reach the care centre without replacing care, always coordinated with the centre itself."
     },
     "roles": {
       "title": "Who takes part",
       "items": [
-        { "name": "Admin", "description": "Validates every hospital and artist profile before it can act on the platform." },
-        { "name": "Hospital", "description": "Publishes open slots in the ward's schedule when there is room for an activity." },
+        { "name": "Admin", "description": "Validates every centre and artist profile before it can act on the platform." },
+        { "name": "Care centre", "description": "Publishes open slots in the centre's schedule when there is room for an activity." },
         { "name": "Artist", "description": "Proposes an activity for a published slot, within their reach and availability." },
-        { "name": "Patient and family", "description": "Enjoy the scheduled event, with no registration required." }
+        { "name": "People and family", "description": "Enjoy the scheduled event, with no registration required." }
       ]
     },
     "flow": {
       "title": "The journey, at a glance",
-      "description": "A slot starts at the hospital, an artist proposes for it, and it becomes a public event. For the detail of each step, see Help.",
+      "description": "A slot starts at the centre, an artist proposes for it, and it becomes a public event. For the detail of each step, see Help.",
       "stages": ["Slot published", "Artist proposal", "Event confirmed"]
     },
     "validation": {
       "title": "Validated profiles",
-      "description": "No hospital or artist can act on the platform until an admin reviews and approves their profile. That validation is what keeps Todo el tiempo cuenta safe and clinically sound."
+      "description": "No centre or artist can act on the platform until an admin reviews and approves their profile. That validation is what keeps Todo el tiempo cuenta safe and meaningful."
     },
     "dataStance": {
       "title": "What data we publish, and what we don't",
-      "description": "We publish what's needed to find a hospital or an event: name, city, postal code, and, for hospitals, an approximate map location.",
+      "description": "We publish what's needed to find a centre or an event: name, city, postal code, the centre type, and, for centres, an approximate map location.",
       "excludedTitle": "Deliberately, we never publish:",
       "excluded": [
-        "The exact room or ward where an event takes place",
-        "The content of proposals between hospitals and artists",
+        "The exact room or space where an event takes place",
+        "The content of proposals between centres and artists",
         "Email addresses or internal database identifiers",
-        "Any visible link between a specific hospital and its events"
+        "Any visible link between a specific centre and its events"
       ],
-      "note": "The hospital directory and the event listing are deliberately kept unlinked: seeing a hospital never reveals which events it has had, and seeing an event never reveals which hospital it happened at."
+      "note": "The centre directory and the event listing are deliberately kept unlinked: seeing a centre never reveals which events it has had, and seeing an event never reveals which centre it happened at."
     },
     "funding": {
       "title": "Why it's free",
-      "description": "Todo el tiempo cuenta is a non-profit initiative. Hospitals, artists, and families pay nothing to take part; the project is sustained apart from any transaction between them."
+      "description": "Todo el tiempo cuenta is a non-profit initiative. Centres, artists, and families pay nothing to take part; the project is sustained apart from any transaction between them."
     }
   },
   "Events": {
@@ -164,13 +165,13 @@
     }
   },
   "Login": {
-    "title": "Welcome back", "description": "Log in to coordinate or review events.", "email": "Email", "password": "Password", "submit": "Log in", "submitting": "Signing in…", "noAccount": "No account yet?", "register": "Register a hospital or artist",
+    "title": "Welcome back", "description": "Log in to coordinate or review events.", "email": "Email", "password": "Password", "submit": "Log in", "submitting": "Signing in…", "noAccount": "No account yet?", "register": "Register a centre or artist",
     "errors": { "invalidCredentials": "Invalid email or password.", "generic": "Something went wrong. Please try again." }
   },
   "Register": {
-    "title": "Register", "description": "Hospitals and artists join here. Every profile is reviewed before it can act.", "email": "Email", "password": "Password", "passwordHint": "At least 8 characters.", "submit": "Create profile", "submitting": "Submitting…", "alreadyRegistered": "Already registered?", "login": "Log in",
-    "role": { "label": "I am registering a", "hospital": "Hospital", "artist": "Artist" }, "name": { "hospital": "Hospital name", "artist": "Artist / stage name" },
-    "location": { "city": "City", "postalCode": "Postal code", "addressLine": "Street address", "hint": "Optional. Helps families find the hospital on a map." },
+    "title": "Register", "description": "Centres and artists join here. Every profile is reviewed before it can act.", "email": "Email", "password": "Password", "passwordHint": "At least 8 characters.", "submit": "Create profile", "submitting": "Submitting…", "alreadyRegistered": "Already registered?", "login": "Log in",
+    "role": { "label": "I am registering a", "centre": "Care centre", "artist": "Artist" }, "name": { "centre": "Centre name", "artist": "Artist / stage name" },
+    "location": { "city": "City", "postalCode": "Postal code", "addressLine": "Street address", "hint": "Optional. Helps families find the centre on a map." },
     "centreType": { "label": "Centre type", "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
     "errors": { "duplicateEmail": "An account with that email already exists.", "failure": "Registration could not be completed. Check your details and try again.", "generic": "Something went wrong. Please try again." },
     "success": { "title": "Request received", "description": "Your profile is pending review by a coordinator. You can log in once it has been approved.", "action": "Go to log in" }

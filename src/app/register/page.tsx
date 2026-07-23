@@ -46,8 +46,8 @@ export default function RegisterPage() {
     <div className="mx-auto flex max-w-md flex-col gap-6 px-4 py-16 sm:px-6">
       <div className="flex flex-col gap-2"><h1 className="font-heading text-2xl font-semibold tracking-tight">{t("title")}</h1><p className="text-muted">{t("description")}</p></div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        <Field label={t("role.label")} htmlFor="role"><select id="role" name="role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputClasses}><option value="centre">{t("role.hospital")}</option><option value="artist">{t("role.artist")}</option></select></Field>
-        <Field label={role === "centre" ? t("name.hospital") : t("name.artist")} htmlFor="name"><input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClasses} /></Field>
+        <Field label={t("role.label")} htmlFor="role"><select id="role" name="role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputClasses}><option value="centre">{t("role.centre")}</option><option value="artist">{t("role.artist")}</option></select></Field>
+        <Field label={role === "centre" ? t("name.centre") : t("name.artist")} htmlFor="name"><input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClasses} /></Field>
         {role === "centre" ? (
           <>
             <Field label={t("centreType.label")} htmlFor="centreType"><select id="centreType" name="centreType" required value={centreType} onChange={(e) => setCentreType(e.target.value as CentreType)} className={inputClasses}>{CENTRE_TYPE_OPTIONS.map((option) => (<option key={option} value={option}>{t(`centreType.${option}`)}</option>))}</select></Field>

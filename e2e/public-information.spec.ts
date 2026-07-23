@@ -41,8 +41,8 @@ test.describe("Home clarity block (Home.what) — spec: 'Home Displays an Explan
 
   test("states the platform is free and non-profit, and the three-step flow", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText(/we connect hospitals with artists/i)).toBeVisible();
-    await expect(page.getByText(/hospitals publish open slots/i)).toBeVisible();
+    await expect(page.getByText(/we connect care centres with artists/i)).toBeVisible();
+    await expect(page.getByText(/centres publish open slots/i)).toBeVisible();
     await expect(page.getByText(/artists propose activities/i)).toBeVisible();
     await expect(page.getByText(/the event is published/i)).toBeVisible();
   });
@@ -83,7 +83,7 @@ test.describe("/quienes-somos — spec: 'Covers Purpose, Roles, Flow, Validation
 
   test("data stance explicitly lists what is deliberately excluded from public data", async ({ page }) => {
     await page.goto("/quienes-somos");
-    await expect(page.getByText(/exact room or ward/i)).toBeVisible();
+    await expect(page.getByText(/exact room or space/i)).toBeVisible();
     await expect(page.getByText(/content of proposals/i)).toBeVisible();
     await expect(page.getByText(/deliberately kept unlinked/i)).toBeVisible();
   });
