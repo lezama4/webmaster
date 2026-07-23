@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DomainValidationError } from "@domain/errors";
+import type { CentreType } from "@domain/profile/Profile";
 import { ConflictError, ForbiddenError, UnauthenticatedError } from "@application/errors";
 import { registerProfile } from "@application/use-cases/registerProfile";
 import {
@@ -35,6 +36,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
         email: "hospital.sanjuan@vtt.test",
         password: "S3cure!pass",
         role: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
       },
       deps,
@@ -341,6 +343,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
           email: "hospital.sanjuan@vtt.test",
           password: "S3cure!pass",
           role: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           city: "Bilbao",
           postalCode: "48013",
@@ -371,6 +374,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
           email: "hospital.sanjuan@vtt.test",
           password: "S3cure!pass",
           role: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
         },
         deps,
@@ -411,6 +415,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
             email: "hospital.sanjuan@vtt.test",
             password: "S3cure!pass",
             role: "centre",
+            centreType: "hospital",
             name: "Hospital San Juan",
             latitude: 200,
             longitude: 0,
@@ -418,6 +423,102 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
           deps,
         ),
       ).rejects.toBeInstanceOf(DomainValidationError);
+    });
+  });
+
+  describe("centreType (D18) — a registering centre declares exactly one of six kinds", () => {
+    const ALL_CENTRE_TYPES = [
+      "hospital",
+      "nursing_home",
+      "day_centre",
+      "day_hospital",
+      "occupational_centre",
+      "palliative_unit",
+    ] as const;
+
+    it.each(ALL_CENTRE_TYPES)(
+      "each of the six centre types can register independently: %s",
+      async (centreType) => {
+        const deps = makeDeps();
+
+        const profile = await registerProfile(
+          {
+            email: `centre.${centreType}@vtt.test`,
+            password: "S3cure!pass",
+            role: "centre",
+            centreType,
+            name: `Some ${centreType} centre`,
+          },
+          deps,
+        );
+
+        expect(profile.status).toBe("pending");
+        expect(profile.type).toBe("centre");
+        expect(profile.centreType).toBe(centreType);
+
+        const persisted = await deps.profiles.findByAccountId(profile.accountId);
+        expect(persisted?.centreType).toBe(centreType);
+      },
+    );
+
+    it("centreType is required for a centre role — rejected before a profile is created, no orphan Account", async () => {
+      const deps = makeDeps();
+
+      await expect(
+        registerProfile(
+          {
+            email: "centre.missing-type@vtt.test",
+            password: "S3cure!pass",
+            role: "centre",
+            name: "Some Centre",
+          },
+          deps,
+        ),
+      ).rejects.toBeInstanceOf(DomainValidationError);
+
+      expect(await deps.accounts.findByEmail("centre.missing-type@vtt.test")).toBeNull();
+    });
+
+    it("centreType is constrained to the six known values — an unknown value is rejected, no profile created", async () => {
+      const deps = makeDeps();
+
+      await expect(
+        registerProfile(
+          {
+            email: "centre.invalid-type@vtt.test",
+            password: "S3cure!pass",
+            role: "centre",
+            // Hostile/malformed input reaching the use case directly,
+            // bypassing whatever the client or the route already checked.
+            centreType: "prison" as unknown as CentreType,
+            name: "Some Centre",
+          },
+          deps,
+        ),
+      ).rejects.toBeInstanceOf(DomainValidationError);
+
+      expect(await deps.accounts.findByEmail("centre.invalid-type@vtt.test")).toBeNull();
+    });
+
+    it("an Artist registration with a centreType present is rejected — an artist profile must never carry one", async () => {
+      const deps = makeDeps();
+
+      await expect(
+        registerProfile(
+          {
+            email: "artist.with-centretype@vtt.test",
+            password: "S3cure!pass",
+            role: "artist",
+            centreType: "hospital",
+            name: "Clara",
+          },
+          deps,
+        ),
+      ).rejects.toBeInstanceOf(DomainValidationError);
+
+      expect(
+        await deps.accounts.findByEmail("artist.with-centretype@vtt.test"),
+      ).toBeNull();
     });
   });
 });

@@ -10,6 +10,7 @@ import type { Account } from "@domain/account/Account";
 import type { Profile } from "@domain/profile/Profile";
 import {
   accountRoleToPrisma,
+  centreTypeToPrisma,
   profileStatusToPrisma,
   profileTypeToPrisma,
   toDomainAccount,
@@ -52,6 +53,18 @@ function profileData(profile: Profile) {
     addressLine: profile.addressLine ?? null,
     latitude: profile.latitude ?? null,
     longitude: profile.longitude ?? null,
+    // D16/D18: was missing from this adapter's OWN serializer (unlike
+    // `ProfileRepository.save`'s) — every centre ever registered through
+    // `registerProfile` persisted a NULL `centreType`, silently dropping
+    // the in-memory domain value on write. Found by the Phase 2.9
+    // register -> validate -> publish integration test against real
+    // Postgres; `rehydrateProfile`'s own invariant caught it on the very
+    // next read (`validateProfile`), rather than a wrong value passing
+    // silently.
+    centreType:
+      profile.centreType !== undefined
+        ? centreTypeToPrisma(profile.centreType)
+        : null,
   };
 }
 
