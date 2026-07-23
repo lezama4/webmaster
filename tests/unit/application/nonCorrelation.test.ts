@@ -41,7 +41,19 @@ import {
   SEED_PUBLISHED_EVENT_TITLE,
 } from "../../../e2e/support/helpers";
 
+/**
+ * `centreType` (ADR D19, widen-beyond-hospitals) is admitted here by hand,
+ * checked against D10 specifically, not merely D9/D14: it is a COARSE
+ * public category (one of six known `CentreType` values) — not event-
+ * derived, and it does not identify a specific centre any more precisely
+ * than `name`/`city` already do. It carries no Slot/Proposal/Event
+ * reference, so it cannot become a join key back to the event surface.
+ * Admitted the same way Block 2's `id`/`averageStars`/`ratingCount` were
+ * admitted onto `EVENT_ALLOW_LISTED_FIELDS` above — checked, named, and
+ * typed out by a person, not derived from the DTO.
+ */
 const HOSPITAL_ALLOW_LISTED_FIELDS = [
+  "centreType",
   "city",
   "latitude",
   "longitude",
@@ -93,7 +105,12 @@ const EVENT_DERIVED_FIELDS = [
   "slots",
 ];
 
-/** Hospital-identifying fields that must NEVER reach the event surface. */
+/**
+ * Hospital/centre-identifying fields that must NEVER reach the event
+ * surface. `centreType` (ADR D19) joins this list on the FORBIDDEN side for
+ * events — it is a directory-side allow-listed field, never an event one;
+ * admitting it on the directory does not loosen what an Event may carry.
+ */
 const HOSPITAL_IDENTIFYING_FIELDS = [
   "hospitalId",
   "hospitalName",
@@ -102,6 +119,7 @@ const HOSPITAL_IDENTIFYING_FIELDS = [
   "postalCode",
   "latitude",
   "longitude",
+  "centreType",
 ];
 
 function aHospital(
@@ -113,6 +131,7 @@ function aHospital(
     postalCode: "48013",
     latitude: 43.26,
     longitude: -2.94,
+    centreType: "hospital",
     ...overrides,
   };
 }
@@ -187,7 +206,7 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     }
   });
 
-  it("HOSTILE ADAPTER: a port that attaches hospital id/name/city/coordinates to an Event is stripped", async () => {
+  it("HOSTILE ADAPTER: a port that attaches hospital id/name/city/coordinates/centreType to an Event is stripped", async () => {
     const hostileItem = {
       ...anEvent(),
       hospitalId: "profile-secret-id",
@@ -197,6 +216,9 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
       postalCode: "48013",
       latitude: 43.26,
       longitude: -2.94,
+      // ADR D19: centreType is a directory-side allow-listed field — an
+      // adapter attaching it to an Event must still have it stripped.
+      centreType: "palliative_unit",
     } as unknown as PublicEventProjection;
     const deps = {
       publicEventProjectionQuery: new FakePublicEventProjectionQuery([hostileItem]),

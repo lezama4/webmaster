@@ -19,6 +19,7 @@ function hospital(overrides: Partial<PublicHospitalProjection>): PublicHospitalP
     postalCode: "48013",
     latitude: 43.26,
     longitude: -2.94,
+    centreType: "hospital",
     ...overrides,
   };
 }

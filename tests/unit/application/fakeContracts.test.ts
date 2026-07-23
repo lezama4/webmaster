@@ -139,6 +139,7 @@ describe("FakePublicHospitalDirectoryQuery contract (D9): listActive returns exa
         postalCode: "46011",
         latitude: 39.4699,
         longitude: -0.3763,
+        centreType: "hospital",
       },
       {
         name: "Hospital Santa Clara",
@@ -146,6 +147,7 @@ describe("FakePublicHospitalDirectoryQuery contract (D9): listActive returns exa
         postalCode: "41003",
         latitude: 37.3891,
         longitude: -5.9845,
+        centreType: "hospital",
       },
     ];
     const query = new FakePublicHospitalDirectoryQuery(items);

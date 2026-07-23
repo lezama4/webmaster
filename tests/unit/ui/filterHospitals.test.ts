@@ -12,6 +12,7 @@ function aHospital(
     postalCode: "48013",
     latitude: 43.263,
     longitude: -2.935,
+    centreType: "hospital",
     ...overrides,
   };
 }

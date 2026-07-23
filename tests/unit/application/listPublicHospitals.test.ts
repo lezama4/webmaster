@@ -5,6 +5,7 @@ import type { PublicHospitalProjection } from "@application/dto/PublicHospitalPr
 import { FakePublicHospitalDirectoryQuery } from "./support/fakes";
 
 const ALLOW_LISTED_FIELDS = [
+  "centreType",
   "city",
   "latitude",
   "longitude",
@@ -21,6 +22,7 @@ function aHospital(
     postalCode: "46011",
     latitude: 39.4699,
     longitude: -0.3763,
+    centreType: "hospital",
     ...overrides,
   };
 }
@@ -81,7 +83,18 @@ describe("listPublicHospitals (public, D9 allow-list via PublicHospitalDirectory
     }
   });
 
-  it("HOSTILE ADAPTER (D14/pr2a-B1): rebuilds a fresh DTO — addressLine, email, id, and event-derived fields returned by the port are structurally ABSENT from the result", async () => {
+  it("a pre-existing hospital row shows centreType hospital (D19: migration backfill, ADR D19)", async () => {
+    const deps = {
+      publicHospitalDirectoryQuery: new FakePublicHospitalDirectoryQuery([aHospital()]),
+    };
+
+    const result = await listPublicHospitals(deps);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].centreType).toBe("hospital");
+  });
+
+  it("HOSTILE ADAPTER (D14/pr2a-B1): rebuilds a fresh DTO — addressLine, email, id, the forbidden type (role) field, and event-derived fields returned by the port are structurally ABSENT from the result, while centreType passes through", async () => {
     const hostileItem = {
       ...aHospital(),
       // A port implementation (buggy, compromised, or a future accidental
@@ -95,7 +108,10 @@ describe("listPublicHospitals (public, D9 allow-list via PublicHospitalDirectory
       id: "profile-secret-id",
       accountId: "account-secret-id",
       status: "ACTIVE",
-      type: "HOSPITAL",
+      // `type` is the internal ProfileType/role field — a DIFFERENT axis
+      // from `centreType` (ADR D19). It must stay forbidden even though
+      // `centreType` is newly admitted onto the allow-list.
+      type: "CENTRE",
       reviewRequestedAt: new Date("2026-01-01T00:00:00Z"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
       updatedAt: new Date("2026-01-01T00:00:00Z"),
@@ -129,6 +145,7 @@ describe("listPublicHospitals (public, D9 allow-list via PublicHospitalDirectory
     // The allow-listed fields themselves must still be forwarded correctly.
     expect(item.name).toBe(hostileItem.name);
     expect(item.city).toBe(hostileItem.city);
+    expect(item.centreType).toBe(hostileItem.centreType);
   });
 
   it("does not import or depend on anything beyond the PublicHospitalDirectoryQuery port (no repository, no Prisma)", () => {
