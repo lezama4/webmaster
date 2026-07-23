@@ -35,7 +35,13 @@ export default async function Home() {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          /* The cellist — the emotional subject — sits at ~77% of the image
+             width. A portrait phone crops ~40% of a landscape hero, and
+             centred `object-cover` cuts her out entirely, leaving only the
+             audience. Bias the focal point right on mobile so she stays in
+             frame; on sm+ the hero box is wide enough to show the whole scene,
+             so recentre. */
+          className="object-cover object-[72%_50%] sm:object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-scrim/90 via-scrim/40 to-scrim/10" />
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-14 pt-28 sm:px-6 sm:pb-20">
