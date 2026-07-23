@@ -14,7 +14,7 @@
     "copyError": "No se pudo copiar el enlace"
   },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender, y por qué no, a llorar, mientras disfrutan junto a sus seres queridos de momentos que no podréis olvidar.",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender —y por qué no, a llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {

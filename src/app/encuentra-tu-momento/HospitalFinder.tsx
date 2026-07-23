@@ -113,11 +113,18 @@ export function HospitalFinder({
           ADR D11 requires in visible UI copy, not only a doc comment. */}
       <p className="text-xs text-muted">{t("map.caption")}</p>
 
+      {/* The list stays FIRST in the DOM so a screen-reader/keyboard user
+          reaches the primary representation before the map's pin buttons
+          (ADR D11). CSS `order` lifts the map ABOVE the list visually on
+          mobile; on md+ the two sit side by side (list left, map right) and
+          order is reset, so source order and visual order agree there. */}
       <div className="grid gap-8 md:grid-cols-[1.1fr_1fr]">
         {filtered.length === 0 ? (
-          <EmptyState title={t("empty.title")} description={t("empty.description")} />
+          <div className="order-2 md:order-none">
+            <EmptyState title={t("empty.title")} description={t("empty.description")} />
+          </div>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="order-2 flex flex-col gap-4 md:order-none">
             {filtered.map((hospital) => {
               const key = hospitalKey(hospital);
               return (
@@ -141,8 +148,9 @@ export function HospitalFinder({
             })}
           </ul>
         )}
-
-        <HospitalMap hospitals={filtered} selectedKey={selectedKey} onSelect={handleSelect} />
+        <div className="order-1 md:order-none">
+          <HospitalMap hospitals={filtered} selectedKey={selectedKey} onSelect={handleSelect} />
+        </div>
       </div>
     </div>
   );
