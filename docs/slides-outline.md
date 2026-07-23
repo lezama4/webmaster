@@ -16,26 +16,38 @@ security response headers, no CSP, no application logging and no dependency
 scanning. Block 2 (ratings) and Block 3 (simulated patronage) are future scope
 and exist only on unmerged branches. The repository is currently **private**.
 
-## Slide 1 — Vivetutiempo: turning hospital idle time into living time
+**On the six-centre-type generalisation (`widen-beyond-hospitals`, ADRs
+D16–D20).** This outline reflects the generalised product — six centre types
+(hospital, nursing home, day centre, day hospital, occupational centre,
+palliative unit), not hospitals only. That change is implemented and verified
+locally against real PostgreSQL (Neon `dev`), but is **not yet merged to `main`
+or deployed**, and its Basque copy is a **draft pending native review**. On the
+day, present the six types as demonstrable in the seeded environment, not as live
+in production, unless the chain has been merged and deployed by then. Keep this
+document an outline; the deck itself is still to be produced.
+
+## Slide 1 — Vivetutiempo ("Todo el tiempo cuenta"): turning idle time in care centres into living time
 
 **Suggested time:** 0:30
 
 **Bullets**
 
-- Master’s Final Project: secure coordination of cultural activities in hospitals.
-- A non-profit, multi-role web platform.
+- Master’s Final Project: secure coordination of cultural activities in care
+  centres — hospitals and five further centre types.
+- A non-profit, multi-role web platform. Visible product name: "Todo el tiempo cuenta".
 - Author, Master’s programme, academic year, supervisor.
 
 **Visual**
 
-- Minimal title image or diagram: Hospital ↔ Artist → Published Event → Patients/Families.
+- Minimal title image or diagram: Care centre ↔ Artist → Published Event → People/Families.
 
 **Speaker note**
 
-“This project is not a hospital information system and it does not manage
-clinical records. It addresses a narrower but real coordination problem: how to
-turn available time in hospitals and cultural offers into safe, traceable public
-events.”
+“This project is not a clinical information system and it does not manage health
+records. It addresses a narrower but real coordination problem: how to turn
+available time in care centres — a hospital, but also a nursing home, a day
+centre, a day hospital, an occupational centre or a palliative unit — and
+cultural offers into safe, traceable public events.”
 
 ---
 
@@ -45,11 +57,13 @@ events.”
 
 **Bullets**
 
-- Patients and families may spend long periods waiting, accompanying or recovering.
+- People in care centres — and their families — may spend long periods waiting,
+  accompanying or recovering, in a hospital or in a residence, day centre or
+  palliative unit.
 - Cultural and human activities can improve that experience.
 - The hard part is operational coordination: availability, proposals, approval,
   governance, and safe public communication.
-- A hospital context makes location, identity, and private messages sensitive by context.
+- A care-centre context makes location, identity, and private messages sensitive by context.
 
 **Visual**
 
@@ -58,9 +72,10 @@ events.”
 
 **Speaker note**
 
-“The differentiator is not claiming to invent art in hospitals. It is modelling
-the coordination layer that connects an available hospital slot with competing
-activity proposals, while preserving governance and confidentiality.”
+“The differentiator is not claiming to invent culture in care settings. It is
+modelling the coordination layer that connects an available slot in a care
+centre with competing activity proposals, while preserving governance and
+confidentiality.”
 
 ---
 
@@ -70,22 +85,25 @@ activity proposals, while preserving governance and confidentiality.”
 
 **Bullets**
 
-- Hospital publishes an agenda Slot.
+- A care centre publishes an agenda Slot.
 - Active Artists submit competing Proposals.
-- The owning Hospital accepts one or rejects proposals.
+- The owning centre accepts one or rejects proposals.
 - Acceptance creates and publishes an Event.
 - Anyone can browse published Events anonymously.
+- "Centre" is a single generic role; the six centre types live on a separate
+  `CentreType` axis, not in the role (see Slide 6).
 
 **Visual**
 
 ```text
-Hospital Slot → Artist Proposal(s) → Hospital decision → Published Event → Public browsing
+Centre Slot → Artist Proposal(s) → Centre decision → Published Event → Public browsing
 ```
 
 **Speaker note**
 
 “The central rule is deliberately not first-come-first-served. A Slot can have
-several proposals and the Hospital chooses the one that best fits its context.”
+several proposals and the owning centre chooses the one that best fits its
+context — the same rule for a hospital, a residence or a palliative unit.”
 
 ---
 
@@ -102,12 +120,18 @@ several proposals and the Hospital chooses the one that best fits its context.�
 | 3. Patronage | Simulated campaigns behind a `PaymentGateway` port. | Planned; no real payments. |
 
 - No EHR integration, native mobile app, real payments, Kubernetes, or AWS in the MVP.
+- **Six centre types (`widen-beyond-hospitals`, D16–D20):** implemented and
+  verified locally against real PostgreSQL, demonstrable in the seeded `dev`
+  environment; **not yet merged or deployed**, Basque copy pending native review.
 
 **Speaker note**
 
 “The scope is intentionally sequential. A complete, demonstrable core is more
 defensible than several partially built modules. Real payments are explicitly
-out of scope; the future block models only a simulated adapter boundary.”
+out of scope; the future block models only a simulated adapter boundary. The
+generalisation from hospitals to six centre types is implemented and verified
+locally; be explicit that it is demonstrable in the seeded environment, not yet
+live in production.”
 
 ---
 
@@ -148,6 +172,14 @@ because JWT is inherently wrong.”
 - `infrastructure/`: Prisma repositories, three transactional units of work, sessions, hashing, rate limiting and HTTP adapters.
 - `ui/` and `app/`: presentation plus thin Next.js entry points — 5 public pages, 3 role areas, 11 mutating API routes.
 - Dependencies point inward; domain/application do not import Next.js or Prisma — enforced by ESLint and green in CI.
+- **Role and kind are orthogonal axes (D16–D20, the gradable claim):** a single
+  generic `centre` role answers "what may this account do?"; a separate
+  `CentreType` enum answers "what kind of place is this?". Authorization never
+  branches on the six types. **Adding a seventh centre type is data, not code** —
+  one enum value + one migration `ADD VALUE` + one i18n label per locale, and
+  zero changes to guards, the security predicate or the public read path. Proven
+  by an integration test where all six types register → validate → publish a
+  Slot through the identical guard path.
 
 **Visual**
 
@@ -155,13 +187,21 @@ because JWT is inherently wrong.”
 UI / Next.js  →  Application (use cases + ports)  →  Domain
                       ↑
               Infrastructure adapters
+
+role axis:  admin | centre | artist | patient      (authorization)
+kind axis:  CentreType = hospital | nursing_home | day_centre |
+            day_hospital | occupational_centre | palliative_unit   (data)
 ```
 
 **Speaker note**
 
 “The architectural test is simple: business rules must still be testable if we
 replace Prisma or the delivery framework. Ports express what the application
-needs; adapters decide how it is persisted or delivered.”
+needs; adapters decide how it is persisted or delivered. The strongest gradable
+claim of the project lives here: because role and centre type are separate axes,
+widening from one kind of centre to six touched the data axis and the copy, but
+not the authorization surface — the security predicate stayed a single renamed
+literal, `type: "CENTRE"`, never a six-value list.”
 
 ---
 
@@ -338,9 +378,18 @@ latency; CI with a local PostgreSQL service is the authoritative record.”
 
 - OWASP threat model: access control, sessions, CSRF, injection, integrity,
   logging, configuration and supply chain.
-- Public output is limited to: title, description, date/time, duration and
+- Public event output is limited to: title, description, date/time, duration and
   artist display name.
+- Public centre directory adds the coarse centre type (`centreType`, D19) to
+  name/city/postal/coordinates — never the address, email or internal `type`,
+  and never a finer sub-label than the six-value category.
 - Always excluded: room/ward, proposal message, email and internal IDs.
+- **Accepted, documented, demo-scoped risk (T-22):** widening onboarding to
+  residencias, disability day/occupational centres and palliative units raises
+  the safeguarding bar (vulnerable adults, possible cognitive impairment) while
+  verification stays self-declared with admin validation. Real institutional
+  verification is named as the next follow-on, not implemented here — and not
+  overstated as a control that exists.
 - Server-side role, ownership, profile-type and live-status checks protect every mutation — re-read inside the mutation's own transaction.
 - Session lifecycle implemented and verified: argon2id with pinned parameters, revocable DB sessions storing only the token hash, fresh token per login, idle/absolute expiry, and atomic rate limiting.
 - CSRF enforced on all 11 mutating routes, including login; fails closed if `APP_ORIGIN` is unset.
@@ -408,7 +457,12 @@ fictional seed data.”
 | Domain state machines and cascades; application ports, use cases and guards; Prisma repositories, migrations, row locks and partial indexes; session adapter; CSRF on every mutation; atomic rate limiter; runtime public allow-list; UI and API routes; integration and E2E suites; deployment serving seeded data. | Security response headers and CSP; request schema and body-size validation; environment validation at startup; security logging and alerting; dependency scanning. Aggregate status matrix and Profile/Proposal text bounds also remain open. | Block 2 ratings, Block 3 simulated patronage, enriched public experience. |
 
 - Evidence: CI run 29905717933 on `482aefd` — 360 passed / 0 skipped, plus 12 Playwright tests.
-- Live: <https://webmaster-lemon.vercel.app>.
+- Live: <https://webmaster-lemon.vercel.app> (hospital-only baseline).
+- Six-centre-type generalisation (`widen-beyond-hospitals`, D16–D20):
+  **implemented and verified locally** against real PostgreSQL (628 passed /
+  77 skipped on the feature branch), **not yet merged or deployed**; Basque copy
+  a draft pending native review. Present it as demonstrable in the seeded
+  environment, not as live in production.
 
 **Speaker note**
 

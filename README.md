@@ -1,14 +1,36 @@
-# Vivetutiempo
+# Vivetutiempo — "Todo el tiempo cuenta"
 
-Vivetutiempo es una plataforma web gratuita y sin fines de lucro que reduce las
-horas muertas de pacientes y familias en hospitales mediante actividades
-culturales. Los Hospitales publican Slots de agenda, los Artistas proponen
-actividades, un Admin valida los perfiles de Hospitales y Artistas, y los
-pacientes/familias navegan Eventos publicados sin necesidad de cuenta.
+Vivetutiempo (título visible "Todo el tiempo cuenta") es una plataforma web
+gratuita y sin fines de lucro que acerca actividades culturales en directo a las
+personas cuyas circunstancias les impiden salir a buscarlas. Un paciente de
+hospital es una de esas personas; también lo son un residente de una residencia
+de mayores, un usuario de un centro de día, un paciente de un hospital de día, un
+participante de un centro ocupacional y una persona en una unidad de cuidados
+paliativos. Cada **centro de cuidado** publica Slots de agenda, los Artistas
+proponen actividades, un Admin valida los perfiles de Centros y Artistas, y las
+personas y sus familias navegan Eventos publicados sin necesidad de cuenta.
+
+El modelo trata el **rol** (quién publica huecos) y el **tipo de centro** (qué
+clase de sitio es) como dos ejes independientes: existe un único rol genérico
+`centre` para todos los centros y un eje `CentreType` aparte que distingue los
+seis tipos (hospital, residencia de mayores, centro de día, hospital de día,
+centro ocupacional y unidad de cuidados paliativos). Añadir un séptimo tipo es un
+cambio de datos (un valor de enum más su copia), no de la lógica de autorización.
+Estas decisiones están en
+[el diseño de `widen-beyond-hospitals`](openspec/changes/widen-beyond-hospitals/design.md)
+(ADR D16–D20).
+
+> **Identificadores internos.** El nombre visible del producto es "Todo el tiempo
+> cuenta", pero los identificadores internos —el paquete, el repositorio, la ruta
+> pública `/api/hospitals`, el slug `/encuentra-tu-momento` y tipos como
+> `PublicHospitalProjection`— conservan deliberadamente el nombre `hospital`/
+> `vivetutiempo`. No se renombran para no romper enlaces ya compartidos ni añadir
+> churn sin valor (design D19, "rename deferral"); el `hospital` de esos nombres
+> significa hoy "cualquier centro de cuidado".
 
 ```text
-Hospital publica un Slot -> Artista presenta una Proposal ->
-Hospital propietario aprueba -> se publica un Evento -> consulta pública
+Un Centro publica un Slot -> un Artista presenta una Proposal ->
+el Centro propietario aprueba -> se publica un Evento -> consulta pública
 ```
 
 Este repositorio es el entregable técnico de un Trabajo de Fin de Máster (TFM).
@@ -25,21 +47,32 @@ planificados para valoraciones y mecenazgo simulado; no se procesan pagos reales
 
 La aplicación está desplegada en **https://webmaster-lemon.vercel.app**
 (Vercel + PostgreSQL gestionado en Neon), con el dataset de demostración
-cargado y verificado sobre el mismo commit publicado en `main`.
+cargado y verificado sobre el commit publicado en `main`.
+
+> **Estado de `widen-beyond-hospitals`.** La generalización a los seis tipos de
+> centro descrita arriba está implementada y verificada localmente contra
+> PostgreSQL real (Neon `dev`), pero **aún no está fusionada en `main` ni
+> desplegada**: el sitio público sigue reflejando la línea base hospitalaria
+> hasta que esta cadena de cambios se promocione. Los seis tipos son
+> demostrables en el entorno sembrado (local/`dev`), no todavía en producción.
+> Además, la copia en euskera es un **borrador pendiente de revisión por una
+> persona nativa** (es/en completas, eu pendiente).
 
 Además del núcleo del Bloque 1, dos rutas públicas de solo lectura completan
 la primera impresión del sitio:
 
-- **`/encuentra-tu-momento`** — directorio público de hospitales activos, con
-  búsqueda por nombre/ciudad/código postal y un mapa indicativo (no a escala).
-  No expone dirección postal, email ni ningún dato que correlacione un
-  hospital con sus Eventos.
+- **`/encuentra-tu-momento`** — directorio público de centros de cuidado
+  activos, con búsqueda por nombre/ciudad/código postal, filtro por tipo de
+  centro (`?type=`) y un mapa indicativo (no a escala). Expone el tipo de centro
+  (`centreType`) como dato público, pero no la dirección postal, el email ni
+  ningún dato que correlacione un centro con sus Eventos. La ruta interna sigue
+  siendo `/api/hospitals` (nombre conservado, design D19).
 - **`/quienes-somos`** — página estática que explica el propósito, los cuatro
-  roles (Admin, Hospital, Artista, Paciente/Familia), el flujo de alto nivel,
-  la validación de perfiles por un Admin, qué datos se publican y cuáles se
-  excluyen deliberadamente, y por qué la plataforma es gratuita y sin ánimo de
-  lucro. El paso a paso operativo sigue viviendo en `/ayuda`; esta página no
-  lo repite.
+  roles (Admin, Centro de cuidado, Artista, Persona/Familia), el flujo de alto
+  nivel, la validación de perfiles por un Admin, qué datos se publican —incluido
+  el tipo de centro— y cuáles se excluyen deliberadamente, y por qué la
+  plataforma es gratuita y sin ánimo de lucro. El paso a paso operativo sigue
+  viviendo en `/ayuda`; esta página no lo repite.
 
 ## Stack tecnológico
 
@@ -135,11 +168,15 @@ npm run db:seed
 ```
 
 El seed es idempotente y solo escribe registros ficticios y estables de demo:
-16 cuentas, cinco Slots, dos Eventos y diez hospitales `ACTIVE` (más uno
-`PENDING`, Hospital Esperanza) que alimentan `/encuentra-tu-momento`. Uno de
-los diez hospitales `ACTIVE` (Hospital del Guadiana) no tiene coordenadas: se
-lista en el buscador pero no muestra pin en el mapa. No debe utilizarse para
-cargar datos reales de hospitales, artistas o pacientes.
+17 cuentas, cinco Slots, dos Eventos y once centros `ACTIVE` de los seis tipos
+(seis hospitales, una residencia de mayores —Residencia Urumea—, un centro de
+día —Centro de Día Monteverde—, un hospital de día —Hospital de Día del Besòs—,
+una unidad de cuidados paliativos —Unidad de Cuidados Paliativos del Bernesga— y
+un centro ocupacional —Centro Ocupacional Aravaca—), más uno `PENDING` (Hospital
+Esperanza), que alimentan `/encuentra-tu-momento` y hacen demostrable el filtro
+por tipo. Uno de los seis hospitales `ACTIVE` (Hospital del Guadiana) no tiene
+coordenadas: se lista en el buscador pero no muestra pin en el mapa. No debe
+utilizarse para cargar datos reales de centros, artistas o personas.
 
 ### 4. Arrancar la aplicación
 
@@ -169,11 +206,16 @@ npm run test
 
 Esa variable también habilita
 `tests/integration/public-hospital-directory-query.test.ts` (el adaptador
-Prisma de `/encuentra-tu-momento`) contra la base real. **Importante**: las
-pruebas de integración llaman a `resetDatabase()` sobre la misma base que usa
-Playwright, así que borran el dataset de demostración. Después de ejecutarlas,
-volvé a correr `npm run db:seed` antes de lanzar `npm run test:e2e`, o cada
-prueba E2E fallará por falta de datos.
+Prisma de `/encuentra-tu-momento`) y, del cambio `widen-beyond-hospitals`,
+`tests/integration/centre-migration.test.ts` (verifica que la migración de
+enums renombra `HOSPITAL`→`CENTRE` sin pérdida de datos y rellena `centreType`)
+y `tests/integration/centre-lifecycle.test.ts` (los seis tipos de centro se
+registran, se validan y publican un Slot por la misma ruta de guardas), todas
+contra la base real. **Importante**: las pruebas de integración llaman a
+`resetDatabase()` sobre la misma base que usa Playwright, así que borran el
+dataset de demostración. Después de ejecutarlas, volvé a correr
+`npm run db:seed` antes de lanzar `npm run test:e2e`, o cada prueba E2E fallará
+por falta de datos.
 
 ## Seed credentials
 
@@ -184,12 +226,19 @@ TFM. No deben reutilizarse en un entorno real. La contraseña de todas es
 | Rol | Email | Estado esperado |
 | --- | --- | --- |
 | Admin | `admin@vtt.test` | Puede validar y desactivar Profiles. |
-| Hospital — San Juan | `hospital.sanjuan@vtt.test` | Activo; propietario de los cinco Slots demo. |
-| Hospital — Esperanza | `hospital.esperanza@vtt.test` | Pendiente; demuestra la validación del Admin. |
+| Centro (hospital) — San Juan | `hospital.sanjuan@vtt.test` | Activo; propietario de los cinco Slots demo. |
+| Centro (hospital) — Esperanza | `hospital.esperanza@vtt.test` | Pendiente; demuestra la validación del Admin. |
 | Artista — Clara | `artist.clara@vtt.test` | Activa; Proposal competidora de S1 y aceptada de S5. |
 | Artista — Mateo | `artist.mateo@vtt.test` | Activo; Proposal competidora de S1, aceptada de S2 y rechazada en cascada en S4. |
 | Artista — Lucía | `artist.lucia@vtt.test` | Pendiente; demuestra la validación del Admin. |
 | Paciente/Familiar — Ana | `patient.ana@vtt.test` | Rol ligero de consulta; sin Profile en el Bloque 1. |
+
+El seed crea además diez Centros `ACTIVE` más para poblar el directorio y su
+filtro por tipo: cinco hospitales (del Mar, Santa Clara, San Rafael, do Orzán y
+del Guadiana, todos con email `hospital.<nombre>@vtt.test`) y los cinco centros
+no hospitalarios listados arriba (Urumea, Monteverde, Besòs, Bernesga —también
+con prefijo de email `hospital.*`, un identificador interno conservado— y Aravaca
+con `centre.aravaca@vtt.test`). Todos comparten la misma contraseña de demo.
 
 El seed reproduce estos estados:
 
@@ -239,3 +288,10 @@ rollback y comprobaciones posteriores están en
 - [Borrador de memoria técnica](docs/memoria-tfm-borrador.md)
 - [Modelo de amenazas](docs/security-threat-model.md)
 - [Runbook de despliegue](docs/deployment.md)
+
+Cambio `widen-beyond-hospitals` (generalización a seis tipos de centro, ADR
+D16–D20), implementado y verificado localmente pero aún no fusionado en `main`:
+
+- [Propuesta](openspec/changes/widen-beyond-hospitals/proposal.md)
+- [Diseño y ADRs (D16–D20)](openspec/changes/widen-beyond-hospitals/design.md)
+- [Plan de tareas](openspec/changes/widen-beyond-hospitals/tasks.md)

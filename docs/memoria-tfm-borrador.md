@@ -1,4 +1,4 @@
-# Vivetutiempo: plataforma de coordinación cultural en el ámbito hospitalario
+# Vivetutiempo: plataforma de coordinación cultural en centros de cuidado
 
 ## Primer borrador de memoria técnica del Trabajo de Fin de Máster
 
@@ -31,25 +31,50 @@
 > (CSP), ni registro de eventos, ni análisis de dependencias. La sección 9
 > mantiene esos puntos como trabajo pendiente explícito.
 
+> **Nota sobre la generalización a seis tipos de centro
+> (`widen-beyond-hospitals`).** Esta memoria se ha extendido para describir el
+> producto generalizado —seis tipos de centro de cuidado en lugar de solo
+> hospitales— porque es lo que implementa el código. Ese cambio (ADR D16–D20)
+> está implementado y **verificado localmente contra PostgreSQL real** (Neon
+> `dev`: migración de enums 673/673, ciclo de vida de los seis tipos 696/696,
+> adaptador del directorio 698/698), pero **aún no está fusionado en `main` ni
+> desplegado**. Por tanto, la evidencia ejecutada fechada sobre `482aefd` que se
+> cita en el resto del documento sigue siendo la de la línea base hospitalaria
+> desplegada; las cifras de `widen-beyond-hospitals` son ejecuciones locales, no
+> de CI ni de producción. La copia en euskera del cambio es un **borrador
+> pendiente de revisión por una persona nativa** (es/en completas, eu
+> pendiente). Los identificadores internos con nombre `hospital`
+> (`PublicHospitalProjection`, la ruta `/api/hospitals`, el slug
+> `/encuentra-tu-momento`) se conservan a propósito y significan hoy "cualquier
+> centro de cuidado" (design D19).
+
 ## 1. Introducción y problema que se aborda
 
-Una estancia hospitalaria incluye con frecuencia periodos prolongados de espera,
-> acompañamiento o recuperación. Vivetutiempo nace como una plataforma web sin
-ánimo de lucro orientada a que esos periodos puedan aprovecharse mediante
-actividades culturales, artísticas y humanas. No pretende sustituir la atención
-sanitaria ni gestionar datos clínicos: su problema concreto es la **coordinación
-segura y trazable** entre centros hospitalarios que disponen de un hueco de
-agenda, artistas o dinamizadores que proponen una actividad y las personas que
-podrán consultar los eventos resultantes.
+Las estancias largas y los días lejos de casa —en un hospital, pero también en
+una residencia de mayores, un centro de día, un hospital de día, un centro
+ocupacional o una unidad de cuidados paliativos— incluyen con frecuencia
+periodos prolongados de espera, acompañamiento o recuperación. Vivetutiempo nace
+como una plataforma web sin ánimo de lucro orientada a que esos periodos puedan
+aprovecharse mediante actividades culturales, artísticas y humanas. No pretende
+sustituir la atención sanitaria ni gestionar datos clínicos: su problema
+concreto es la **coordinación segura y trazable** entre centros de cuidado que
+disponen de un hueco de agenda, artistas o dinamizadores que proponen una
+actividad y las personas que podrán consultar los eventos resultantes. El
+concepto rector es más amplio que el hospital: *personas cuyas circunstancias
+les impiden salir a buscar la cultura, de modo que la cultura llega a ellas*.
 
-La propuesta diferencia cuatro papeles: Hospital, Artista, Administrador y
-Paciente/Familiar. En el núcleo funcional, el Hospital publica un hueco
-(`Slot`), uno o varios Artistas presentan propuestas, y sólo el Hospital
-propietario selecciona una de ellas. Esta decisión convierte la propuesta
-aceptada en un evento publicado y resuelve explícitamente las propuestas
-competidoras. Los pacientes, familiares y visitantes anónimos pueden consultar
-los eventos publicados sin crear una cuenta. El flujo y sus límites están
-definidos en la propuesta del proyecto y en las especificaciones de bloque 1
+La propuesta diferencia cuatro papeles: Centro de cuidado, Artista,
+Administrador y Persona/Familia. Un rasgo de diseño (ADR D16) es que "Centro" es
+un **rol genérico** de autorización, y el tipo concreto de centro (hospital,
+residencia, centro de día, hospital de día, centro ocupacional o unidad de
+cuidados paliativos) vive en un **eje `CentreType` independiente**, no en el rol.
+En el núcleo funcional, el Centro publica un hueco (`Slot`), uno o varios
+Artistas presentan propuestas, y sólo el Centro propietario selecciona una de
+ellas. Esta decisión convierte la propuesta aceptada en un evento publicado y
+resuelve explícitamente las propuestas competidoras. Las personas atendidas, sus
+familias y los visitantes anónimos pueden consultar los eventos publicados sin
+crear una cuenta. El flujo y sus límites están definidos en la propuesta del
+proyecto y en las especificaciones de bloque 1
 ([`proposal.md`, secciones 1--5](../openspec/changes/bootstrap-vivetutiempo-platform/proposal.md);
 [`slot-proposal-coordination/spec.md`](../openspec/changes/bootstrap-vivetutiempo-platform/specs/slot-proposal-coordination/spec.md)).
 
@@ -65,16 +90,17 @@ asistido por IA, guiado por especificaciones y arquitectura hexagonal
 ### 2.1 Objetivo general
 
 Diseñar y construir una plataforma web de coordinación de actividades culturales
-en hospitales que sea funcional para un flujo central multirol y que demuestre
-de forma verificable prácticas de arquitectura limpia, pruebas por capas,
-seguridad por diseño y desarrollo guiado por especificaciones.
+en centros de cuidado —hospitales y otros cinco tipos de centro— que sea
+funcional para un flujo central multirol y que demuestre de forma verificable
+prácticas de arquitectura limpia, pruebas por capas, seguridad por diseño y
+desarrollo guiado por especificaciones.
 
 ### 2.2 Objetivos específicos
 
 1. Modelar de forma explícita los ciclos de vida de las cuentas y perfiles, los
    huecos de agenda, las propuestas y los eventos.
-2. Garantizar que Hospitales y Artistas sólo actúan tras una validación
-   administrativa y que cada Hospital sólo decide sobre sus propios huecos.
+2. Garantizar que Centros y Artistas sólo actúan tras una validación
+   administrativa y que cada Centro sólo decide sobre sus propios huecos.
 3. Resolver de manera atómica la aceptación de una propuesta: aceptar una,
    llenar el hueco, publicar un evento y rechazar las competidoras pendientes.
 4. Ofrecer consulta pública de eventos publicados sin divulgar ubicación exacta,
@@ -190,9 +216,9 @@ sesión verificada, nunca del cuerpo de la petición.
 
 | Concepto | Estados y transiciones | Responsabilidad |
 | --- | --- | --- |
-| `Account` | No tiene ciclo de vida de negocio en bloque 1; posee rol `admin`, `hospital`, `artist` o `patient`. | Identidad y autorización base. Las credenciales quedan fuera del dominio. |
-| `Profile` | `pending → active | rejected`; `active → deactivated`; `rejected → pending`. | Gobernanza de Hospitales y Artistas. La re-inscripción reutiliza el mismo perfil y registra una nueva solicitud de revisión. |
-| `Slot` | `open → filled | closed`. | Hueco de agenda de un Hospital activo. Su creación exige fecha futura, duración positiva y límites de texto. |
+| `Account` | No tiene ciclo de vida de negocio en bloque 1; posee rol `admin`, `centre`, `artist` o `patient`. | Identidad y autorización base. El rol `centre` (antes `hospital`) es genérico para cualquier tipo de centro. Las credenciales quedan fuera del dominio. |
+| `Profile` | `pending → active | rejected`; `active → deactivated`; `rejected → pending`. | Gobernanza de Centros y Artistas. `ProfileType` es `centre` o `artist`; un perfil `centre` lleva además un `CentreType` obligatorio (uno de los seis tipos) y un artista no lo lleva. La re-inscripción reutiliza el mismo perfil y registra una nueva solicitud de revisión. |
+| `Slot` | `open → filled | closed`. | Hueco de agenda de un Centro activo. Su creación exige fecha futura, duración positiva y límites de texto. |
 | `Proposal` | `submitted → accepted | rejected`. | Propuesta de un Artista; sus estados terminales no pueden transitar de nuevo. |
 | `Event` | `created → published → completed`. | Actividad confirmada; el estado `completed` deja preparada la ampliación de valoraciones. |
 
@@ -265,6 +291,42 @@ resultan inestables al ejecutarse localmente contra una rama remota de Neon,
 porque la latencia de red eleva el tiempo de las transacciones solapadas (8-9
 segundos frente a un límite de 5). La ejecución en CI con PostgreSQL local es
 la evidencia autorizada de concurrencia.
+
+### 5.5 Rol y tipo como ejes ortogonales (D16–D20)
+
+El cambio `widen-beyond-hospitals` generaliza el producto de un único tipo de
+organización participante —el hospital— a seis tipos de centro de cuidado, y lo
+hace apoyándose en una única decisión estructural: **el rol y el tipo son dos
+preguntas distintas.** El rol responde "¿qué puede hacer esta cuenta?" (publicar
+huecos o proponer actividades); el tipo de centro responde "¿qué clase de sitio
+es?". La palabra "hospital" confundía ambas cosas, así que se separan:
+
+- El valor compartido `HOSPITAL` se renombra a `CENTRE` en los **dos** enums que
+  lo llevaban, `AccountRole` y `ProfileType` (D16). El mapa 1:1 rol→tipo de
+  perfil sobrevive sin cambiar de forma (`centre → centre`, `artist → artist`).
+- Un **tercer eje** `CentreType` —enum real de Prisma, como `Audience`— porta
+  los seis tipos. Un perfil de centro debe declarar su tipo; un artista no lo
+  lleva. Esta biconditional es la única costura que acopla honestamente los dos
+  ejes, en un solo punto, sin que el tipo se filtre a la autorización (D18).
+- La migración es no destructiva: `ALTER TYPE ... RENAME VALUE` renombra la
+  etiqueta *en su sitio* (mismo OID, sin reescritura de filas), y una columna
+  `centreType` aditiva se rellena a `hospital` para cada fila existente —porque
+  todo perfil previo era, de hecho, un hospital— con cero pérdida de datos
+  (D17). Se verificó contra PostgreSQL real (Neon `dev`), incluida la reversión.
+- En la superficie pública, `centreType` se añade a la allow-list del directorio
+  y se vuelve filtrable, pero el predicado de seguridad **no crece**: sigue
+  siendo `type: "CENTRE"` (un único literal renombrado), nunca una lista de seis
+  valores, porque los seis tipos comparten el mismo `ProfileType.CENTRE` (D19).
+
+La afirmación arquitectónica evaluable del TFM es precisa: **añadir un séptimo
+tipo de centro es un cambio de datos, no de código.** Concretamente, un valor de
+enum más una migración `ADD VALUE` más una etiqueta de i18n por idioma, y **cero**
+cambios en las guardas, el predicado de seguridad o la ruta de lectura pública.
+Lo que lo demuestra es una prueba de integración en la que los seis tipos se
+registran, se validan y publican un Slot **por la misma ruta de guardas** que
+usaba el hospital (Fase 2.9, 696/696 contra Neon `dev`). Contrasta con añadir un
+séptimo *rol*, que sí tocaría guardas, ramas y sus pruebas: por eso el tipo es
+un eje de datos y el rol no se infla.
 
 ## 6. Proceso de desarrollo: Spec-Driven Development e IA dirigida
 
@@ -406,6 +468,17 @@ datos personales.
   descripción, fecha, duración y nombre público del artista. Prohíbe ubicación
   exacta, mensaje de propuesta, correos e identificadores
   ([`public-event-browsing/spec.md`](../openspec/changes/bootstrap-vivetutiempo-platform/specs/public-event-browsing/spec.md)).
+- **Directorio público de centros por allow-list explícita.** El directorio
+  `/encuentra-tu-momento` publica un conjunto cerrado de campos —nombre, ciudad,
+  código postal, coordenadas y, desde D19, el **tipo de centro** (`centreType`)—
+  y nada más: ni dirección postal, ni email, ni el campo interno `type`
+  (`ProfileType`), que permanece prohibido en la allow-list. Igual que la
+  proyección de eventos, el adaptador construye el DTO campo a campo (`select`,
+  nunca `include`), de modo que ampliar la consulta no puede filtrar una
+  propiedad en tiempo de ejecución. Se re-ejecutaron ambas suites de
+  no-correlación (D10): como la superficie pública de eventos no expone
+  ubicación ni identidad del centro, publicar el tipo de centro **no crea ninguna
+  nueva clave de cruce** entre el directorio y los eventos.
 - **Concurrencia como seguridad de integridad.** El protocolo de bloqueo evita
   decisiones contradictorias y estados imposibles causados por peticiones
   simultáneas.
@@ -463,6 +536,21 @@ La rigurosidad de la memoria exige distinguir los hallazgos que se han cerrado
 5. La validación del agregado Hueco/Propuesta sigue siendo incompleta: sólo
    rechaza la contradicción «hueco abierto con propuesta aceptada», no la matriz
    completa de estados.
+6. La ampliación a residencias, centros de día/ocupacionales y unidades de
+   paliativos **eleva el listón de salvaguarda** —esas poblaciones incluyen
+   personas mayores, con deterioro cognitivo y adultos vulnerables, y los nuevos
+   tipos tienen marcadores de confianza independientes más débiles que un gran
+   hospital público—, mientras que la verificación sigue siendo **autodeclarada
+   con validación por un Admin**, sin cambios en su forma. Además, publicar
+   `(centreType, ciudad)` puede acotar la población de un tipo pequeño o raro
+   (p. ej. una única unidad de paliativos en una ciudad): esto no es una fuga de
+   correlación cruzada (D10 se mantiene), sino una identificabilidad de una sola
+   superficie, inherente al propósito de descubrimiento del producto —el
+   directorio publica metadatos de instituciones que se registran para ser
+   listadas y no nombra a ninguna persona—. Ambos puntos se aceptan y se
+   documentan de forma explícita, con alcance de demo, en el modelo de amenazas
+   (verificación institucional real como siguiente paso). Ningún texto de la
+   plataforma afirma una salvaguarda que el código no implemente.
 
 El criterio de salida planteado en su día —probar revocación, expiración, origen
 CSRF, denegación de perfiles no activos, carreras de concurrencia y ausencia de
@@ -512,6 +600,17 @@ distinta:
 - **Política de retención:** decisión sobre conservación y borrado de perfiles
   rechazados, mensajes, registros y copias de seguridad, requisito previo a
   procesar cualquier dato real.
+- **Cierre de `widen-beyond-hospitals`:** el cambio a seis tipos de centro está
+  implementado y verificado localmente contra PostgreSQL real, pero queda por
+  **fusionar en `main` y desplegar**; hasta entonces el sitio público refleja la
+  línea base hospitalaria. Su puerta bloqueante es la **revisión de la copia en
+  euskera por una persona nativa** (es/en completas, eu en borrador): la paridad
+  estructural de locales (conjuntos de claves + placeholders ICU) pasa de forma
+  automática, pero eso es solo estructura, no calidad de traducción. También
+  quedan abiertas dos revisiones manuales de "se lee bien para una residencia /
+  un centro de día" sobre la copia narrativa.
+- **Verificación institucional** de los tipos de centro más vulnerables, como
+  siguiente paso de salvaguarda una vez el modelo los admite (véase §8.2).
 
 > **TODO (autor):** el repositorio <https://github.com/lezama4/webmaster> es
 > **privado**. La entrega del TFM exige un repositorio público. Es el único
@@ -543,8 +642,8 @@ previa a su implementación.
 > trabajo pendiente es de endurecimiento y observabilidad, no de construcción.
 
 Vivetutiempo plantea un problema social concreto y lo aborda mediante un flujo
-acotado: convertir disponibilidad hospitalaria y propuestas culturales en
-eventos publicados, con roles y decisiones trazables. La principal aportación
+acotado: convertir la disponibilidad de agenda de los centros de cuidado y las
+propuestas culturales en eventos publicados, con roles y decisiones trazables. La principal aportación
 técnica del TFM es hacer explícitas las reglas que suelen quedar ocultas en una
 aplicación CRUD: estados, propiedad, cascadas, concurrencia, revocación y
 exposición mínima de datos.
