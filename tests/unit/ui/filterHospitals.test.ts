@@ -12,6 +12,7 @@ function aHospital(
     postalCode: "48013",
     latitude: 43.263,
     longitude: -2.935,
+    centreType: "hospital",
     ...overrides,
   };
 }
@@ -117,5 +118,64 @@ describe("filterHospitals (D12 — client-side, pure, framework-free)", () => {
     const result = filterHospitals(DATASET, ["bilbao", "ignored-second-value"]);
 
     expect(result).toEqual([DATASET[0]]);
+  });
+});
+
+describe("filterHospitals — centreType predicate (D19/D12 extension, widen-beyond-hospitals)", () => {
+  const NURSING_BILBAO = aHospital({
+    name: "Residencia Bilbao",
+    city: "Bilbao",
+    postalCode: "48013",
+    centreType: "nursing_home",
+  });
+  const NURSING_MADRID = aHospital({
+    name: "Residencia Madrid",
+    city: "Madrid",
+    postalCode: "28003",
+    centreType: "nursing_home",
+  });
+  const DAY_CENTRE_GETXO = aHospital({
+    name: "Centro de Día Getxo",
+    city: "Getxo",
+    postalCode: "48992",
+    centreType: "day_centre",
+  });
+  const MIXED_DATASET: readonly PublicHospitalProjection[] = [
+    ...DATASET,
+    NURSING_BILBAO,
+    NURSING_MADRID,
+    DAY_CENTRE_GETXO,
+  ];
+
+  it("narrows to only the rows matching the given centreType, no query", () => {
+    const result = filterHospitals(MIXED_DATASET, "", "nursing_home");
+
+    expect(result).toEqual([NURSING_BILBAO, NURSING_MADRID]);
+  });
+
+  it("with no centreType argument (defaults to \"all\"), behaves exactly like the two-arg call", () => {
+    expect(filterHospitals(MIXED_DATASET, "")).toEqual(MIXED_DATASET);
+  });
+
+  it("\"all\" is an explicit passthrough — every centreType is included", () => {
+    expect(filterHospitals(MIXED_DATASET, "", "all")).toEqual(MIXED_DATASET);
+  });
+
+  it("combines a centreType filter with a text query by AND — only rows matching BOTH remain", () => {
+    const result = filterHospitals(MIXED_DATASET, "bilbao", "nursing_home");
+
+    expect(result).toEqual([NURSING_BILBAO]);
+  });
+
+  it("a centreType filter with a query matching nothing of that type returns an empty array", () => {
+    expect(filterHospitals(MIXED_DATASET, "getxo", "nursing_home")).toEqual([]);
+  });
+
+  it("preserves the input's deterministic order when a centreType filter narrows multiple matches", () => {
+    const result = filterHospitals(MIXED_DATASET, "", "nursing_home");
+
+    expect(result).toEqual([NURSING_BILBAO, NURSING_MADRID]);
+    // Order matches MIXED_DATASET's own order, not alphabetical/re-sorted.
+    expect(MIXED_DATASET.indexOf(result[0])).toBeLessThan(MIXED_DATASET.indexOf(result[1]));
   });
 });

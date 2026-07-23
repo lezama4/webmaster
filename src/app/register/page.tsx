@@ -5,19 +5,33 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton } from "@ui/components/ui";
 
-type Role = "hospital" | "artist";
+type Role = "centre" | "artist";
+
+/** Mirrors the domain `CentreType` union (`@domain/profile/Profile`) — kept local so this client component does not import domain code directly (same convention as `PublishSlotForm`'s `AUDIENCE_OPTIONS`). */
+const CENTRE_TYPE_OPTIONS = [
+  "hospital",
+  "nursing_home",
+  "day_centre",
+  "day_hospital",
+  "occupational_centre",
+  "palliative_unit",
+] as const;
+type CentreType = (typeof CENTRE_TYPE_OPTIONS)[number];
 
 export default function RegisterPage() {
   const t = useTranslations("Register");
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>("hospital"); const [error, setError] = useState<string | null>(null); const [pending, setPending] = useState(false); const [done, setDone] = useState(false);
-  // Optional PUBLIC hospital location (Phase 2) — hospital-only, never shown/sent for artists.
+  const [role, setRole] = useState<Role>("centre"); const [error, setError] = useState<string | null>(null); const [pending, setPending] = useState(false); const [done, setDone] = useState(false);
+  // Required-when-centre `centreType` (D18) — one of the six kinds; ignored/never sent for an Artist.
+  const [centreType, setCentreType] = useState<CentreType>("hospital");
+  // Optional PUBLIC centre location (Phase 2) — centre-only, never shown/sent for artists.
   const [city, setCity] = useState(""); const [postalCode, setPostalCode] = useState(""); const [addressLine, setAddressLine] = useState("");
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setPending(true);
     try {
       const body: Record<string, unknown> = { name, email, password, role };
-      if (role === "hospital") {
+      if (role === "centre") {
+        body.centreType = centreType;
         if (city.trim()) body.city = city.trim();
         if (postalCode.trim()) body.postalCode = postalCode.trim();
         if (addressLine.trim()) body.addressLine = addressLine.trim();
@@ -32,10 +46,11 @@ export default function RegisterPage() {
     <div className="mx-auto flex max-w-md flex-col gap-6 px-4 py-16 sm:px-6">
       <div className="flex flex-col gap-2"><h1 className="font-heading text-2xl font-semibold tracking-tight">{t("title")}</h1><p className="text-muted">{t("description")}</p></div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        <Field label={t("role.label")} htmlFor="role"><select id="role" name="role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputClasses}><option value="hospital">{t("role.hospital")}</option><option value="artist">{t("role.artist")}</option></select></Field>
-        <Field label={role === "hospital" ? t("name.hospital") : t("name.artist")} htmlFor="name"><input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClasses} /></Field>
-        {role === "hospital" ? (
+        <Field label={t("role.label")} htmlFor="role"><select id="role" name="role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputClasses}><option value="centre">{t("role.centre")}</option><option value="artist">{t("role.artist")}</option></select></Field>
+        <Field label={role === "centre" ? t("name.centre") : t("name.artist")} htmlFor="name"><input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClasses} /></Field>
+        {role === "centre" ? (
           <>
+            <Field label={t("centreType.label")} htmlFor="centreType"><select id="centreType" name="centreType" required value={centreType} onChange={(e) => setCentreType(e.target.value as CentreType)} className={inputClasses}>{CENTRE_TYPE_OPTIONS.map((option) => (<option key={option} value={option}>{t(`centreType.${option}`)}</option>))}</select></Field>
             <Field label={t("location.city")} htmlFor="city" hint={t("location.hint")}><input id="city" name="city" type="text" value={city} onChange={(e) => setCity(e.target.value)} className={inputClasses} /></Field>
             <Field label={t("location.postalCode")} htmlFor="postalCode"><input id="postalCode" name="postalCode" type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={inputClasses} /></Field>
             <Field label={t("location.addressLine")} htmlFor="addressLine"><input id="addressLine" name="addressLine" type="text" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className={inputClasses} /></Field>

@@ -6,14 +6,24 @@ import type { PendingProfileView } from "@application/dto/PendingProfileView";
 import { FakePendingProfileQuery } from "./support/fakes";
 import { actorFor, anAccount } from "./support/builders";
 
-const ALLOW_LISTED_FIELDS = ["displayName", "profileId", "requestedAt", "type"].sort();
+const ALLOW_LISTED_FIELDS = [
+  "centreType",
+  "displayName",
+  "profileId",
+  "requestedAt",
+  "type",
+].sort();
 
 function aPendingProfileView(
   overrides: Partial<PendingProfileView> = {},
 ): PendingProfileView {
+  const type = overrides.type ?? "centre";
   return {
     profileId: overrides.profileId ?? "profile-1",
-    type: overrides.type ?? "hospital",
+    type,
+    // D18: every `centre` fixture defaults to `hospital` unless a test asks
+    // for another kind; an `artist` fixture never carries a `centreType`.
+    ...(type === "centre" ? { centreType: overrides.centreType ?? "hospital" } : {}),
     displayName: overrides.displayName ?? "Hospital San Juan",
     requestedAt: overrides.requestedAt ?? new Date("2026-07-01T10:00:00Z"),
   };
@@ -44,7 +54,7 @@ describe("listPendingProfiles (Admin validation queue, 5.3/5.12)", () => {
 
   it("denies a non-admin actor (Hospital) with ForbiddenError", async () => {
     const deps = { pendingProfileQuery: new FakePendingProfileQuery([]) };
-    const hospitalActor = actorFor(anAccount("hospital"));
+    const hospitalActor = actorFor(anAccount("centre"));
 
     await expect(listPendingProfiles(hospitalActor, deps)).rejects.toBeInstanceOf(
       ForbiddenError,
@@ -74,6 +84,34 @@ describe("listPendingProfiles (Admin validation queue, 5.3/5.12)", () => {
       expect(item).not.toHaveProperty("passwordHash");
       expect(item).not.toHaveProperty("status");
     }
+  });
+
+  it("D18: an Artist item never carries a centreType key — the field is absent, not just undefined", async () => {
+    const deps = {
+      pendingProfileQuery: new FakePendingProfileQuery([
+        aPendingProfileView({ type: "artist", displayName: "Clara" }),
+      ]),
+    };
+
+    const result = await listPendingProfiles(admin, deps);
+
+    expect(result).toHaveLength(1);
+    expect(Object.keys(result[0]!).sort()).toEqual(
+      ["displayName", "profileId", "requestedAt", "type"].sort(),
+    );
+    expect(result[0]).not.toHaveProperty("centreType");
+  });
+
+  it("D18: a centre item's specific centreType is rebuilt unchanged, not merely the coarse centre/artist type", async () => {
+    const deps = {
+      pendingProfileQuery: new FakePendingProfileQuery([
+        aPendingProfileView({ centreType: "palliative_unit" }),
+      ]),
+    };
+
+    const result = await listPendingProfiles(admin, deps);
+
+    expect(result[0]?.centreType).toBe("palliative_unit");
   });
 
   it("HOSTILE ADAPTER: rebuilds a fresh DTO — forbidden fields returned by the port are structurally ABSENT from the result", async () => {

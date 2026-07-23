@@ -3,6 +3,7 @@ import { profileTypeForRole } from "@domain/account/Account";
 import {
   createProfile,
   reactivateProfile,
+  type CentreType,
   type Profile,
 } from "@domain/profile/Profile";
 import type { Clock } from "@domain/shared/Clock";
@@ -17,9 +18,15 @@ export interface RegisterProfileInput {
   readonly password: string;
   readonly role: AccountRole;
   readonly name: string;
-  // Optional PUBLIC hospital location (Phase 2). Only meaningful for
-  // `role: "hospital"` — silently ignored for any other role (D2: the
-  // registration form only shows these fields for hospitals, but the
+  // Required when `role === "centre"` (D18) — one of the six known kinds;
+  // MUST be absent for any other role. Not trusted at the type level alone:
+  // `createProfile`'s domain invariant (`assertCentreTypeInvariant`) is what
+  // actually enforces "centre requires it, artist forbids it" server-side,
+  // independently of whatever the client sent or the route already checked.
+  readonly centreType?: CentreType;
+  // Optional PUBLIC centre location (Phase 2). Only meaningful for
+  // `role: "centre"` — silently ignored for any other role (D2: the
+  // registration form only shows these fields for centres, but the
   // use case does not trust the caller and enforces it server-side too).
   readonly city?: string;
   readonly postalCode?: string;
@@ -28,9 +35,9 @@ export interface RegisterProfileInput {
   readonly longitude?: number;
 }
 
-/** Picks only the location fields relevant to a `hospital` registration; every other role gets none (Phase 2). */
-function hospitalLocationFrom(input: RegisterProfileInput) {
-  if (input.role !== "hospital") return {};
+/** Picks only the location fields relevant to a `centre` registration; every other role gets none (Phase 2). */
+function centreLocationFrom(input: RegisterProfileInput) {
+  if (input.role !== "centre") return {};
   return {
     ...(input.city !== undefined ? { city: input.city } : {}),
     ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
@@ -38,6 +45,20 @@ function hospitalLocationFrom(input: RegisterProfileInput) {
     ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
     ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
   };
+}
+
+/**
+ * D18: passes the caller-declared `centreType` straight through to
+ * `createProfile`, for ANY role — deliberately NOT gated on
+ * `role === "centre"` the way `centreLocationFrom` is. Domain's
+ * `assertCentreTypeInvariant` is what actually enforces the rule (a
+ * `centre` Profile requires one of the six values; an `artist` Profile
+ * forbids it): gating here would silently DROP an artist-with-centreType
+ * mistake instead of REJECTING it, which the centre-registration spec
+ * ("An artist registration forbids centreType") explicitly requires.
+ */
+function centreTypeFrom(input: RegisterProfileInput): { centreType?: CentreType } {
+  return input.centreType !== undefined ? { centreType: input.centreType } : {};
 }
 
 export interface RegisterProfileDeps {
@@ -120,8 +141,9 @@ export async function registerProfile(
           id: deps.idGenerator.next(),
           accountId: ctx.existing.account.id,
           type,
+          ...centreTypeFrom(input),
           name: input.name,
-          ...hospitalLocationFrom(input),
+          ...centreLocationFrom(input),
         });
         await ctx.saveProfile(profile);
         return profile;
@@ -137,8 +159,9 @@ export async function registerProfile(
         id: deps.idGenerator.next(),
         accountId: account.id,
         type,
+        ...centreTypeFrom(input),
         name: input.name,
-        ...hospitalLocationFrom(input),
+        ...centreLocationFrom(input),
       });
       await ctx.createAccountAndProfile(account, passwordHash, profile);
       return profile;

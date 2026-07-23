@@ -30,7 +30,7 @@ test("demo chain: register -> admin approve -> publish -> propose -> accept -> a
   const password = "DemoChainPass123!";
 
   const hospital = {
-    role: "hospital" as const,
+    role: "centre" as const,
     name: `Demo Hospital ${runId}`,
     email: `hospital.demo.${runId}@vtt.test`,
     password,

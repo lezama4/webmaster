@@ -1,6 +1,7 @@
 import type {
   AccountRole as PrismaAccountRole,
   Audience as PrismaAudience,
+  CentreType as PrismaCentreType,
   EventStatus as PrismaEventStatus,
   ProfileStatus as PrismaProfileStatus,
   ProfileType as PrismaProfileType,
@@ -10,6 +11,7 @@ import type {
 import { rehydrateAccount, type Account, type AccountRole } from "@domain/account/Account";
 import {
   rehydrateProfile,
+  type CentreType,
   type Profile,
   type ProfileStatus,
   type ProfileType,
@@ -26,24 +28,45 @@ import { rehydrateRating, type Rating } from "@domain/rating/Rating";
  */
 const ACCOUNT_ROLE_TO_DOMAIN: Record<PrismaAccountRole, AccountRole> = {
   ADMIN: "admin",
-  HOSPITAL: "hospital",
+  CENTRE: "centre",
   ARTIST: "artist",
   PATIENT: "patient",
 };
 const ACCOUNT_ROLE_TO_PRISMA: Record<AccountRole, PrismaAccountRole> = {
   admin: "ADMIN",
-  hospital: "HOSPITAL",
+  centre: "CENTRE",
   artist: "ARTIST",
   patient: "PATIENT",
 };
 
 const PROFILE_TYPE_TO_DOMAIN: Record<PrismaProfileType, ProfileType> = {
-  HOSPITAL: "hospital",
+  CENTRE: "centre",
   ARTIST: "artist",
 };
 const PROFILE_TYPE_TO_PRISMA: Record<ProfileType, PrismaProfileType> = {
-  hospital: "HOSPITAL",
+  centre: "CENTRE",
   artist: "ARTIST",
+};
+
+/**
+ * Bidirectional map for the six `CentreType` kinds (ADR D16) — an
+ * independent axis from `ProfileType`/`AccountRole` above.
+ */
+const CENTRE_TYPE_TO_DOMAIN: Record<PrismaCentreType, CentreType> = {
+  HOSPITAL: "hospital",
+  NURSING_HOME: "nursing_home",
+  DAY_CENTRE: "day_centre",
+  DAY_HOSPITAL: "day_hospital",
+  OCCUPATIONAL_CENTRE: "occupational_centre",
+  PALLIATIVE_UNIT: "palliative_unit",
+};
+const CENTRE_TYPE_TO_PRISMA: Record<CentreType, PrismaCentreType> = {
+  hospital: "HOSPITAL",
+  nursing_home: "NURSING_HOME",
+  day_centre: "DAY_CENTRE",
+  day_hospital: "DAY_HOSPITAL",
+  occupational_centre: "OCCUPATIONAL_CENTRE",
+  palliative_unit: "PALLIATIVE_UNIT",
 };
 
 const PROFILE_STATUS_TO_DOMAIN: Record<PrismaProfileStatus, ProfileStatus> = {
@@ -118,6 +141,13 @@ export function profileTypeToPrisma(type: ProfileType): PrismaProfileType {
   return PROFILE_TYPE_TO_PRISMA[type];
 }
 
+export function toDomainCentreType(centreType: PrismaCentreType): CentreType {
+  return CENTRE_TYPE_TO_DOMAIN[centreType];
+}
+export function centreTypeToPrisma(centreType: CentreType): PrismaCentreType {
+  return CENTRE_TYPE_TO_PRISMA[centreType];
+}
+
 export function profileStatusToPrisma(status: ProfileStatus): PrismaProfileStatus {
   return PROFILE_STATUS_TO_PRISMA[status];
 }
@@ -155,12 +185,15 @@ export interface ProfileRow {
   readonly name: string;
   readonly status: PrismaProfileStatus;
   readonly reviewRequestedAt: Date | null;
-  // PUBLIC hospital location (Phase 2) — all nullable, see schema.prisma.
+  // PUBLIC centre location (Phase 2) — all nullable, see schema.prisma.
   readonly city?: string | null;
   readonly postalCode?: string | null;
   readonly addressLine?: string | null;
   readonly latitude?: number | null;
   readonly longitude?: number | null;
+  // The kind of care centre (ADR D16) — present only for `type: CENTRE`
+  // rows; NULL for artists.
+  readonly centreType?: PrismaCentreType | null;
 }
 
 export interface SlotRow {
@@ -215,6 +248,9 @@ export function toDomainProfile(row: ProfileRow): Profile {
     type: PROFILE_TYPE_TO_DOMAIN[row.type],
     name: row.name,
     status: PROFILE_STATUS_TO_DOMAIN[row.status],
+    ...(row.centreType !== null && row.centreType !== undefined
+      ? { centreType: CENTRE_TYPE_TO_DOMAIN[row.centreType] }
+      : {}),
     ...(row.reviewRequestedAt !== null
       ? { reviewRequestedAt: row.reviewRequestedAt }
       : {}),

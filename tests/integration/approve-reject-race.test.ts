@@ -33,7 +33,7 @@ describe.skipIf(!dbAvailable)("race: approve vs reject (4.14, pr2b-M5)", () => {
     const { profile: artist } = await createArtistProfile(client);
     const slot = await createOpenSlot(client, hospital.id);
     const proposal = await createSubmittedProposal(client, slot.id, artist.id);
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     return { hospitalActor, slot, proposal };
   }
 

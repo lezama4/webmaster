@@ -27,10 +27,13 @@ import {
 // known fixture-naming patterns from other spec files.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_HOSPITAL_KEYS = ["city", "latitude", "longitude", "name", "postalCode"];
+// widen-beyond-hospitals (D19): `centreType` joined the allow-list; the
+// internal `type` (role) field stays forbidden — see ADR D19 and
+// `PublicHospitalProjection`'s doc comment.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
 
-test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
-  test("returns exactly the allow-listed keys, every ACTIVE hospital, and never leaks addressLine/email/Esperanza", async () => {
+test.describe("GET /api/hospitals — allow-list boundary (D9/D14/D19)", () => {
+  test("returns exactly the allow-listed keys, every ACTIVE centre, and never leaks addressLine/email/type/Esperanza", async () => {
     const ctx = await request.newContext({ baseURL });
     const res = await ctx.get("/api/hospitals");
     expect(res.status()).toBe(200);
@@ -38,7 +41,7 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     const raw = await res.text();
     const body = JSON.parse(raw) as { hospitals: Array<Record<string, unknown>> };
 
-    expect(body.hospitals.length).toBeGreaterThanOrEqual(10);
+    expect(body.hospitals.length).toBeGreaterThanOrEqual(SEED_ACTIVE_HOSPITALS.length);
 
     for (const hospital of body.hospitals) {
       expect(Object.keys(hospital).sort()).toEqual(ALLOWED_HOSPITAL_KEYS);
@@ -48,6 +51,8 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     const cities = new Set(body.hospitals.map((hospital) => hospital.city));
     for (const seeded of SEED_ACTIVE_HOSPITALS) {
       expect(names).toContain(seeded.name);
+      const found = body.hospitals.find((hospital) => hospital.name === seeded.name);
+      expect(found?.centreType, `centreType for ${seeded.name}`).toBe(seeded.centreType);
     }
     expect(cities.size).toBeGreaterThanOrEqual(10);
     expect(names).not.toContain(SEED_PENDING_HOSPITAL_NAME);
@@ -145,7 +150,7 @@ test.describe("/encuentra-tu-momento — listing and search (D9/D12)", () => {
     await page.locator("#hospital-search").fill("Zzzznotreal");
 
     await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
-    await expect(page.getByText("No hospitals match that search")).toBeVisible();
+    await expect(page.getByText("No centres match that search")).toBeVisible();
   });
 });
 
@@ -164,7 +169,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     // no pin, so pins <= cards, with the live region as the source of truth
     // for the expected split).
     const liveText = (await liveRegion.textContent()) ?? "";
-    const match = liveText.match(/^(\d+) hospitals? found(?: · (\d+) shown on the map)?/);
+    const match = liveText.match(/^(\d+) centres? found(?: · (\d+) shown on the map)?/);
     expect(match, `unexpected live-region text: "${liveText}"`).not.toBeNull();
     const expectedTotal = Number(match![1]);
     const expectedMappable = match![2] === undefined ? expectedTotal : Number(match![2]);
@@ -187,12 +192,16 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
 
     // Focus the search input directly (a natural, stable starting point
     // independent of how many links a future header redesign adds), then
-    // Tab once: `<li>` cards carry no tabindex, so the very next focusable
-    // element in DOM/tab order is the first map pin (D11: tab order == list
-    // order, i.e. the D9 city-asc sort — "A Coruña"/"Hospital do Orzán"
-    // sorts first among the 10-hospital roster; Bilbao/"Hospital San Juan"
-    // was only first back when the seed had 4 ACTIVE hospitals).
+    // Tab TWICE: the centreType `<select>` (widen-beyond-hospitals PR5) is
+    // now the next focusable element after the search input, so it takes
+    // the first Tab stop; `<li>` cards carry no tabindex, so the SECOND Tab
+    // reaches the first map pin (D11: tab order == list order, i.e. the D9
+    // city-asc sort — "A Coruña"/"Hospital do Orzán" sorts first among the
+    // 10-hospital roster; Bilbao/"Hospital San Juan" was only first back
+    // when the seed had 4 ACTIVE hospitals).
     await page.locator("#hospital-search").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#centre-type-filter")).toBeFocused();
     await page.keyboard.press("Tab");
 
     const firstPin = page.getByTestId("hospital-pin").first();
@@ -231,10 +240,10 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     // number is not asserted — see the file-level note on shared-database
     // pollution). The meaningful, deterministic assertion is AFTER a
     // collision-free search narrows to exactly one known hospital.
-    await expect(liveRegion).toHaveText(/^\d+ hospitals? found/i);
+    await expect(liveRegion).toHaveText(/^\d+ centres? found/i);
 
     await page.locator("#hospital-search").fill("HOSPITAL SAN JUAN");
-    await expect(liveRegion).toHaveText(/^1 hospitals? found/i);
+    await expect(liveRegion).toHaveText(/^1 centres? found/i);
   });
 
   test("the 'indicative map, not to scale' caption is visible", async ({ page }) => {
@@ -265,11 +274,58 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
   });
 });
 
+test.describe("/encuentra-tu-momento — centreType filter (D12/D19)", () => {
+  test("the centreType tag is visible on results, per their own type, before any filter is applied", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    // The tag's text is exact ("Hospital"/"Nursing home") — using exact:true
+    // is what keeps this collision-free against the card's own <h2>, which
+    // contains "Hospital" as a substring of a longer name ("Hospital San
+    // Juan"), not as its entire text content.
+    const sanJuanCard = page.locator("li").filter({ hasText: "Hospital San Juan" });
+    await expect(sanJuanCard.getByText("Hospital", { exact: true })).toBeVisible();
+
+    const urumeaCard = page.locator("li").filter({ hasText: "Residencia Urumea" });
+    await expect(urumeaCard.getByText("Nursing home", { exact: true })).toBeVisible();
+  });
+
+  test("selecting a type filter narrows to only that type and reflects the URL; 'all' restores the full set", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    await page.locator("#centre-type-filter").selectOption("nursing_home");
+    await expect(page).toHaveURL(/type=nursing_home/);
+    await expect(page.getByRole("heading", { level: 2, name: "Residencia Urumea" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital San Juan" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Centro de Día Monteverde" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Centro Ocupacional Aravaca" })).toHaveCount(0);
+
+    await page.locator("#centre-type-filter").selectOption("all");
+    await expect(page).not.toHaveURL(/type=/);
+    for (const hospital of SEED_ACTIVE_HOSPITALS) {
+      await expect(page.getByRole("heading", { level: 2, name: hospital.name })).toBeVisible();
+    }
+  });
+
+  test("a type filter combines with the existing text search by AND", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    // "Hospital" type + a city search that matches a DIFFERENT centreType
+    // ("Residencia Urumea" is in Donostia-San Sebastián, not Bilbao) proves
+    // both predicates apply together, not either alone.
+    await page.locator("#centre-type-filter").selectOption("hospital");
+    await page.locator("#hospital-search").fill("bilb");
+
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital San Juan" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Hospital Santa Clara" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: "Residencia Urumea" })).toHaveCount(0);
+  });
+});
+
 test.describe("/encuentra-tu-momento — locale rendering via NEXT_LOCALE cookie (D13/D15)", () => {
   const cases = [
-    { locale: "es", title: "Encuentra tu hospital" },
-    { locale: "eu", title: "Aurkitu zure ospitalea" },
-    { locale: "en", title: "Find your hospital" },
+    { locale: "es", title: "Encuentra tu centro" },
+    { locale: "eu", title: "Aurkitu zure zentroa" },
+    { locale: "en", title: "Find your centre" },
   ] as const;
 
   for (const { locale, title } of cases) {

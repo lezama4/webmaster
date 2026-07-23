@@ -39,7 +39,7 @@ describe.skipIf(!dbAvailable)("matching race: approve vs approve (4.10, pr2b-M5)
     const slot = await createOpenSlot(client, hospital.id);
     const claraProposal = await createSubmittedProposal(client, slot.id, clara.id);
     const mateoProposal = await createSubmittedProposal(client, slot.id, mateo.id);
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     return { hospitalActor, slot, claraProposal, mateoProposal };
   }
 

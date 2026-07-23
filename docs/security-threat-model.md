@@ -38,6 +38,21 @@ Those are not oversights in the review; they are genuinely absent from the
 codebase, and T-16, T-17 and T-18 record them as open. A green test suite is
 not production hardening.
 
+**Scope note — `widen-beyond-hospitals` (six centre types).** This model has
+been extended to cover the generalisation from a hospital-only product to six
+centre types (hospital, nursing home, day centre, day hospital, occupational
+centre, palliative unit) via a generic `CENTRE` role plus a separate
+`CentreType` axis (ADRs D16–D20). That change is implemented and verified
+locally against real PostgreSQL (Neon `dev`), but is **not yet merged to `main`
+or deployed** — the dated CI evidence on `482aefd` cited throughout remains the
+deployed hospital-only baseline. Two security-relevant facts follow from the
+change and are recorded below: `centreType` is now a **public, allow-listed
+field** on the directory (D19), and the widening **raises the safeguarding bar**
+for more vulnerable populations while verification stays self-declared —
+recorded as an accepted, documented, demo-scoped open risk (T-22). D10
+cross-surface non-correlation was re-assessed and **holds** (public events carry
+no location or centre identity, so `type + city` narrows no event).
+
 The model uses the current [OWASP Top 10:2025](https://owasp.org/Top10/2025/)
 as its primary taxonomy and cross-references the still widely used
 [OWASP Top 10:2021](https://owasp.org/Top10/2021/). OWASP is an awareness and
@@ -72,6 +87,7 @@ same architecture later processes live data.
 | Asset / data set | Classification | Why it matters | Required handling |
 | --- | --- | --- | --- |
 | Public event projection: title, description, date/time, duration, artist display name | Public after publication; integrity-sensitive | It is intentionally anonymous-facing, but false or altered events damage trust and may cause attendance at the wrong time. | Explicit allow-list, published-only filter, output encoding, integrity-protected write path. |
+| Public centre directory projection: name, city, postal code, coordinates, and centre type (`centreType`, D19) | Public by design — self-registered institutions | Publishing the centre type is required so families can tell a day centre from a palliative unit, but a small or rare type in a city is a stronger population signal than "one hospital" was (single-surface identifiability, T-22). | Coarse six-value category only (never a sub-label or unit name); explicit allow-list; never the address, email or internal `type`; assessed to add no join key to the event surface (D10). |
 | Exact Slot location, future schedule, Hospital identity and operational agenda | Confidential / context-sensitive | Ward, room and timetable information can expose operational or patient-adjacent context. | Never expose publicly; restrict to an active Artist with a legitimate need, and minimise logs. |
 | Proposal message and competing-proposal state | Confidential | May contain direct contact details, commercial terms, personal information, or private operational context. | Hospital owner and authorised workflow only; no public projection; bounded and safely rendered. |
 | Account email, profile name/type/status, account-to-profile relation | Personal data; confidential | Enables contact, account targeting, role inference, and governance decisions. | Server-side authorisation, data minimisation, retention policy, no unnecessary API disclosure. |
@@ -168,6 +184,7 @@ transaction, so a session-time snapshot is never the authority for a mutation.
 | T-06 Matching race produces contradictory state | A08:2025, A06:2025 / A08, A04:2021 | Slot/Proposal/Event consistency | Concurrent submit, approve, reject or close runs against stale data and leaves an actionable proposal on a non-open Slot or more than one accepted proposal. | High integrity impact. | Medium to high | **Mitigated.** `PrismaMatchingUnitOfWork` issues `SELECT … FOR UPDATE` on the Slot row before any decision-informing read, loads the full Proposal set in the same transaction, and persists atomically. Nine barrier-forced race files (`submit-approve`, `submit-close`, `approve-close`, `approve-reject`, `close-reject`, `matching-race`, `duplicate-submission`, `login-vs-deactivation`, `slot-auth-vs-deactivation`) executed in CI against real PostgreSQL, plus partial unique indexes proven by `partial-index-catalog` and `duplicate-submission`. |
 | T-07 Incomplete persisted aggregate accepted as valid | A08:2025, A06:2025 / A08, A04:2021 | Historical integrity and future decisions | A corrupted or faulty persistence snapshot has a filled Slot with no accepted Proposal, multiple accepted Proposals, or submitted Proposals on a non-open Slot. | High integrity/audit impact. | Medium | **Partial/open gap — unchanged.** Re-read on this revision: `assertValidSlotAggregate` still checks only linkage, duplicate ids and the single `open`-with-accepted contradiction (`aggregate.ts:37-44`). A `filled` Slot with no accepted Proposal, two accepted Proposals, or submitted Proposals on a non-open Slot still rehydrate successfully. `codex-pr1-review.md` M1 remains open: the full status matrix and negative rehydration tests are still required. Note this is a defence-in-depth gap against *corrupt persisted data* — the write paths themselves are lock-protected (T-06). |
 | T-08 Account/Profile partial registration or duplicate race | A08:2025, A10:2025 / A08:2021 | Account/profile consistency, onboarding availability | Account save succeeds but Profile save fails; or concurrent same-email registration observes no account twice. | Medium integrity and availability impact. | Medium | **Mitigated.** `PrismaRegistrationUnitOfWork` holds one transaction across the uniqueness check, Account creation and Profile creation/reactivation. Existing accounts are locked with `SELECT … FOR UPDATE`; a first registration (no row to lock) takes `pg_advisory_xact_lock` on the normalised email and re-reads under `FOR UPDATE` (`RegistrationUnitOfWork.ts:85-93`). `registration-race.test.ts` executed in CI. |
+| T-22 Widened safeguarding bar under self-declared verification (D16–D20) | A06:2025 Insecure Design / A04:2021; also A01:2025 for the public-data facet | Vulnerable populations (residencia residents, day/occupational-centre users, palliative patients); centre trustworthiness; single-surface population identifiability | Two facets. **(a) Admission:** a bad actor self-registers as a residencia, occupational centre or palliative unit — populations that include older people, people with cognitive impairment and vulnerable adults, and whose centre kinds carry weaker independent trust markers than a large public hospital — and the only gate is self-declaration plus manual admin validation. **(b) Public data:** publishing `(centreType, city)` on the directory (D19) narrows the population of a small or rare kind (e.g. a lone palliative unit in a city) more sharply than "one hospital" ever did. | High (real world) for the safeguarding facet; Medium for identifiability. Both **accepted** at demo scope. | **Accepted open risk — documented, demo-scoped. Not a mitigated control; no verification control beyond admin validation exists.** Verification stays **self-declared with admin validation**, unchanged in shape from the hospital-only product — the widening changes *who* self-declares, not *how* trust is established. Facet (b) is deliberately bounded to the **coarse six-value category only** (never a sub-label or unit name), publishes only institutional metadata about institutions that self-registered to be listed, names no individual, and was assessed **not** to be a D10 cross-surface leak (public events expose no location or centre identity, so there is nothing to join to). **Real institutional verification/accreditation for the more vulnerable centre types is named as the next safeguarding follow-on** and is explicitly out of scope for this change. No copy or document asserts a safeguarding posture the code does not implement. |
 
 ### 4.2 Authentication, sessions, and request forgery
 
@@ -205,7 +222,7 @@ coverage to readers using either 2021 or 2025 terminology.
 | A03 Software Supply Chain Failures | A06 Vulnerable and Outdated Components | **Largely uncovered.** The lockfile is committed and CI installs with `npm ci` under a pinned npm, preventing drift. There is no SBOM, no vulnerability monitoring, no audit step and no documented update ownership. See T-17. |
 | A04 Cryptographic Failures | A02 Cryptographic Failures | **Covered with executed evidence.** Argon2id parameters are pinned explicitly (`m=19456,t=2,p=1`, v0x13) with upgrade-on-login; session values are CSPRNG; only `sha256(token)` is persisted, asserted directly against the row in CI; rate-limiter keys are server-keyed HMAC. Secret *rotation* procedure is documented for the limiter key only. |
 | A05 Injection | A03 Injection | **Covered for SQL.** All raw statements are parameterised `Prisma.sql` templates; migration identifiers are verified against the live catalog in CI. React escapes output by default and no unsafe HTML rendering exists. Not covered: request body-size limits and Profile/Proposal text bounds (T-15). |
-| A06 Insecure Design | A04 Insecure Design | **Covered.** Explicit state machines, allow-list projection, credential-verified re-registration, lock-first concurrency model, and adversarial review rounds recorded as artefacts. Retention decisions remain an open product/legal item (T-21). |
+| A06 Insecure Design | A04 Insecure Design | **Covered, with two accepted open items.** Explicit state machines, allow-list projection (events and the centre directory), credential-verified re-registration, lock-first concurrency model, the orthogonal role/`CentreType` design (D16–D20), and adversarial review rounds recorded as artefacts. Retention decisions remain an open product/legal item (T-21); the widened safeguarding bar under self-declared verification is an accepted, demo-scoped open risk (T-22). |
 | A07 Authentication Failures | A07 Identification and Authentication Failures | **Covered with executed evidence.** DB-backed session lifecycle with fresh token per login (no fixation), absolute and idle expiry, conditional touch, logout deletion and revoke-all; atomic rate limiting keyed by account and client; timing-parity login; CSRF on login. No password recovery flow exists — if one is added it needs its own analysis. |
 | A08 Software or Data Integrity Failures | A08 Software and Data Integrity Failures | **Covered with executed evidence** for atomic registration, lock-first matching, partial unique indexes, transactional cascades and migration integrity, all proven by the PostgreSQL suite in CI. Build-pipeline security is not covered (see A03). |
 | A09 Security Logging & Alerting Failures | A09 Security Logging and Monitoring Failures | **Not covered.** No logging implementation exists in the codebase. See T-18. |
@@ -239,6 +256,13 @@ production use. The following are minimum engineering requirements.
    display name is not automatically public merely because it is stored.
 5. Hash/truncate security telemetry such as client address and do not place
    messages, session IDs, credentials or locations in logs.
+6. On the public centre directory, publish only the allow-listed institutional
+   fields — name, city, postal code, coordinates and the coarse `centreType`
+   category (D19) — and never the street address, email, internal `type` field,
+   or any finer sub-label than the six-value category. The centre type is
+   published because the product's discovery purpose requires families to
+   distinguish centre kinds; keeping it coarse is the concrete mitigation for
+   the single-surface identifiability recorded in T-22.
 
 ### 6.2 Retention and deletion design decisions still required
 
@@ -361,6 +385,14 @@ Remaining priority order, for a system that is already exposed:
    corrupt persisted data.
 5. **T-21 — agree a retention and deletion schedule** before any real (non-demo)
    data is ever processed.
+
+**Accepted, not queued for this scope:** **T-22 — the widened safeguarding bar**
+(residencias, disability day/occupational centres, palliative units) under
+self-declared verification is *accepted and documented* at demo scope, not a
+control to implement now. Its named follow-on is real institutional
+verification/accreditation for the more vulnerable centre types, to be designed
+before any such centre onboards with real (non-demo) data. It is listed here so
+it is visible, not because a mitigation is scheduled.
 
 ## Source evidence
 

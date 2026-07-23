@@ -116,6 +116,33 @@ describe("Locale parity guard (D13) — repository-wide, all namespaces", () => 
     expect(emptyEntries, emptyEntries.join("\n")).toEqual([]);
   });
 
+  it("each locale has exactly the six CentreType.* labels, one per centreType value (widen-beyond-hospitals D20)", () => {
+    // The shared display-labels namespace (ADR D20) consumed by the finder
+    // tag/filter. Registration and the admin queue keep their own
+    // `Register.centreType.*` / `AdminProfiles.centreType.*` namespaces; this
+    // asserts the top-level `CentreType.*` set is present and exactly six.
+    const centreTypeValues = [
+      "hospital",
+      "nursing_home",
+      "day_centre",
+      "day_hospital",
+      "occupational_centre",
+      "palliative_unit",
+    ].sort();
+    for (const [label, tree] of [
+      ["es", es],
+      ["eu", eu],
+      ["en", en],
+    ] as const) {
+      const namespace = (tree as MessageTree).CentreType as MessageTree | undefined;
+      expect(namespace, `${label}.CentreType namespace is missing entirely`).toBeTruthy();
+      const keys = Object.keys(namespace ?? {}).sort();
+      expect(keys, `${label}.CentreType must have exactly the six centreType keys`).toEqual(
+        centreTypeValues,
+      );
+    }
+  });
+
   it("ICU placeholder argument sets match across locales for every shared string key", () => {
     const mismatches: string[] = [];
     for (const key of esKeys) {

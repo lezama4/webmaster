@@ -37,7 +37,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
       },
     });
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     const artistActor = actorFor(artist, artistAccount.id, "artist");
 
     const closePromise = closeSlot(
@@ -84,7 +84,7 @@ describe.skipIf(!dbAvailable)("race: submit vs close (4.12)", () => {
       },
     });
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     const artistActor = actorFor(artist, artistAccount.id, "artist");
     const submitPromise = submitProposal(
       artistActor,

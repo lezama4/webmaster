@@ -1,3 +1,5 @@
+import type { CentreType } from "@domain/profile/Profile";
+
 /**
  * Admin pending-profile queue item (5.3/5.12) — an explicit ALLOW-LIST,
  * mirroring the D6 discipline `PublicEventProjection` establishes: only the
@@ -7,7 +9,15 @@
  */
 export interface PendingProfileView {
   readonly profileId: string;
-  readonly type: "hospital" | "artist";
+  readonly type: "centre" | "artist";
+  /**
+   * The kind of care centre (ADR D16/D18) — present if and only if `type
+   * === "centre"`, always absent for `type === "artist"`. This surface is
+   * authenticated/authorized (admin-only), unlike the public directory, so
+   * it MAY carry `centreType` freely; it lets the admin queue show the
+   * specific kind (e.g. "Residencia de mayores") instead of a flat "Centro".
+   */
+  readonly centreType?: CentreType;
   readonly displayName: string;
   /**
    * When this Profile most recently entered review — `reviewRequestedAt`

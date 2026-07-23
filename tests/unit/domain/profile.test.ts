@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import {
   approveProfile,
+  assertValidCentreType,
+  CENTRE_TYPES,
   type CreateProfileInput,
   createProfile,
   deactivateProfile,
@@ -18,11 +20,13 @@ const NOW = new Date("2026-07-10T12:00:00Z");
 const fixedClock: Clock = { now: () => NOW };
 
 function pendingProfile(overrides: Partial<CreateProfileInput> = {}): Profile {
+  const type = overrides.type ?? "centre";
   return createProfile({
     id: "profile-1",
     accountId: "account-1",
-    type: "hospital",
     name: "Hospital San Juan",
+    ...(type === "centre" ? { centreType: "hospital" } : {}),
+    type,
     ...overrides,
   });
 }
@@ -33,7 +37,8 @@ describe("Profile state machine", () => {
       const profile = createProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
       });
 
@@ -45,7 +50,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
         }),
       ).toThrow(DomainValidationError);
@@ -56,7 +62,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "   ",
         }),
       ).toThrow(DomainValidationError);
@@ -71,7 +78,8 @@ describe("Profile state machine", () => {
       const fabricated: Profile = {
         id: "profile-x",
         accountId: "account-x",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Fabricated Hospital",
         status: "active",
       };
@@ -80,12 +88,125 @@ describe("Profile state machine", () => {
     });
   });
 
+  describe("centreType invariant (D16, widen-beyond-hospitals): type and centreType are coupled at exactly one point", () => {
+    it("createProfile denies a 'centre' Profile with no centreType", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "centre",
+          name: "Residencia Aranzazu",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("createProfile accepts a 'centre' Profile with each of the six known centreType values", () => {
+      const centreTypes = [
+        "hospital",
+        "nursing_home",
+        "day_centre",
+        "day_hospital",
+        "occupational_centre",
+        "palliative_unit",
+      ] as const;
+
+      for (const centreType of centreTypes) {
+        const profile = createProfile({
+          id: `profile-${centreType}`,
+          accountId: "account-1",
+          type: "centre",
+          centreType,
+          name: "A Centre",
+        });
+        expect(profile.centreType).toBe(centreType);
+      }
+    });
+
+    it("createProfile denies a 'centre' Profile with an unknown centreType string", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "centre",
+          // @ts-expect-error - deliberately invalid centreType.
+          centreType: "prison",
+          name: "Residencia Aranzazu",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("createProfile denies an 'artist' Profile that carries a centreType", () => {
+      expect(() =>
+        createProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "artist",
+          centreType: "hospital",
+          name: "Clara Romero",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("createProfile leaves centreType undefined for an 'artist' Profile", () => {
+      const profile = createProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "artist",
+        name: "Clara Romero",
+      });
+
+      expect(profile.centreType).toBeUndefined();
+    });
+
+    it("rehydrateProfile enforces the same invariant on persisted data", () => {
+      expect(() =>
+        rehydrateProfile({
+          id: "profile-1",
+          accountId: "account-1",
+          type: "centre",
+          name: "Residencia Aranzazu",
+          status: "active",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("rehydrateProfile round-trips a valid centreType", () => {
+      const profile = rehydrateProfile({
+        id: "profile-1",
+        accountId: "account-1",
+        type: "centre",
+        centreType: "palliative_unit",
+        name: "UCP Ría",
+        status: "active",
+      });
+
+      expect(profile.centreType).toBe("palliative_unit");
+    });
+  });
+
+  describe("assertValidCentreType (D16)", () => {
+    it("accepts each of the six known CentreType values", () => {
+      for (const centreType of CENTRE_TYPES) {
+        expect(() => assertValidCentreType(centreType)).not.toThrow();
+      }
+    });
+
+    it("rejects an unknown string", () => {
+      expect(() => assertValidCentreType("prison")).toThrow(DomainValidationError);
+    });
+
+    it("rejects an empty string", () => {
+      expect(() => assertValidCentreType("")).toThrow(DomainValidationError);
+    });
+  });
+
   describe("rehydrateProfile (M1: validated reconstruction from persisted data)", () => {
     it("rehydrates a profile in 'active' state (a status createProfile can never produce)", () => {
       const profile = rehydrateProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         status: "active",
       });
@@ -97,7 +218,8 @@ describe("Profile state machine", () => {
       const profile = rehydrateProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         status: "deactivated",
       });
@@ -111,7 +233,8 @@ describe("Profile state machine", () => {
       const profile = rehydrateProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         status: "pending",
         reviewRequestedAt: original,
@@ -126,7 +249,8 @@ describe("Profile state machine", () => {
         rehydrateProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           // @ts-expect-error - deliberately invalid persisted status.
           status: "banned",
@@ -152,7 +276,8 @@ describe("Profile state machine", () => {
         rehydrateProfile({
           id: "profile-1",
           accountId: "",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           status: "pending",
         }),
@@ -164,7 +289,8 @@ describe("Profile state machine", () => {
         rehydrateProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           status: "pending",
           reviewRequestedAt: new Date(NaN),
@@ -335,7 +461,8 @@ describe("Profile state machine", () => {
       const profile = createProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         city: "Bilbao",
         postalCode: "48013",
@@ -355,7 +482,8 @@ describe("Profile state machine", () => {
       const profile = createProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         city: "Bilbao",
       });
@@ -370,7 +498,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: 90.5,
           longitude: 0,
@@ -383,7 +512,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: -90.5,
           longitude: 0,
@@ -396,7 +526,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: 0,
           longitude: 180.5,
@@ -409,7 +540,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: 0,
           longitude: -180.5,
@@ -422,7 +554,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: Number.NaN,
           longitude: 0,
@@ -435,7 +568,8 @@ describe("Profile state machine", () => {
         createProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           latitude: 0,
           longitude: Number.POSITIVE_INFINITY,
@@ -447,7 +581,8 @@ describe("Profile state machine", () => {
       const south = createProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         latitude: -90,
         longitude: -180,
@@ -455,7 +590,8 @@ describe("Profile state machine", () => {
       const north = createProfile({
         id: "profile-2",
         accountId: "account-2",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital Esperanza",
         latitude: 90,
         longitude: 180,
@@ -471,7 +607,8 @@ describe("Profile state machine", () => {
       const profile = rehydrateProfile({
         id: "profile-1",
         accountId: "account-1",
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital San Juan",
         status: "active",
         city: "Bilbao",
@@ -493,7 +630,8 @@ describe("Profile state machine", () => {
         rehydrateProfile({
           id: "profile-1",
           accountId: "account-1",
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital San Juan",
           status: "active",
           latitude: 200,

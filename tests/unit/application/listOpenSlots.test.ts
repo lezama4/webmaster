@@ -103,7 +103,7 @@ describe("listOpenSlots (active-Artist visibility, N2, dedicated read-model port
     const account = anAccount("artist");
     // Corrupted/imported-data scenario: the live Profile is a Hospital
     // Profile despite the Account being role 'artist'.
-    const mismatchedProfile = aProfile("hospital", "active", {
+    const mismatchedProfile = aProfile("centre", "active", {
       accountId: account.id,
     });
     await deps.profiles.save(mismatchedProfile);

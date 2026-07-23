@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata({
     pageTitle: t("title"),
     // Reuses the on-page description verbatim (D10): it already mentions
-    // "participating hospitals" only as a generic category, never a named
+    // "participating care centres" only as a generic category, never a named
     // one — introducing a SEPARATE OG/share string here would just be a
     // new surface to re-audit for the same non-correlation invariant.
     // See tests/unit/application/nonCorrelation.test.ts and

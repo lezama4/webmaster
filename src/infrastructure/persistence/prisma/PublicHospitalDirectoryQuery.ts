@@ -1,6 +1,7 @@
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
 import type { PublicHospitalDirectoryQuery } from "@application/ports/PublicHospitalDirectoryQuery";
 import type { PrismaClientOrTx } from "./client";
+import { toDomainCentreType } from "./mappers";
 
 /**
  * The ONLY adapter permitted to read `Profile` for the public hospital
@@ -27,13 +28,14 @@ export class PrismaPublicHospitalDirectoryQuery
       // Security predicate (D9) — the SOLE reason a PENDING/REJECTED/
       // DEACTIVATED profile, or an Artist profile, cannot reach the public
       // directory. Must never acquire an unrelated condition.
-      where: { type: "HOSPITAL", status: "ACTIVE" },
+      where: { type: "CENTRE", status: "ACTIVE" },
       select: {
         name: true,
         city: true,
         postalCode: true,
         latitude: true,
         longitude: true,
+        centreType: true,
       },
       // Ordering derived ONLY from allow-listed fields (D9) — never
       // `createdAt`/`id`, which would weakly encode registration/seed
@@ -42,12 +44,25 @@ export class PrismaPublicHospitalDirectoryQuery
       orderBy: [{ city: { sort: "asc", nulls: "last" } }, { name: "asc" }],
     });
 
-    return rows.map((row): PublicHospitalProjection => ({
-      name: row.name,
-      city: row.city,
-      postalCode: row.postalCode,
-      latitude: row.latitude,
-      longitude: row.longitude,
-    }));
+    return rows.map((row): PublicHospitalProjection => {
+      // D16 invariant: every `type: CENTRE` row carries a non-null
+      // `centreType` (enforced at write time by the domain factory and
+      // backfilled by the D17 migration). A null here would mean that
+      // invariant was violated at the data layer — fail loudly rather than
+      // silently coercing to a made-up value.
+      if (row.centreType === null) {
+        throw new Error(
+          `Profile '${row.name}' has type CENTRE but a null centreType — D16 invariant violated`,
+        );
+      }
+      return {
+        name: row.name,
+        city: row.city,
+        postalCode: row.postalCode,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        centreType: toDomainCentreType(row.centreType),
+      };
+    });
   }
 }

@@ -63,14 +63,14 @@ function makeProfileDeps() {
 describe("Authorization edge-case matrix — stale session snapshot vs. live status (M6)", () => {
   it("publishSlot denies a Hospital whose stale actor snapshot says 'active' but the LIVE Profile is 'deactivated'", async () => {
     const deps = makeSlotDeps();
-    const account = anAccount("hospital");
-    const stillActiveSnapshot = aProfile("hospital", "active", {
+    const account = anAccount("centre");
+    const stillActiveSnapshot = aProfile("centre", "active", {
       accountId: account.id,
     });
     const actor = actorFor(account, stillActiveSnapshot); // snapshot: 'active'
     // The Admin deactivates it AFTER the actor object was built (simulating
     // a status change mid-session) — the repository now holds 'deactivated'.
-    const deactivated = aProfile("hospital", "deactivated", {
+    const deactivated = aProfile("centre", "deactivated", {
       id: stillActiveSnapshot.id,
       accountId: account.id,
     });
@@ -112,10 +112,10 @@ describe("Authorization edge-case matrix — stale session snapshot vs. live sta
 
   it("approveProposal denies a Hospital whose stale actor snapshot says 'active' but the LIVE Profile is 'deactivated'", async () => {
     const deps = makeSlotDeps();
-    const account = anAccount("hospital");
-    const activeSnapshot = aProfile("hospital", "active", { accountId: account.id });
+    const account = anAccount("centre");
+    const activeSnapshot = aProfile("centre", "active", { accountId: account.id });
     const actor = actorFor(account, activeSnapshot);
-    const deactivated = aProfile("hospital", "deactivated", {
+    const deactivated = aProfile("centre", "deactivated", {
       id: activeSnapshot.id,
       accountId: account.id,
     });
@@ -132,10 +132,10 @@ describe("Authorization edge-case matrix — stale session snapshot vs. live sta
 
   it("rejectProposal denies a Hospital whose LIVE Profile turned 'rejected' mid-session", async () => {
     const deps = makeSlotDeps();
-    const account = anAccount("hospital");
-    const activeSnapshot = aProfile("hospital", "active", { accountId: account.id });
+    const account = anAccount("centre");
+    const activeSnapshot = aProfile("centre", "active", { accountId: account.id });
     const actor = actorFor(account, activeSnapshot);
-    const rejected = aProfile("hospital", "rejected", {
+    const rejected = aProfile("centre", "rejected", {
       id: activeSnapshot.id,
       accountId: account.id,
     });
@@ -152,10 +152,10 @@ describe("Authorization edge-case matrix — stale session snapshot vs. live sta
 
   it("closeSlot denies a Hospital whose LIVE Profile turned 'deactivated' mid-session", async () => {
     const deps = makeSlotDeps();
-    const account = anAccount("hospital");
-    const activeSnapshot = aProfile("hospital", "active", { accountId: account.id });
+    const account = anAccount("centre");
+    const activeSnapshot = aProfile("centre", "active", { accountId: account.id });
     const actor = actorFor(account, activeSnapshot);
-    const deactivated = aProfile("hospital", "deactivated", {
+    const deactivated = aProfile("centre", "deactivated", {
       id: activeSnapshot.id,
       accountId: account.id,
     });
@@ -171,8 +171,8 @@ describe("Authorization edge-case matrix — stale session snapshot vs. live sta
   it("Admin cannot approveProposal/rejectProposal (Hospital-only, not a role gap in Admin's favor)", async () => {
     const deps = makeSlotDeps();
     const admin = actorFor(anAccount("admin"));
-    const hospitalAccount = anAccount("hospital");
-    const hospitalProfile = aProfile("hospital", "active", {
+    const hospitalAccount = anAccount("centre");
+    const hospitalProfile = aProfile("centre", "active", {
       accountId: hospitalAccount.id,
     });
     await deps.profiles.save(hospitalProfile);

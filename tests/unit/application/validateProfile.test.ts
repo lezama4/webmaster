@@ -26,7 +26,7 @@ const admin = actorFor(anAccount("admin"));
 describe("validateProfile (Admin validation queue decision)", () => {
   it("approves a pending profile: pending -> active", async () => {
     const deps = makeDeps();
-    const pending = aProfile("hospital", "pending");
+    const pending = aProfile("centre", "pending");
     await deps.profiles.save(pending);
 
     const result = await validateProfile(
@@ -125,7 +125,7 @@ describe("validateProfile (Admin validation queue decision)", () => {
     const deps = makeDeps();
     const pending = aProfile("artist", "pending");
     await deps.profiles.save(pending);
-    const hospitalActor = actorFor(anAccount("hospital"));
+    const hospitalActor = actorFor(anAccount("centre"));
 
     await expect(
       validateProfile(
@@ -146,7 +146,7 @@ describe("validateProfile (Admin validation queue decision)", () => {
 
   it("denies validating a profile that is not pending (already active)", async () => {
     const deps = makeDeps();
-    const active = aProfile("hospital", "active");
+    const active = aProfile("centre", "active");
     await deps.profiles.save(active);
 
     await expect(
@@ -156,7 +156,7 @@ describe("validateProfile (Admin validation queue decision)", () => {
 
   it("FAILS CLOSED on a decision that is neither 'approve' nor 'reject' (pr2a-N2) — never falls through to reject", async () => {
     const deps = makeDeps();
-    const pending = aProfile("hospital", "pending", { accountId: "acct-n2" });
+    const pending = aProfile("centre", "pending", { accountId: "acct-n2" });
     await deps.profiles.save(pending);
 
     await expect(

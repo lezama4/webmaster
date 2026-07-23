@@ -1,6 +1,7 @@
 {
-  "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a pacientes durante sus estancias hospitalarias. Gratuita para hospitales, artistas y familias.", "help": "Ayuda" } },
+  "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a las personas que están en centros de cuidado, durante estancias largas o días lejos de casa. Gratuita para centros, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
+  "CentreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" },
   "Share": {
     "heading": "Compartí esta página",
     "footerLabel": "Compartí Todo el tiempo cuenta",
@@ -20,22 +21,22 @@
     "mission": {
       "eyebrow": "Por qué existimos",
       "title": "Un hueco en la agenda puede ser el mejor momento del mes.",
-      "description": "No sustituimos el tratamiento: lo acompañamos. Coordinamos con cada planta para que la música, el teatro o un taller lleguen sin interrumpir el cuidado, y para que cada actuación tenga sentido para quien la recibe.",
+      "description": "No sustituimos el cuidado: lo acompañamos. Coordinamos con cada centro para que la música, el teatro o un taller lleguen sin interrumpir la atención, y para que cada actuación tenga sentido para quien la recibe.",
       "imageAlt": "Un artista muestra recortes de papel de colores a un grupo de pacientes, un adolescente y una enfermera alrededor de una mesa cubierta de materiales de manualidades."
     },
     "trust": {
       "eyebrow": "Respaldo institucional",
-      "title": "Cada hueco lo abre un hospital, no una plataforma anónima.",
-      "description": "Los coordinadores de cada planta revisan y confirman las propuestas antes de que lleguen a un paciente. Así es como Todo el tiempo cuenta se mantiene seguro y con sentido clínico.",
-      "hospitalsLabel": "Hospitales participantes",
+      "title": "Cada hueco lo abre un centro de cuidado, no una plataforma anónima.",
+      "description": "Los coordinadores de cada centro revisan y confirman las propuestas antes de que lleguen a las personas a su cuidado. Así es como Todo el tiempo cuenta se mantiene seguro y con sentido.",
+      "hospitalsLabel": "Centros participantes",
       "patronsLabel": "Organizaciones mecenas",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
       "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "Conjunto ilustrativo para esta fase MVP: incluye hospitales de la base de datos de demostración y organizaciones de ejemplo, no acuerdos de mecenazgo confirmados."
+      "disclaimer": "Conjunto ilustrativo para esta fase MVP: incluye centros de la base de datos de demostración y organizaciones de ejemplo, no acuerdos de mecenazgo confirmados."
     },
     "artists": {
       "eyebrow": "Artistas destacados",
-      "title": "Personas que ya llevan su oficio a planta.",
+      "title": "Personas que ya llevan su oficio a los centros.",
       "description": "Perfiles de ejemplo de la base de datos de demostración, con la valoración que recibirían tras un evento completado.",
       "disclaimer": "Perfiles y valoraciones ilustrativos para esta fase MVP.",
       "items": [
@@ -44,7 +45,7 @@
       ]
     },
     "reviews": {
-      "eyebrow": "Voces desde planta",
+      "eyebrow": "Voces desde los centros",
       "title": "Lo que cuentan quienes ya vivieron un momento.",
       "imageAlt": "Un coro actúa ante un público de pacientes y familiares sentados, con dos personas en silla de ruedas en primera fila.",
       "disclaimer": "Ejemplos ilustrativos para esta fase MVP; no son reseñas verificadas de eventos reales.",
@@ -56,15 +57,15 @@
     },
     "closing": {
       "title": "¿Listo para abrir el primer hueco, o para proponer el primer momento?",
-      "description": "Hospitales y artistas se registran en el mismo lugar. Un coordinador revisa cada perfil antes de que pueda actuar.",
-      "primaryCta": "Registrar un hospital o perfil",
+      "description": "Centros y artistas se registran en el mismo lugar. Un coordinador revisa cada perfil antes de que pueda actuar.",
+      "primaryCta": "Registrar un centro o perfil",
       "secondaryCta": "Ver próximos eventos"
     },
     "what": {
       "eyebrow": "Qué es Todo el tiempo cuenta",
       "title": "Cultura en directo para acompañar la espera.",
-      "description": "Conectamos hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
-      "steps": ["Los hospitales publican huecos", "Los artistas proponen actividades", "Se publica el evento"],
+      "description": "Conectamos centros de cuidado con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
+      "steps": ["Los centros publican huecos", "Los artistas proponen actividades", "Se publica el evento"],
       "primaryCta": "Ver próximos eventos",
       "secondaryCta": "Cómo funciona"
     }
@@ -72,82 +73,83 @@
   "Help": {
     "eyebrow": "Ayuda",
     "title": "Cómo funciona Todo el tiempo cuenta",
-    "intro": "Una guía rápida del proceso, pensada para hospitales, artistas y familias.",
-    "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro pasos, una tarde compartida. Antes de empezar, un administrador valida cada hospital y cada artista; después, cada paso se revisa antes de llegar a un paciente." },
-    "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Hospitales", "text": "El mismo hospital revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } },
+    "intro": "Una guía rápida del proceso, pensada para centros, artistas y familias.",
+    "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro pasos, una tarde compartida. Antes de empezar, un administrador valida cada centro y cada artista; después, cada paso se revisa antes de llegar a las personas que lo recibirán." },
+    "steps": { "01": { "role": "Centros", "text": "Abren un hueco en la agenda del centro: una fecha, una hora y un lugar donde a las personas que están allí les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Centros", "text": "El mismo centro revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Las personas que están allí y sus familias ven lo que está por llegar y comparten cómo fue." } },
     "faq": {
       "title": "Preguntas frecuentes",
       "items": [
         { "question": "¿Cómo se valoran los eventos y los artistas?", "answer": "Los usuarios registrados pueden valorar un evento publicado de 1 a 5 estrellas, y cada evento muestra su media. Los testimonios de la portada siguen siendo ejemplos ilustrativos, no reseñas verificadas." },
-        { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un hospital indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
-        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Todo el tiempo cuenta nunca publica datos personales de pacientes. La planta o sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la habitación o el motivo de ingreso de cualquier paciente no se registran en la plataforma." }
+        { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un centro indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
+        { "question": "¿Cómo se protege la ubicación de las personas?", "answer": "Todo el tiempo cuenta nunca publica datos personales. El espacio o la sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la ubicación exacta o el motivo de estancia de cualquier persona no se registran en la plataforma." }
       ]
     }
   },
   "Finder": {
-    "nav": "Encuentra tu hospital",
-    "title": "Encuentra tu hospital",
-    "description": "Consultá los hospitales que ya forman parte de Todo el tiempo cuenta y comprobá si el tuyo está entre ellos.",
+    "nav": "Encuentra tu centro",
+    "title": "Encuentra tu centro",
+    "description": "Consultá los centros que ya forman parte de Todo el tiempo cuenta y comprobá si el tuyo está entre ellos.",
     "search": { "label": "Buscar por nombre, ciudad o código postal", "placeholder": "Por ejemplo: Bilbao, 48013…" },
-    "resultCount": { "all": "{count} hospitales encontrados", "partial": "{count} hospitales encontrados · {mappable} en el mapa" },
-    "map": { "ariaLabel": "Mapa indicativo de hospitales participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
-    "empty": { "title": "No encontramos hospitales con esa búsqueda", "description": "Probá con otro nombre, ciudad o código postal." },
+    "filter": { "label": "Filtrar por tipo de centro", "all": "Todos los tipos" },
+    "resultCount": { "all": "{count} centros encontrados", "partial": "{count} centros encontrados · {mappable} en el mapa" },
+    "map": { "ariaLabel": "Mapa indicativo de centros participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
+    "empty": { "title": "No encontramos centros con esa búsqueda", "description": "Probá con otro nombre, ciudad o código postal." },
     "noLocation": "Ubicación no indicada"
   },
   "About": {
     "nav": "Quiénes somos",
     "eyebrow": "Quiénes somos",
-    "title": "Una plataforma sin ánimo de lucro para llevar cultura en directo a la cama del hospital.",
+    "title": "Una plataforma sin ánimo de lucro para llevar cultura en directo allí donde el cuidado retiene a las personas.",
     "intro": "Aquí explicamos qué es Todo el tiempo cuenta, quién participa, cómo se protege la privacidad y por qué es gratis. Para el paso a paso de cómo publicar o proponer, visitá la Ayuda.",
     "purpose": {
       "title": "Nuestro propósito",
-      "description": "Las estancias hospitalarias largas aíslan. Todo el tiempo cuenta existe para que la música, el teatro y los talleres lleguen a planta sin sustituir el cuidado clínico, siempre coordinados con el hospital."
+      "description": "Las estancias largas y los días lejos de casa aíslan. Todo el tiempo cuenta existe para que la música, el teatro y los talleres lleguen al centro de cuidado sin sustituir la atención, siempre coordinados con el propio centro."
     },
     "roles": {
       "title": "Quién participa",
       "items": [
-        { "name": "Administrador", "description": "Valida cada perfil de hospital y artista antes de que pueda actuar en la plataforma." },
-        { "name": "Hospital", "description": "Publica huecos en la agenda de su planta cuando hay espacio para una actividad." },
+        { "name": "Administrador", "description": "Valida cada perfil de centro y artista antes de que pueda actuar en la plataforma." },
+        { "name": "Centro de cuidado", "description": "Publica huecos en la agenda del centro cuando hay espacio para una actividad." },
         { "name": "Artista", "description": "Propone una actividad para un hueco publicado, dentro de su área y disponibilidad." },
-        { "name": "Paciente y familia", "description": "Disfrutan del evento programado, sin necesidad de registrarse." }
+        { "name": "Personas y familias", "description": "Disfrutan del evento programado, sin necesidad de registrarse." }
       ]
     },
     "flow": {
       "title": "El recorrido, de un vistazo",
-      "description": "Un hueco nace en el hospital, un artista lo propone, y termina siendo un evento público. Para el detalle de cada paso, consultá la Ayuda.",
+      "description": "Un hueco nace en el centro, un artista lo propone, y termina siendo un evento público. Para el detalle de cada paso, consultá la Ayuda.",
       "stages": ["Hueco publicado", "Propuesta de artista", "Evento confirmado"]
     },
     "validation": {
       "title": "Perfiles validados",
-      "description": "Ningún hospital ni artista puede actuar en la plataforma hasta que un administrador revisa y aprueba su perfil. Esa validación es lo que mantiene Todo el tiempo cuenta seguro y con sentido clínico."
+      "description": "Ningún centro ni artista puede actuar en la plataforma hasta que un administrador revisa y aprueba su perfil. Esa validación es lo que mantiene Todo el tiempo cuenta seguro y con sentido."
     },
     "dataStance": {
       "title": "Qué datos publicamos, y qué no",
-      "description": "Publicamos lo necesario para encontrar un hospital o un evento: nombre, ciudad, código postal y, para hospitales, una ubicación aproximada en el mapa.",
+      "description": "Publicamos lo necesario para encontrar un centro o un evento: nombre, ciudad, código postal, el tipo de centro y, para los centros, una ubicación aproximada en el mapa.",
       "excludedTitle": "Deliberadamente, nunca publicamos:",
       "excluded": [
-        "La sala o planta exacta donde ocurre un evento",
-        "El contenido de las propuestas entre hospitales y artistas",
+        "La sala o el espacio exacto donde ocurre un evento",
+        "El contenido de las propuestas entre centros y artistas",
         "Direcciones de correo electrónico o identificadores internos de la base de datos",
-        "Cualquier relación visible entre un hospital concreto y sus eventos"
+        "Cualquier relación visible entre un centro concreto y sus eventos"
       ],
-      "note": "El directorio de hospitales y el listado de eventos se mantienen deliberadamente sin enlazar entre sí: ver un hospital nunca revela qué eventos ha tenido, y ver un evento nunca revela en qué hospital ocurrió."
+      "note": "El directorio de centros y el listado de eventos se mantienen deliberadamente sin enlazar entre sí: ver un centro nunca revela qué eventos ha tenido, y ver un evento nunca revela en qué centro ocurrió."
     },
     "funding": {
       "title": "Por qué es gratis",
-      "description": "Todo el tiempo cuenta es una iniciativa sin ánimo de lucro. Hospitales, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
+      "description": "Todo el tiempo cuenta es una iniciativa sin ánimo de lucro. Centros, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
     }
   },
-  "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en hospitales participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada planta.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los hospitales aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Sin valoraciones todavía", "average": "{average} de media · {count} valoraciones", "averageLabel": "Valoración media: {value} de 5 estrellas", "title": "Valorá este evento", "yourRating": "Tu valoración", "starLabel": "{value} de 5 estrellas", "error": "No se ha podido guardar tu valoración. Volvé a intentarlo." } },
-  "Login": { "title": "Te damos la bienvenida", "description": "Iniciá sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tenés una cuenta?", "register": "Registrar un hospital o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
-  "Register": { "title": "Registrarse", "description": "Hospitales y artistas se unen aquí. Cada perfil se revisa antes de poder actuar.", "email": "Correo electrónico", "password": "Contraseña", "passwordHint": "Al menos 8 caracteres.", "submit": "Crear perfil", "submitting": "Enviando…", "alreadyRegistered": "¿Ya estás registrado?", "login": "Iniciar sesión", "role": { "label": "Quiero registrar un", "hospital": "Hospital", "artist": "Artista" }, "name": { "hospital": "Nombre del hospital", "artist": "Nombre artístico" }, "location": { "city": "Ciudad", "postalCode": "Código postal", "addressLine": "Dirección", "hint": "Opcional. Ayuda a las familias a encontrar el hospital en el mapa." }, "errors": { "duplicateEmail": "Ya existe una cuenta con ese correo electrónico.", "failure": "No se ha podido completar el registro. Revisá tus datos y volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." }, "success": { "title": "Solicitud recibida", "description": "Tu perfil está pendiente de revisión por parte de un coordinador. Podés iniciar sesión cuando se apruebe.", "action": "Ir al inicio de sesión" } },
-  "AdminProfiles": { "title": "Cola de validación de perfiles", "description": "Revisá los hospitales y artistas que esperan aprobación. Los perfiles que se registran de nuevo tras un rechazo también aparecen aquí: la misma cola, sin lista aparte.", "requested": "Solicitado el {date}", "types": { "hospital": "Hospital", "artist": "Artista" }, "empty": { "title": "No hay nada que revisar", "description": "Los nuevos registros de hospitales y artistas aparecerán aquí en cuanto lleguen." } },
+  "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en centros participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada centro.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los centros aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Sin valoraciones todavía", "average": "{average} de media · {count} valoraciones", "averageLabel": "Valoración media: {value} de 5 estrellas", "title": "Valorá este evento", "yourRating": "Tu valoración", "starLabel": "{value} de 5 estrellas", "error": "No se ha podido guardar tu valoración. Volvé a intentarlo." } },
+  "Login": { "title": "Te damos la bienvenida", "description": "Iniciá sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tenés una cuenta?", "register": "Registrar un centro o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
+  "Register": { "title": "Registrarse", "description": "Centros y artistas se unen aquí. Cada perfil se revisa antes de poder actuar.", "email": "Correo electrónico", "password": "Contraseña", "passwordHint": "Al menos 8 caracteres.", "submit": "Crear perfil", "submitting": "Enviando…", "alreadyRegistered": "¿Ya estás registrado?", "login": "Iniciar sesión", "role": { "label": "Quiero registrar un", "centre": "Centro de cuidado", "artist": "Artista" }, "name": { "centre": "Nombre del centro", "artist": "Nombre artístico" }, "location": { "city": "Ciudad", "postalCode": "Código postal", "addressLine": "Dirección", "hint": "Opcional. Ayuda a las familias a encontrar el centro en el mapa." }, "centreType": { "label": "Tipo de centro", "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" }, "errors": { "duplicateEmail": "Ya existe una cuenta con ese correo electrónico.", "failure": "No se ha podido completar el registro. Revisá tus datos y volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." }, "success": { "title": "Solicitud recibida", "description": "Tu perfil está pendiente de revisión por parte de un coordinador. Podés iniciar sesión cuando se apruebe.", "action": "Ir al inicio de sesión" } },
+  "AdminProfiles": { "title": "Cola de validación de perfiles", "description": "Revisá los centros y artistas que esperan aprobación. Los perfiles que se registran de nuevo tras un rechazo también aparecen aquí: la misma cola, sin lista aparte.", "requested": "Solicitado el {date}", "types": { "centre": "Centro de cuidado", "artist": "Artista" }, "centreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" }, "empty": { "title": "No hay nada que revisar", "description": "Los nuevos registros de centros y artistas aparecerán aquí en cuanto lleguen." } },
   "ProfileActions": { "approve": "Aprobar", "approving": "Aprobando…", "reject": "Rechazar", "rejecting": "Rechazando…", "error": "No se ha podido completar la acción.", "genericError": "Algo ha salido mal. Volvé a intentarlo." },
   "HospitalSlots": { "title": "Tus huecos", "description": "Publicá un momento para que los artistas propongan una actividad y después revisá las propuestas que recibas.", "noProposals": "Aún no hay propuestas.", "empty": { "title": "Aún no hay huecos", "description": "Los huecos que publiques aparecerán aquí junto a las propuestas enviadas por artistas." }, "slotStatus": { "open": "Abierto", "filled": "Cubierto", "closed": "Cerrado" }, "proposalStatus": { "submitted": "Pendiente de revisión", "accepted": "Aceptada", "rejected": "Rechazada" } },
-  "PublishSlot": { "title": "Publicar un hueco", "description": "Abrí un momento en la agenda de la planta para que los artistas propongan una actividad.", "submit": "Publicar hueco", "publishing": "Publicando…", "locationHint": "Visible para los artistas registrados que exploren este hueco; nunca se muestra en la página pública de eventos.", "fields": { "title": "Título", "description": "Descripción", "dateTime": "Fecha y hora", "duration": "Duración (minutos)", "location": "Ubicación", "audience": "Público objetivo" }, "errors": { "failure": "No se ha podido publicar el hueco. Revisá los datos y volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
+  "PublishSlot": { "title": "Publicar un hueco", "description": "Abrí un momento en la agenda del centro para que los artistas propongan una actividad.", "submit": "Publicar hueco", "publishing": "Publicando…", "locationHint": "Visible para los artistas registrados que exploren este hueco; nunca se muestra en la página pública de eventos.", "fields": { "title": "Título", "description": "Descripción", "dateTime": "Fecha y hora", "duration": "Duración (minutos)", "location": "Ubicación", "audience": "Público objetivo" }, "errors": { "failure": "No se ha podido publicar el hueco. Revisá los datos y volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." } },
   "Audience": { "all_ages": "Todos los públicos", "early_childhood": "0–5 años", "children": "6–12 años", "teens": "13–17 años", "adults": "Adultos (18+)" },
   "ProposalActions": { "approve": "Aprobar", "approving": "Aprobando…", "reject": "Rechazar", "rejecting": "Rechazando…", "error": "No se ha podido completar la acción.", "genericError": "Algo ha salido mal. Volvé a intentarlo." },
   "CloseSlot": { "submit": "Cerrar hueco", "closing": "Cerrando…", "error": "No se ha podido cerrar el hueco.", "genericError": "Algo ha salido mal. Volvé a intentarlo." },
-  "ArtistSlots": { "title": "Huecos abiertos", "description": "Hospitales que esperan que un artista lleve un momento a sus pacientes. Proponé una actividad para cualquier hueco que te encaje.", "at": "en", "empty": { "title": "No hay huecos abiertos ahora", "description": "Los hospitales publican nuevos huecos con regularidad; volvé pronto para encontrar un momento que te encaje." }, "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
-  "ProposeActivity": { "open": "Proponer una actividad", "label": "Tu propuesta", "hint": "¿Qué vas a aportar a este momento?", "submit": "Enviar propuesta", "sending": "Enviando…", "cancel": "Cancelar", "sent": "Propuesta enviada: el hospital la revisará.", "errors": { "duplicate": "Ya enviaste una propuesta para este hueco.", "failure": "No se ha podido enviar la propuesta. Volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." } }
+  "ArtistSlots": { "title": "Huecos abiertos", "description": "Centros que esperan que un artista lleve un momento a las personas a su cuidado. Proponé una actividad para cualquier hueco que te encaje.", "at": "en", "empty": { "title": "No hay huecos abiertos ahora", "description": "Los centros publican nuevos huecos con regularidad; volvé pronto para encontrar un momento que te encaje." }, "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" } },
+  "ProposeActivity": { "open": "Proponer una actividad", "label": "Tu propuesta", "hint": "¿Qué vas a aportar a este momento?", "submit": "Enviar propuesta", "sending": "Enviando…", "cancel": "Cancelar", "sent": "Propuesta enviada: el centro la revisará.", "errors": { "duplicate": "Ya enviaste una propuesta para este hueco.", "failure": "No se ha podido enviar la propuesta. Volvé a intentarlo.", "generic": "Algo ha salido mal. Volvé a intentarlo." } }
 }
