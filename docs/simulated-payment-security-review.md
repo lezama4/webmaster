@@ -386,8 +386,11 @@ change was written test-first.
   ("no construction site on the request path outside the guarded region")
   instead of by a count that had already gone stale.
 - Full Vitest suite (`npm run test`): **594 passed, 61 skipped**
-  (39 files passed, 18 skipped) — the round-6 total plus the 7 added this round,
-  with no pre-existing test's behaviour changed. The skipped suites require a
+  (39 files passed, 18 skipped) — the current absolute total for the whole
+  branch. Payment work added 7 tests to `supportPayment.test.ts` this round;
+  the rest of the growth since round 6 (479) is unrelated blocks — event
+  ratings, sharing/Open Graph — that reached `main` and onto which this
+  branch was rebased, not payment changes. The skipped suites require a
   PostgreSQL environment not available in this run.
 - TypeScript: `npx tsc --noEmit` exited 0 with no output.
 - ESLint: `npm run lint` exited 0 with no findings.
