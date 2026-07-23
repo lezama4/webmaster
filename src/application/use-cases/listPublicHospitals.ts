@@ -42,5 +42,6 @@ function toPublicHospitalProjection(
     postalCode: record.postalCode,
     latitude: record.latitude,
     longitude: record.longitude,
+    centreType: record.centreType,
   };
 }
