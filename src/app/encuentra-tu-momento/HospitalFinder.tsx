@@ -20,11 +20,11 @@ const URL_SYNC_DEBOUNCE_MS = 300;
  * Mirrors the domain `CentreType` union (`@domain/profile/Profile`) plus the
  * "all" filter value — kept local so this client component does not import
  * domain code directly (same convention as `register/page.tsx`'s
- * `CENTRE_TYPE_OPTIONS`). Labels are read from the `Register.centreType.*`
- * i18n keys (ADR D19/D20 hand-off): those six labels already exist, in
- * parity across all three locales, from the registration form (PR2) — this
- * filter/tag reuses them rather than duplicating a near-identical namespace.
- * The narrative `Finder.*` vocabulary rewrite is a later, separate phase.
+ * `CENTRE_TYPE_OPTIONS`). Labels are read from the shared top-level
+ * `CentreType.*` i18n namespace (ADR D20): the consolidated display-labels
+ * set for the finder tag/filter, three-locale parity guaranteed by
+ * `localeParity.test.ts`. (PR6 introduced `CentreType.*` and re-pointed this
+ * consumer off the temporary `Register.centreType.*` reuse PR5 shipped.)
  */
 const CENTRE_TYPE_FILTER_OPTIONS = [
   "all",
@@ -57,7 +57,7 @@ export function HospitalFinder({
   initialType: CentreTypeFilter;
 }) {
   const t = useTranslations("Finder");
-  const tCentreType = useTranslations("Register.centreType");
+  const tCentreType = useTranslations("CentreType");
   const [query, setQuery] = useState(initialQuery);
   const [centreType, setCentreType] = useState<CentreTypeFilter>(initialType);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -195,11 +195,11 @@ export function HospitalFinder({
                   }`}
                 >
                   <h2 className="text-lg font-semibold tracking-tight">{hospital.name}</h2>
-                  {/* centreType tag (ADR D19/D20 hand-off): the coarse public
+                  {/* centreType tag (ADR D19/D20): the coarse public
                       category, visibly displayed per result, not merely
-                      present in the underlying data. Reuses the
-                      `Register.centreType.*` labels (see the component-level
-                      doc comment on `CENTRE_TYPE_FILTER_OPTIONS`). */}
+                      present in the underlying data. Reads the shared
+                      `CentreType.*` labels (see the component-level doc
+                      comment on `CENTRE_TYPE_FILTER_OPTIONS`). */}
                   <span className={`${audienceBadgeClasses} w-fit`}>
                     {tCentreType(hospital.centreType)}
                   </span>

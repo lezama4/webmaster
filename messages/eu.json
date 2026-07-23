@@ -1,6 +1,7 @@
 {
-  "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Ospitaleko egonaldietan pazienteei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena. Doakoa ospitaleentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
+  "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Zaintza-zentroetan dauden pertsonei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena, egonaldi luzeetan edo etxetik kanpoko egunetan. Doakoa zentroentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
+  "CentreType": { "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" },
   "Share": {
     "heading": "Partekatu orrialde hau",
     "footerLabel": "Partekatu Todo el tiempo cuenta",
@@ -20,18 +21,18 @@
     "mission": {
       "eyebrow": "Zergatik gaude hemen",
       "title": "Agendako hutsune bat hilabeteko unerik onena izan daiteke.",
-      "description": "Ez dugu tratamendua ordezten: lagundu egiten dugu. Gela bakoitzarekin koordinatzen dugu musika, antzerkia edo tailer bat zainketa eten gabe iritsi dadin, eta jasotzen duenarentzat zentzua izan dezan.",
+      "description": "Ez dugu zainketa ordezten: lagundu egiten dugu. Zentro bakoitzarekin koordinatzen dugu musika, antzerkia edo tailer bat arreta eten gabe iritsi dadin, eta jasotzen duenarentzat zentzua izan dezan.",
       "imageAlt": "Artista batek kolorezko paper-mozketak erakusten dizkie pazienteen talde bati, nerabe bati eta erizain bati, eskulan-materialez betetako mahai baten inguruan."
     },
     "trust": {
       "eyebrow": "Erakundeen babesa",
-      "title": "Hutsune bakoitza ospitale batek irekitzen du, ez plataforma anonimo batek.",
-      "description": "Gela bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte paziente batengana iritsi aurretik. Horrela mantentzen da Todo el tiempo cuenta segurua eta zentzu klinikoarekin.",
-      "hospitalsLabel": "Parte hartzen duten ospitaleak",
+      "title": "Hutsune bakoitza zaintza-zentro batek irekitzen du, ez plataforma anonimo batek.",
+      "description": "Zentro bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte beren zaintzapean dauden pertsonengana iritsi aurretik. Horrela mantentzen da Todo el tiempo cuenta segurua eta zentzuduna.",
+      "hospitalsLabel": "Parte hartzen duten zentroak",
       "patronsLabel": "Mezenas-erakundeak",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
       "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "MVP fase honetarako adibide-multzoa: demo-datu-baseko ospitaleak eta adibide-erakundeak biltzen ditu, ez baieztatutako mezenasgo-akordioak."
+      "disclaimer": "MVP fase honetarako adibide-multzoa: demo-datu-baseko zentroak eta adibide-erakundeak biltzen ditu, ez baieztatutako mezenasgo-akordioak."
     },
     "artists": {
       "eyebrow": "Balorazio onena duten artistak",
@@ -56,15 +57,15 @@
     },
     "closing": {
       "title": "Prest lehen hutsunea irekitzeko, edo lehen unea proposatzeko?",
-      "description": "Ospitaleak eta artistak leku berean erregistratzen dira. Koordinatzaile batek profil bakoitza berrikusten du jarduteko gai izan aurretik.",
-      "primaryCta": "Erregistratu ospitale edo profil bat",
+      "description": "Zentroak eta artistak leku berean erregistratzen dira. Koordinatzaile batek profil bakoitza berrikusten du jarduteko gai izan aurretik.",
+      "primaryCta": "Erregistratu zentro edo profil bat",
       "secondaryCta": "Ikusi hurrengo ekitaldiak"
     },
     "what": {
       "eyebrow": "Zer da Todo el tiempo cuenta",
       "title": "Zuzeneko kultura itxaronaldia laguntzeko.",
-      "description": "Ospitaleak eta artistak konektatzen ditugu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
-      "steps": ["Ospitaleek hutsuneak argitaratzen dituzte", "Artistek jarduerak proposatzen dituzte", "Ekitaldia argitaratzen da"],
+      "description": "Zaintza-zentroak eta artistak konektatzen ditugu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
+      "steps": ["Zentroek hutsuneak argitaratzen dituzte", "Artistek jarduerak proposatzen dituzte", "Ekitaldia argitaratzen da"],
       "primaryCta": "Ikusi hurrengo ekitaldiak",
       "secondaryCta": "Nola funtzionatzen duen"
     }
@@ -72,77 +73,77 @@
   "Help": {
     "eyebrow": "Laguntza",
     "title": "Nola funtzionatzen du Todo el tiempo cuentak",
-    "intro": "Prozesuaren gida labur bat, ospitale, artista eta familientzat.",
-    "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau urrats, arratsalde partekatu bat. Hasi aurretik, administratzaile batek ospitale eta artista bakoitza balioztatzen du; ondoren, urrats bakoitza berrikusten da paziente batengana iritsi aurretik." },
-    "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Ospitaleak", "text": "Ospitale berak jasotako proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
+    "intro": "Prozesuaren gida labur bat, zentro, artista eta familientzat.",
+    "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau urrats, arratsalde partekatu bat. Hasi aurretik, administratzaile batek zentro eta artista bakoitza balioztatzen du; ondoren, urrats bakoitza berrikusten da jasoko duten pertsonengana iritsi aurretik." },
+    "steps": { "01": { "role": "Zentroak", "text": "Hutsune bat irekitzen dute zentroko agendan: data, ordua eta bertan daudenek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Zentroak", "text": "Zentro berak jasotako proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Bertan daudenek eta beren familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
     "faq": {
       "title": "Maiz egiten diren galderak",
       "items": [
         { "question": "Nola baloratzen dira ekitaldiak eta artistak?", "answer": "Erregistratutako erabiltzaileek argitaratutako ekitaldi bat 1etik 5 izarrera balora dezakete, eta ekitaldi bakoitzak bere batez bestekoa erakusten du. Hasierako orriko testigantzak adibide ilustragarriak dira oraindik, ez egiaztatutako iritziak." },
-        { "question": "Zer esan nahi dute hutsune baten adin-tarteek (audientzia)?", "answer": "Ospitale batek argitaratzen duen hutsune bakoitzak hurbilketa-adin-tarte bat adierazten du —adibidez, 0–5, 6–12, helduak edo adin guztiak— artistek bertaratuko diren pertsonentzat egokia den jarduera bat proposa dezaten." },
-        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Todo el tiempo cuentak ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune baten solairua edo gela proposamen bat aztertzen ari diren artista identifikatuei bakarrik erakusten zaie; ekitaldien agenda publikoan kokapen hori ez da inoiz agertzen. Inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik ez da plataforman erregistratzen." }
+        { "question": "Zer esan nahi dute hutsune baten adin-tarteek (audientzia)?", "answer": "Zentro batek argitaratzen duen hutsune bakoitzak hurbilketa-adin-tarte bat adierazten du —adibidez, 0–5, 6–12, helduak edo adin guztiak— artistek bertaratuko diren pertsonentzat egokia den jarduera bat proposa dezaten." },
+        { "question": "Nola babesten da pertsonen kokapena?", "answer": "Todo el tiempo cuentak ez du inoiz datu pertsonalik argitaratzen. Hutsune baten gela edo espazioa proposamen bat aztertzen ari diren artista identifikatuei bakarrik erakusten zaie; ekitaldien agenda publikoan kokapen hori ez da inoiz agertzen. Inoren izenik, kokapen zehatzik edo egonaldiaren arrazoirik ez da plataforman erregistratzen." }
       ]
     }
   },
   "Finder": {
-    "nav": "Aurkitu zure ospitalea",
-    "title": "Aurkitu zure ospitalea",
-    "description": "Ikusi Todo el tiempo cuenta-n dagoeneko parte hartzen duten ospitaleak eta begiratu zurea horien artean dagoen.",
+    "nav": "Aurkitu zure zentroa",
+    "title": "Aurkitu zure zentroa",
+    "description": "Ikusi Todo el tiempo cuenta-n dagoeneko parte hartzen duten zentroak eta begiratu zurea horien artean dagoen.",
     "search": { "label": "Bilatu izenaren, herriaren edo posta kodearen arabera", "placeholder": "Adibidez: Bilbo, 48013…" },
     "filter": { "label": "Iragazi zentro motaren arabera", "all": "Mota guztiak" },
-    "resultCount": { "all": "{count} ospitale aurkituta", "partial": "{count} ospitale aurkituta · {mappable} mapan" },
-    "map": { "ariaLabel": "Parte hartzen duten ospitaleen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
-    "empty": { "title": "Ez dugu bilaketa horrekin bat datorren ospitalerik aurkitu", "description": "Saiatu beste izen, herri edo posta kode batekin." },
+    "resultCount": { "all": "{count} zentro aurkituta", "partial": "{count} zentro aurkituta · {mappable} mapan" },
+    "map": { "ariaLabel": "Parte hartzen duten zentroen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
+    "empty": { "title": "Ez dugu bilaketa horrekin bat datorren zentrorik aurkitu", "description": "Saiatu beste izen, herri edo posta kode batekin." },
     "noLocation": "Kokapena ez da adierazi"
   },
   "About": {
     "nav": "Gutaz",
     "eyebrow": "Gutaz",
-    "title": "Irabazi-asmorik gabeko plataforma bat, zuzeneko kultura ospitaleko ohera eramateko.",
+    "title": "Irabazi-asmorik gabeko plataforma bat, zuzeneko kultura zaintzak pertsonak etxetik urrun mantentzen dituen lekuetara eramateko.",
     "intro": "Hemen azaltzen dugu zer den Todo el tiempo cuenta, nortzuk parte hartzen duten, pribatutasuna nola babesten den eta zergatik den doakoa. Argitaratzeko edo proposatzeko urratsen xehetasunetarako, ikusi Laguntza.",
     "purpose": {
       "title": "Gure helburua",
-      "description": "Ospitaleko egonaldi luzeek isolatu egiten dute. Todo el tiempo cuenta existitzen da musika, antzerkia eta tailerrak gelara irits daitezen zainketa klinikoa ordeztu gabe, beti ospitalearekin koordinatuta."
+      "description": "Egonaldi luzeek eta etxetik kanpoko egunek isolatu egiten dute. Todo el tiempo cuenta existitzen da musika, antzerkia eta tailerrak zaintza-zentrora irits daitezen arreta ordeztu gabe, beti zentroarekin berarekin koordinatuta."
     },
     "roles": {
       "title": "Nortzuk parte hartzen duten",
       "items": [
-        { "name": "Administratzailea", "description": "Ospitale eta artista profil bakoitza balidatzen du, plataforman jardun ahal izan aurretik." },
-        { "name": "Ospitalea", "description": "Gelako agendan hutsuneak argitaratzen ditu, jarduera baterako tokia dagoenean." },
+        { "name": "Administratzailea", "description": "Zentro eta artista profil bakoitza balidatzen du, plataforman jardun ahal izan aurretik." },
+        { "name": "Zaintza-zentroa", "description": "Zentroko agendan hutsuneak argitaratzen ditu, jarduera baterako tokia dagoenean." },
         { "name": "Artista", "description": "Argitaratutako hutsune baterako jarduera bat proposatzen du, bere esparruaren eta erabilgarritasunaren arabera." },
-        { "name": "Pazientea eta familia", "description": "Programatutako ekitaldiaz gozatzen dute, izena eman beharrik gabe." }
+        { "name": "Pertsonak eta familiak", "description": "Programatutako ekitaldiaz gozatzen dute, izena eman beharrik gabe." }
       ]
     },
     "flow": {
       "title": "Bidea, begi-kolpe batean",
-      "description": "Hutsune bat ospitalean hasten da, artista batek proposatzen du, eta ekitaldi publiko bihurtzen da. Urrats bakoitzaren xehetasunetarako, ikusi Laguntza.",
+      "description": "Hutsune bat zentroan hasten da, artista batek proposatzen du, eta ekitaldi publiko bihurtzen da. Urrats bakoitzaren xehetasunetarako, ikusi Laguntza.",
       "stages": ["Hutsunea argitaratuta", "Artistaren proposamena", "Ekitaldia baieztatuta"]
     },
     "validation": {
       "title": "Balidatutako profilak",
-      "description": "Ez ospitale batek ez artista batek ezin dute plataforman jardun, administratzaile batek profila berrikusi eta onartu arte. Balidazio horrek mantentzen du Todo el tiempo cuenta segurua eta zentzu klinikoarekin."
+      "description": "Ez zentro batek ez artista batek ezin dute plataforman jardun, administratzaile batek profila berrikusi eta onartu arte. Balidazio horrek mantentzen du Todo el tiempo cuenta segurua eta zentzuduna."
     },
     "dataStance": {
       "title": "Zer datu argitaratzen ditugun, eta zer ez",
-      "description": "Ospitale edo ekitaldi bat aurkitzeko behar dena argitaratzen dugu: izena, herria, posta-kodea eta, ospitaleen kasuan, mapako kokapen hurbildu bat.",
+      "description": "Zentro edo ekitaldi bat aurkitzeko behar dena argitaratzen dugu: izena, herria, posta-kodea, zentro mota eta, zentroen kasuan, mapako kokapen hurbildu bat.",
       "excludedTitle": "Nahita, inoiz ez dugu argitaratzen:",
       "excluded": [
-        "Ekitaldia gertatzen den gela edo areto zehatza",
-        "Ospitale eta artisten arteko proposamenen edukia",
+        "Ekitaldia gertatzen den gela edo espazio zehatza",
+        "Zentro eta artisten arteko proposamenen edukia",
         "Helbide elektronikoak edo datu-baseko barne-identifikadoreak",
-        "Ospitale jakin bat eta bere ekitaldien arteko lotura ikusgairik"
+        "Zentro jakin bat eta bere ekitaldien arteko lotura ikusgairik"
       ],
-      "note": "Ospitale-direktorioa eta ekitaldien zerrenda nahita mantentzen dira lotu gabe: ospitale bat ikusteak ez du inoiz agerian uzten zer ekitaldi izan dituen, eta ekitaldi bat ikusteak ez du inoiz agerian uzten zein ospitaletan izan zen."
+      "note": "Zentro-direktorioa eta ekitaldien zerrenda nahita mantentzen dira lotu gabe: zentro bat ikusteak ez du inoiz agerian uzten zer ekitaldi izan dituen, eta ekitaldi bat ikusteak ez du inoiz agerian uzten zein zentrotan izan zen."
     },
     "funding": {
       "title": "Zergatik den doakoa",
-      "description": "Todo el tiempo cuenta irabazi-asmorik gabeko ekimena da. Ospitaleek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
+      "description": "Todo el tiempo cuenta irabazi-asmorik gabeko ekimena da. Zentroek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
     }
   },
   "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten ospitaleetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira solairu bakoitzarekin.", "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Ospitaleek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Oraindik ez dago baloraziorik", "average": "{average} batez beste · {count} balorazio", "averageLabel": "Batez besteko balorazioa: 5etik {value} izar", "title": "Baloratu ekitaldi hau", "yourRating": "Zure balorazioa", "starLabel": "5etik {value} izar", "error": "Ezin izan da balorazioa gorde. Saiatu berriro, mesedez." } },
-  "Login": { "title": "Ongi etorri berriro", "description": "Hasi saioa ekitaldiak koordinatzeko edo berrikusteko.", "email": "Helbide elektronikoa", "password": "Pasahitza", "submit": "Hasi saioa", "submitting": "Saioa hasten…", "noAccount": "Ez duzu konturik?", "register": "Erregistratu ospitale edo artista bat", "errors": { "invalidCredentials": "Helbide elektronikoa edo pasahitza ez da zuzena.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
-  "Register": { "title": "Eman izena", "description": "Ospitaleek eta artistek hemen egiten dute bat. Profil bakoitza berrikusten da jardun aurretik.", "email": "Helbide elektronikoa", "password": "Pasahitza", "passwordHint": "Gutxienez 8 karaktere.", "submit": "Sortu profila", "submitting": "Bidaltzen…", "alreadyRegistered": "Dagoeneko erregistratuta?", "login": "Hasi saioa", "role": { "label": "Hau erregistratzen ari naiz:", "hospital": "Ospitalea", "artist": "Artista" }, "name": { "hospital": "Ospitalearen izena", "artist": "Artista edo eszena-izena" }, "location": { "city": "Herria", "postalCode": "Posta kodea", "addressLine": "Helbidea", "hint": "Aukerakoa. Familiei ospitalea mapan aurkitzen laguntzen die." }, "centreType": { "label": "Zentro mota", "hospital": "Ospitalea", "nursing_home": "Zaharren egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Okupazio-zentroa", "palliative_unit": "Zainketa aringarrien unitatea" }, "errors": { "duplicateEmail": "Dagoeneko badago helbide elektroniko hori duen kontu bat.", "failure": "Ezin izan da erregistroa osatu. Egiaztatu datuak eta saiatu berriro.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." }, "success": { "title": "Eskaera jaso da", "description": "Zure profila koordinatzaile baten berrikuspenaren zain dago. Onartu ondoren hasi ahal izango duzu saioa.", "action": "Joan saio-hasierara" } },
-  "AdminProfiles": { "title": "Profilak baliozkotzeko ilara", "description": "Berrikusi onarpenaren zain dauden ospitaleak eta artistak. Uko baten ondoren berriro erregistratzen diren profilak ere hemen agertzen dira; ilara bera da.", "requested": "Eskatua: {date}", "types": { "centre": "Ospitalea", "artist": "Artista" }, "centreType": { "hospital": "Ospitalea", "nursing_home": "Zaharren egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Okupazio-zentroa", "palliative_unit": "Zainketa aringarrien unitatea" }, "empty": { "title": "Ez dago berrikusteko ezer", "description": "Ospitaleen eta artisten erregistro berriak hemen agertuko dira iritsi bezain laster." } },
+  "Login": { "title": "Ongi etorri berriro", "description": "Hasi saioa ekitaldiak koordinatzeko edo berrikusteko.", "email": "Helbide elektronikoa", "password": "Pasahitza", "submit": "Hasi saioa", "submitting": "Saioa hasten…", "noAccount": "Ez duzu konturik?", "register": "Erregistratu zentro edo artista bat", "errors": { "invalidCredentials": "Helbide elektronikoa edo pasahitza ez da zuzena.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
+  "Register": { "title": "Eman izena", "description": "Zentroek eta artistek hemen egiten dute bat. Profil bakoitza berrikusten da jardun aurretik.", "email": "Helbide elektronikoa", "password": "Pasahitza", "passwordHint": "Gutxienez 8 karaktere.", "submit": "Sortu profila", "submitting": "Bidaltzen…", "alreadyRegistered": "Dagoeneko erregistratuta?", "login": "Hasi saioa", "role": { "label": "Hau erregistratzen ari naiz:", "centre": "Zaintza-zentroa", "artist": "Artista" }, "name": { "centre": "Zentroaren izena", "artist": "Artista edo eszena-izena" }, "location": { "city": "Herria", "postalCode": "Posta kodea", "addressLine": "Helbidea", "hint": "Aukerakoa. Familiei zentroa mapan aurkitzen laguntzen die." }, "centreType": { "label": "Zentro mota", "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" }, "errors": { "duplicateEmail": "Dagoeneko badago helbide elektroniko hori duen kontu bat.", "failure": "Ezin izan da erregistroa osatu. Egiaztatu datuak eta saiatu berriro.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." }, "success": { "title": "Eskaera jaso da", "description": "Zure profila koordinatzaile baten berrikuspenaren zain dago. Onartu ondoren hasi ahal izango duzu saioa.", "action": "Joan saio-hasierara" } },
+  "AdminProfiles": { "title": "Profilak baliozkotzeko ilara", "description": "Berrikusi onarpenaren zain dauden ospitaleak eta artistak. Uko baten ondoren berriro erregistratzen diren profilak ere hemen agertzen dira; ilara bera da.", "requested": "Eskatua: {date}", "types": { "centre": "Ospitalea", "artist": "Artista" }, "centreType": { "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" }, "empty": { "title": "Ez dago berrikusteko ezer", "description": "Ospitaleen eta artisten erregistro berriak hemen agertuko dira iritsi bezain laster." } },
   "ProfileActions": { "approve": "Onartu", "approving": "Onartzen…", "reject": "Ukatu", "rejecting": "Ukatzen…", "error": "Ezin izan da ekintza osatu.", "genericError": "Zerbait gaizki joan da. Saiatu berriro, mesedez." },
   "HospitalSlots": { "title": "Zure tarteak", "description": "Argitaratu une bat artistek jarduera bat proposa dezaten, eta ondoren berrikusi jasotako proposamenak.", "noProposals": "Oraindik ez dago proposamenik.", "empty": { "title": "Oraindik ez dago tarterik", "description": "Argitaratzen dituzun tarteak hemen agertuko dira artistek bidalitako proposamenekin batera." }, "slotStatus": { "open": "Irekita", "filled": "Beteta", "closed": "Itxita" }, "proposalStatus": { "submitted": "Berrikusteko zain", "accepted": "Onartuta", "rejected": "Ukatuta" } },
   "PublishSlot": { "title": "Argitaratu tarte bat", "description": "Ireki une bat gelako agendan artistek jarduera bat proposa dezaten.", "submit": "Argitaratu tartea", "publishing": "Argitaratzen…", "locationHint": "Tarte hau aztertzen duten erregistratutako artistek ikus dezakete; ez da inoiz ekitaldi publikoen orrian erakusten.", "fields": { "title": "Izenburua", "description": "Deskribapena", "dateTime": "Data eta ordua", "duration": "Iraupena (minutuak)", "location": "Kokapena", "audience": "Adin-taldea" }, "errors": { "failure": "Ezin izan da tartea argitaratu. Egiaztatu datuak eta saiatu berriro.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
