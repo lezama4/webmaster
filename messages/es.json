@@ -14,7 +14,7 @@
     "copyError": "No se pudo copiar el enlace"
   },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender —y por qué no, a llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender —y por qué no, también llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {
@@ -63,7 +63,7 @@
     "what": {
       "eyebrow": "Qué es Todo el tiempo cuenta",
       "title": "Cultura en directo para acompañar la espera.",
-      "description": "Todo el tiempo cuenta conecta hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
+      "description": "Conectamos hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
       "steps": ["Los hospitales publican huecos", "Los artistas proponen actividades", "Se publica el evento"],
       "primaryCta": "Ver próximos eventos",
       "secondaryCta": "Cómo funciona"

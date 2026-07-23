@@ -14,7 +14,7 @@
     "copyError": "Ezin izan da esteka kopiatu"
   },
   "Home": {
-    "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten —eta, zergatik ez, negar egiten— maite dituzten pertsonez inguratuta, ahaztuko ez dituzuen uneetan.",
+    "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten —eta, zergatik ez, negar ere egiten— maite dituzten pertsonez inguratuta, ahaztuko ez dituzuen uneetan.",
     "ariaRating": "{rating} / 5 izar",
     "hero": { "imageAlt": "Biolontxelo-jotzaile batek ospitaleko areto komunean pazienteentzat eta senideentzat jotzen du, gurpil-aulkian dagoen pertsona bat entzuleen artean dela." },
     "mission": {
@@ -63,7 +63,7 @@
     "what": {
       "eyebrow": "Zer da Todo el tiempo cuenta",
       "title": "Zuzeneko kultura itxaronaldia laguntzeko.",
-      "description": "Todo el tiempo cuentak ospitaleak eta artistak konektatzen ditu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
+      "description": "Ospitaleak eta artistak konektatzen ditugu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
       "steps": ["Ospitaleek hutsuneak argitaratzen dituzte", "Artistek jarduerak proposatzen dituzte", "Ekitaldia argitaratzen da"],
       "primaryCta": "Ikusi hurrengo ekitaldiak",
       "secondaryCta": "Nola funtzionatzen duen"
