@@ -61,8 +61,10 @@ financial record, or transfer funds to an Artist or any other party.
   `cause` is re-declared explicitly, because `Error` installs it writable and
   configurable; without that, the two routes the documents offer a handler —
   branch on the discriminator, or unwrap `cause` — would not be equally
-  protected, since the locked flag could be read against a swapped cause. Both
-  descriptors are asserted by tests.
+  protected, since the locked flag could be read against a swapped cause. Each
+  of the three descriptors — `cancelledPayment`, `causedByAdapterDefect` and
+  `cause` — is asserted own, non-enumerable, non-writable and non-configurable
+  by a test.
 - The module-private allowed-value sets are frozen as well — `PAYER_KINDS`,
   `PAYMENT_METHODS`, `TERMINAL_STATUSES`, `SETTLEMENT_OUTCOMES`,
   `SIMULATED_GATEWAY_OUTCOMES` and `SIMULATED_OUTCOMES`, alongside the already
@@ -171,21 +173,24 @@ financial record, or transfer funds to an Artist or any other party.
   input, and a misbehaving adapter is a defect on our side of the boundary, not
   a rejected caller operation.
 - **`AdapterContractError` never reaches `toErrorResponse` from this use
-  case.** It has **four** construction sites: two in `validateGatewayResult`,
-  plus `FakePaymentGateway`'s constructor and its `syntheticReference`. Three
-  of them are either inside the guarded region (`validateGatewayResult`) or
-  inside the adapter call that region awaits (`syntheticReference`, reached
-  from `FakePaymentGateway.simulate`), and that region's `catch`
-  unconditionally rethrows a `FailedSimulationError` — so from this use case
-  the error is structurally incapable of escaping and surfaces only as
-  `FailedSimulationError.cause`. Its "falls through to a generic 500" mapping
-  is therefore unreachable from here. The fourth site is the
-  `FakePaymentGateway` constructor, which runs when the adapter is wired,
-  before any call reaches the use case. (An earlier version of this document
-  said the error was "only ever constructed inside the guarded region" and
-  described all adapter sites as wiring-time. Both were false:
-  `syntheticReference` runs on the request path. The conclusion survives
-  because that path is awaited from inside the guarded region.)
+  case.** The argument is STRUCTURAL — about where each construction site sits
+  relative to the use case's guarded region — not a count of sites, because a
+  count goes stale the moment one is added or removed. Every site that can
+  construct it on the REQUEST path lies inside that guarded region: thrown
+  either directly in `validateGatewayResult`, or inside the adapter call the
+  region awaits (`syntheticReference`, reached from `FakePaymentGateway.
+  simulate`). That region's `catch` unconditionally rethrows a
+  `FailedSimulationError`, so from this use case the error is structurally
+  incapable of escaping and surfaces only as `FailedSimulationError.cause`; its
+  "falls through to a generic 500" mapping is therefore unreachable from here.
+  Every remaining site runs at WIRING time (constructing a `FakePaymentGateway`),
+  before any call reaches the use case. The invariant is precise: no
+  construction site sits on the request path OUTSIDE the guarded region, and
+  that is the one condition a newly added site must preserve. (An earlier
+  version of this document said the error was "only ever constructed inside the
+  guarded region" and described all adapter sites as wiring-time; both were
+  false, because `syntheticReference` runs on the request path. The conclusion
+  survives because that path is awaited from inside the guarded region.)
 - `FailedSimulationError` carries `causedByAdapterDefect`, an own,
   non-enumerable, non-writable, non-configurable boolean derived from whether
   `cause` is an `AdapterContractError`. It exists because the wrapping above
@@ -346,11 +351,48 @@ Stated here so no reader has to infer them from the absence of a claim.
 
 ## Verification performed
 
-Numbers below come from runs performed on branch `feat/support-payments`,
-against the round-6 correction applied on top of commit `8b87e37`. They are not
-carried over from an earlier round. Every claim in this document is one these
-runs support; where a run did not establish a guarantee, the guarantee is
-listed under "Known non-guarantees" instead.
+Numbers come from runs performed on branch `feat/support-payments`. Every claim
+in this document is one the latest (round-7) run supports; where a run did not
+establish a guarantee, the guarantee is listed under "Known non-guarantees"
+instead. The round-6 block below is retained as prior evidence; the round-7
+block reflects the current state of the code and tests.
+
+### Round 7 (current)
+
+Round 7 closed a disputed read-once gap in the domain factory plus two
+documentation claims that asserted more than the artifacts proved. The one code
+change was written test-first.
+
+- The read-once gap: every enumerated/amount assertion in `SupportPayment.ts`
+  now RETURNS the value it validated, and every field is built from those
+  returned locals. Previously a value was validated and then re-read off the
+  input to store it, so a getter or `Proxy` on cast/deserialized input could
+  pass a valid value to the check and smuggle a different one into the frozen
+  aggregate (`amountCents: -999` on a `succeeded` payment; a forged `pending`
+  from a status getter).
+- Test-first RED phase: seven new cases in `supportPayment.test.ts` (a
+  getter/Proxy whose second read differs, across `createSupportPayment`,
+  `rehydrateSupportPayment`, `settleSupportPayment` and `cancelSupportPayment`)
+  reported **7 failed** before the fix, each storing the smuggled `-999`/
+  `pending` value; **all 7 passed** after applying the read-once discipline.
+- Two `simulateSupportPayment.test.ts` descriptor assertions were strengthened
+  to full own/non-enumerable/non-writable/non-configurable checks for
+  `cancelledPayment` and `causedByAdapterDefect`. The code already implemented
+  these; temporarily setting either property to `configurable: true` made both
+  assertions fail, confirming they constrain the descriptor, and reverting made
+  them pass. This makes the document's "each of the three descriptors is
+  asserted by a test" claim true.
+- The `AdapterContractError` construction-site claim was restated STRUCTURALLY
+  ("no construction site on the request path outside the guarded region")
+  instead of by a count that had already gone stale.
+- Full Vitest suite (`npm run test`): **594 passed, 61 skipped**
+  (39 files passed, 18 skipped) — the round-6 total plus the 7 added this round,
+  with no pre-existing test's behaviour changed. The skipped suites require a
+  PostgreSQL environment not available in this run.
+- TypeScript: `npx tsc --noEmit` exited 0 with no output.
+- ESLint: `npm run lint` exited 0 with no findings.
+
+### Round 6 (prior)
 
 Round 6 was **documentation-only except for two code changes**, each written
 test-first. It corrected claims that asserted more than the code does; it added

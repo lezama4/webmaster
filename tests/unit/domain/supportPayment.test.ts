@@ -582,6 +582,157 @@ describe("SupportPayment (simulation-only domain)", () => {
   });
 });
 
+/**
+ * Every validated field must be STORED from the same read that validated it.
+ * These assertions run on cast or deserialized input, which a doc comment names
+ * as the adversary: "runs on cast or deserialized input" and "a Proxy can
+ * trap". A getter (or a Proxy `get` trap) whose second read differs from its
+ * first must not be able to pass a valid value to the check and smuggle a
+ * different one into the frozen aggregate. The guarantee is read-once: the
+ * value stored is the value validated.
+ */
+describe("a field is validated and stored from a single read", () => {
+  it("createSupportPayment stores the amount it validated, not a second read", () => {
+    let reads = 0;
+    const input = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward" as const,
+      get amountCents() {
+        reads += 1;
+        return reads === 1 ? 5000 : -999;
+      },
+      payerKind: "individual" as const,
+      method: "card" as const,
+    };
+
+    const payment = createSupportPayment(input);
+
+    expect(payment.amountCents).toBe(5000);
+  });
+
+  it("createSupportPayment stores the payerKind it validated, not a second read", () => {
+    let reads = 0;
+    const input = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward" as const,
+      amountCents: 5000,
+      get payerKind() {
+        reads += 1;
+        return (reads === 1 ? "individual" : "smuggled") as never;
+      },
+      method: "card" as const,
+    };
+
+    const payment = createSupportPayment(input);
+
+    expect(payment.payerKind).toBe("individual");
+  });
+
+  it("createSupportPayment stores the method it validated, not a second read", () => {
+    let reads = 0;
+    const input = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward" as const,
+      amountCents: 5000,
+      payerKind: "individual" as const,
+      get method() {
+        reads += 1;
+        return (reads === 1 ? "card" : "smuggled") as never;
+      },
+    };
+
+    const payment = createSupportPayment(input);
+
+    expect(payment.method).toBe("card");
+  });
+
+  it("rehydrateSupportPayment cannot forge a pending payment from a status getter", () => {
+    let reads = 0;
+    const input = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward" as const,
+      amountCents: 5000,
+      payerKind: "institution" as const,
+      method: "bizum" as const,
+      get status() {
+        reads += 1;
+        return (reads === 1 ? "declined" : "pending") as never;
+      },
+    };
+
+    const payment = rehydrateSupportPayment(input);
+
+    expect(payment.status).toBe("declined");
+  });
+
+  it("rehydrateSupportPayment stores the amount it validated, not a second read", () => {
+    let reads = 0;
+    const input = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward" as const,
+      get amountCents() {
+        reads += 1;
+        return reads === 1 ? 5000 : -999;
+      },
+      payerKind: "institution" as const,
+      method: "bizum" as const,
+      status: "succeeded" as const,
+    };
+
+    const payment = rehydrateSupportPayment(input);
+
+    expect(payment.amountCents).toBe(5000);
+  });
+
+  it("settleSupportPayment stores the amount it validated, not a second read", () => {
+    let reads = 0;
+    const hostile = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward",
+      get amountCents() {
+        reads += 1;
+        return reads === 1 ? 5000 : -999;
+      },
+      currency: "EUR",
+      simulated: true,
+      payerKind: "individual",
+      method: "card",
+      status: "pending",
+    } as unknown as SupportPayment;
+
+    const settled = settleSupportPayment(hostile, "succeeded");
+
+    expect(settled.amountCents).toBe(5000);
+  });
+
+  it("cancelSupportPayment stores the amount it validated when the input is a Proxy", () => {
+    let reads = 0;
+    const target = {
+      id: "support-payment-1",
+      campaignReference: "campaign-music-ward",
+      amountCents: 5000,
+      currency: "EUR",
+      simulated: true,
+      payerKind: "individual",
+      method: "card",
+      status: "pending",
+    };
+    const hostile = new Proxy(target, {
+      get(obj, prop, receiver) {
+        if (prop === "amountCents") {
+          reads += 1;
+          return reads === 1 ? 5000 : -999;
+        }
+        return Reflect.get(obj, prop, receiver);
+      },
+    }) as unknown as SupportPayment;
+
+    const cancelled = cancelSupportPayment(hostile);
+
+    expect(cancelled.amountCents).toBe(5000);
+  });
+});
+
 describe("rehydrateSupportPayment", () => {
   function persisted() {
     return {

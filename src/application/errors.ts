@@ -12,16 +12,20 @@ import type { SupportPayment } from "@domain/support-payment/SupportPayment";
  * through to a generic 500 in `toErrorResponse`.
  *
  * For `AdapterContractError` that mapping is unreachable from
- * `simulateSupportPayment`. There are FOUR construction sites. Three of them
- * are reachable from this use case, and each is either inside its guarded
- * region (`validateGatewayResult`, twice) or inside the adapter call that
- * region awaits (`FakePaymentGateway.simulate` -> `syntheticReference`, which
- * runs on the request path, not at wiring time); the region's `catch`
- * unconditionally rethrows a `FailedSimulationError`, so from here the error
- * surfaces ONLY as `FailedSimulationError.cause` and never reaches
- * `toErrorResponse`. The fourth site — `FakePaymentGateway`'s constructor —
- * runs when the adapter is wired, before any call reaches the use case, so it
- * is not covered by that argument and is not reachable from a request either.
+ * `simulateSupportPayment`. The reason is stated STRUCTURALLY, by where each
+ * construction site sits relative to the use case's guarded region, not by
+ * counting sites — a count goes stale the moment a site is added or removed.
+ * Every site that can construct it on the REQUEST path lies inside that guarded
+ * region: thrown either directly in `validateGatewayResult`, or inside the
+ * adapter call the region awaits (`FakePaymentGateway.simulate` ->
+ * `syntheticReference`). The region's `catch` unconditionally rethrows a
+ * `FailedSimulationError`, so from here the error surfaces ONLY as
+ * `FailedSimulationError.cause` and never reaches `toErrorResponse`. Every
+ * remaining site runs at WIRING time (constructing a `FakePaymentGateway`),
+ * before any request reaches the use case. The invariant that keeps the 500
+ * mapping unreachable is therefore precise: no construction site sits on the
+ * request path OUTSIDE the guarded region — the one condition a newly added
+ * site would have to preserve.
  *
  * For `FailedSimulationError` the missing mapping is a KNOWN GAP the first
  * handler to expose the simulation must close. That class is raised for
@@ -64,9 +68,9 @@ export class NotFoundError extends ApplicationError {}
  * any case unreachable from `simulateSupportPayment`, which wraps every throw
  * from its guarded region — including throws from the adapter call that region
  * awaits — in a `FailedSimulationError`; there it survives only as `cause`,
- * discriminated by `FailedSimulationError.causedByAdapterDefect`. The one
- * construction site outside that region is `FakePaymentGateway`'s constructor,
- * which runs at wiring time.
+ * discriminated by `FailedSimulationError.causedByAdapterDefect`. Any
+ * construction site outside that region runs at wiring time (constructing a
+ * `FakePaymentGateway`), before any request reaches the use case.
  */
 export class AdapterContractError extends ApplicationError {}
 

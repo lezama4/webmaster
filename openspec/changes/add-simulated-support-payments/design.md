@@ -64,16 +64,18 @@ import `fetch`, Node networking APIs, or a provider SDK.
   error taxonomy, never a `DomainError`: a gateway response is not domain
   input, and an adapter defect is not a rejected caller operation.
 - `AdapterContractError` never reaches `toErrorResponse` from
-  `simulateSupportPayment`. It has four construction sites: two in
-  `validateGatewayResult`, plus `FakePaymentGateway`'s constructor and its
-  `syntheticReference`. Every site is either inside the use case's guarded
-  region or inside the adapter call that region awaits — `syntheticReference`
-  runs on the request path, from `FakePaymentGateway.simulate` — except the
-  constructor, which runs at wiring time before any call reaches the use case.
-  The guarded region's `catch` unconditionally rethrows a
-  `FailedSimulationError`, so from this use case the error surfaces only as
-  `FailedSimulationError.cause` and its "falls through to 500" mapping is
-  unreachable.
+  `simulateSupportPayment`. The argument is STRUCTURAL — where each construction
+  site sits relative to the use case's guarded region — not a count of sites,
+  which would go stale as sites are added or removed. Every site that constructs
+  it on the REQUEST path is inside that guarded region: thrown directly in
+  `validateGatewayResult`, or inside the adapter call the region awaits
+  (`syntheticReference`, reached from `FakePaymentGateway.simulate`). Every
+  remaining site runs at wiring time (constructing a `FakePaymentGateway`),
+  before any call reaches the use case. The guarded region's `catch`
+  unconditionally rethrows a `FailedSimulationError`, so from this use case the
+  error surfaces only as `FailedSimulationError.cause` and its "falls through to
+  500" mapping is unreachable. The invariant a new site must preserve: no
+  construction site on the request path outside the guarded region.
 - `FailedSimulationError` is raised for FAILURES ONLY. A gateway `declined`
   outcome passes validation, settles the payment, and the use case RESOLVES
   normally — it never reaches this error, so the class has no business-outcome

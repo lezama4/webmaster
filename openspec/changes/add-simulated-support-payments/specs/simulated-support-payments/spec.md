@@ -260,9 +260,9 @@ so they are not asserted.
 - GIVEN an adapter that rejects with a shared or frozen error value
 - WHEN the application reports the failure
 - THEN it MUST throw a new error carrying the original value as `cause`
-- AND the cancelled payment MUST be an own non-enumerable, non-writable
-  property, so it is not serialised into structured logs and two failures
-  cannot overwrite each other
+- AND the cancelled payment MUST be an own, non-enumerable, non-writable and
+  non-configurable property, so it is not serialised into structured logs, two
+  failures cannot overwrite each other, and it cannot be redefined
 
 ### Requirement: Financial identifiers are out of the model
 

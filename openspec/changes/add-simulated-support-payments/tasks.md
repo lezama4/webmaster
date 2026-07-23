@@ -156,7 +156,9 @@ decision *not* to add the control.
 - [x] 8.9 Regenerate the security approval evidence numbers from an actual run.
 
 > Round 6 superseded two claims recorded above. **8.1** is false as written:
-> `AdapterContractError` has four construction sites, not one region — see 9.1.
+> `AdapterContractError` is constructed at more than the guarded region alone —
+> a request-path site (`syntheticReference`) and a wiring-time site both exist —
+> see 9.1.
 > **8.2**'s framing of the alternative as "ordinary business outcomes" is false:
 > a declined gateway outcome resolves normally and never reaches
 > `FailedSimulationError` — see 9.2.
@@ -168,13 +170,20 @@ consecutive round. Every remaining finding was a sentence asserting more than
 the code does. No security control was missing.
 
 - [x] 9.1 Correct the `AdapterContractError` construction-site claim in
-  `src/application/errors.ts`, the security approval, and the design doc. There
-  are FOUR sites: two in `validateGatewayResult`, plus `FakePaymentGateway`'s
-  constructor and its `syntheticReference`. The old wording said "only ever
-  constructed inside the guarded region" and characterised all adapter sites as
-  wiring-time, but `syntheticReference` runs on the request path. The
-  conclusion survives — that path is awaited from inside the guarded region —
-  but not for the stated reason.
+  `src/application/errors.ts`, the security approval, and the design doc. State
+  it STRUCTURALLY, not by count: every site that constructs it on the REQUEST
+  path is inside the use case's guarded region (in `validateGatewayResult`, or
+  in the adapter call the region awaits — `syntheticReference`), and every
+  remaining site runs at wiring time (constructing a `FakePaymentGateway`). The
+  old wording said "only ever constructed inside the guarded region" and
+  characterised all adapter sites as wiring-time, but `syntheticReference` runs
+  on the request path; the conclusion survives because that path is awaited from
+  inside the guarded region. A count would go stale — 9.3 below adds another
+  site to `validateGatewayResult` — so the invariant is stated as "no
+  construction site on the request path outside the guarded region" instead.
+  (Round 6 stated this as "four sites, two in `validateGatewayResult`"; 9.3 made
+  that three-in-`validateGatewayResult`, which is why the structural form
+  replaced it in round 7.)
 - [x] 9.2 Delete the "legitimate decline-cancel" case from
   `src/application/errors.ts`, the security approval, the design doc, and the
   test describe block. It does not exist: a gateway `outcome: "declined"`
@@ -225,3 +234,36 @@ the code does. No security control was missing.
   outbound request and gateway result.
 - [x] 9.11 Regenerate the security approval evidence numbers from an actual
   run.
+
+## 10. Round-7 correction — one code gap, two documentation truths
+
+Round 7 ended ESCALATED on a disputed finding: one judge proved a read-once gap
+in the domain factory; the other did not report it because the reachable callers
+pass plain data. It is a real gap in a stated guarantee, exercised by a hostile
+in-process object — the adversary the module's own doc comments name. Fixed
+here, test-first, together with two documentation claims that asserted more than
+the artifacts prove.
+
+- [x] 10.1 (code, test first) Make every enumerated/amount assertion in
+  `SupportPayment.ts` RETURN the value it validated, and build every field from
+  those returned locals — never a second read of `input.x` after validating it.
+  A getter or `Proxy` on cast/deserialized input could otherwise pass a valid
+  value to the check and store a different one (`amountCents: -999` on a frozen
+  `succeeded` payment; a forged `pending` from a status getter). This is the
+  read-once discipline `validateGatewayResult` and `FakePaymentGateway` already
+  apply. Covered for `createSupportPayment`, `rehydrateSupportPayment`,
+  `settleSupportPayment` and `cancelSupportPayment`.
+- [x] 10.2 Replace the `AdapterContractError` construction-site COUNT ("four
+  sites, two in `validateGatewayResult`") with a STRUCTURAL statement in
+  `src/application/errors.ts`, the security approval, the design doc, and this
+  file. The count was already stale — 9.3 added a third `validateGatewayResult`
+  site — and this file said "two" in 9.1 while 9.3 adds a third. The invariant
+  is now stated as "no construction site on the request path outside the guarded
+  region", which stays true as sites are added or removed.
+- [x] 10.3 (test first) Make the "both descriptors are asserted by tests" claim
+  true rather than weaken it. `cause` had a full descriptor assertion;
+  `cancelledPayment` asserted only enumerable/writable; `causedByAdapterDefect`
+  had no descriptor assertion. Added full own/non-enumerable/non-writable/
+  non-configurable checks for `cancelledPayment` and `causedByAdapterDefect`;
+  the code already implemented them. Corrected the wording in the security
+  approval to name all three descriptors.

@@ -255,7 +255,7 @@ describe("simulateSupportPayment", () => {
     expect(error.message).not.toContain("[object Object]");
   });
 
-  it("keeps cancelledPayment non-enumerable and non-writable", async () => {
+  it("keeps cancelledPayment own, non-enumerable, non-writable and non-configurable", async () => {
     const paymentGateway: PaymentGateway = {
       async simulate() {
         throw new Error("gateway unavailable");
@@ -266,9 +266,14 @@ describe("simulateSupportPayment", () => {
 
     expect(Object.keys(error)).not.toContain("cancelledPayment");
     expect(JSON.stringify(error)).not.toContain("cancelledPayment");
+    expect(Object.hasOwn(error, "cancelledPayment")).toBe(true);
     expect(
       Object.getOwnPropertyDescriptor(error, "cancelledPayment"),
-    ).toMatchObject({ enumerable: false, writable: false });
+    ).toMatchObject({
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
   });
 
   it("does not treat an unrelated error carrying a cancelledPayment key as a failed simulation", () => {
@@ -466,7 +471,7 @@ describe("simulateSupportPayment", () => {
       expect(error.causedByAdapterDefect).toBe(false);
     });
 
-    it("keeps the discriminator non-writable so it cannot be forged", async () => {
+    it("keeps the discriminator own, non-enumerable, non-writable and non-configurable so it cannot be forged", async () => {
       const paymentGateway: PaymentGateway = {
         async simulate() {
           throw new Error("gateway unavailable");
@@ -480,6 +485,15 @@ describe("simulateSupportPayment", () => {
           true;
       }).toThrow(TypeError);
       expect(error.causedByAdapterDefect).toBe(false);
+      expect(Object.keys(error)).not.toContain("causedByAdapterDefect");
+      expect(Object.hasOwn(error, "causedByAdapterDefect")).toBe(true);
+      expect(
+        Object.getOwnPropertyDescriptor(error, "causedByAdapterDefect"),
+      ).toMatchObject({
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
     });
 
     /**

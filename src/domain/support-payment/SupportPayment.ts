@@ -230,13 +230,16 @@ function assertCampaignReference(
   return value;
 }
 
-function assertTerminalStatus(status: SupportPaymentTerminalStatus): void {
+function assertTerminalStatus(
+  status: SupportPaymentTerminalStatus,
+): SupportPaymentTerminalStatus {
   if (!TERMINAL_STATUSES.includes(status)) {
     rejectUnknownValue("rehydrated status", TERMINAL_STATUSES);
   }
+  return status;
 }
 
-function assertAmountCents(amountCents: number): void {
+function assertAmountCents(amountCents: number): number {
   if (
     !Number.isSafeInteger(amountCents) ||
     amountCents <= 0 ||
@@ -246,18 +249,21 @@ function assertAmountCents(amountCents: number): void {
       `SupportPayment amountCents must be a positive safe integer up to ${MAX_SIMULATED_SUPPORT_AMOUNT_CENTS}`,
     );
   }
+  return amountCents;
 }
 
-function assertPayerKind(payerKind: SupportPayerKind): void {
+function assertPayerKind(payerKind: SupportPayerKind): SupportPayerKind {
   if (!PAYER_KINDS.includes(payerKind)) {
     rejectUnknownValue("payerKind", PAYER_KINDS);
   }
+  return payerKind;
 }
 
-function assertMethod(method: SimulatedPaymentMethod): void {
+function assertMethod(method: SimulatedPaymentMethod): SimulatedPaymentMethod {
   if (!PAYMENT_METHODS.includes(method)) {
     rejectUnknownValue("method", PAYMENT_METHODS);
   }
+  return method;
 }
 
 /**
@@ -286,22 +292,30 @@ function assertPending(payment: SupportPayment, transition: string): void {
  * deserialized object carrying a corrupt known value — a negative amount, an
  * IBAN in a field, an unknown method — emerge as a frozen, valid-looking
  * terminal payment.
+ *
+ * Every field is read off `payment` EXACTLY ONCE, as the argument to its
+ * assertion, and the value STORED is the value the assertion returned — never a
+ * second read of the same property. `payment` may be a cast or deserialized
+ * object exposing a getter or a `Proxy` trap, so reading a field to validate it
+ * and reading it again to store it would let one value pass the check and a
+ * different one reach the frozen aggregate. This is the read-once discipline
+ * `validateGatewayResult` and `FakePaymentGateway` already apply.
  */
 function assertKnownFields(
   payment: SupportPayment,
 ): Omit<SupportPaymentFields, "status"> {
   const id = assertId(payment.id);
   const campaignReference = assertCampaignReference(payment.campaignReference);
-  assertAmountCents(payment.amountCents);
-  assertPayerKind(payment.payerKind);
-  assertMethod(payment.method);
+  const amountCents = assertAmountCents(payment.amountCents);
+  const payerKind = assertPayerKind(payment.payerKind);
+  const method = assertMethod(payment.method);
 
   return {
     id,
     campaignReference,
-    amountCents: payment.amountCents,
-    payerKind: payment.payerKind,
-    method: payment.method,
+    amountCents,
+    payerKind,
+    method,
   };
 }
 
@@ -311,16 +325,16 @@ export function createSupportPayment(
 ): SupportPayment {
   const id = assertId(input.id);
   const campaignReference = assertCampaignReference(input.campaignReference);
-  assertAmountCents(input.amountCents);
-  assertPayerKind(input.payerKind);
-  assertMethod(input.method);
+  const amountCents = assertAmountCents(input.amountCents);
+  const payerKind = assertPayerKind(input.payerKind);
+  const method = assertMethod(input.method);
 
   return buildSupportPayment({
     id,
     campaignReference,
-    amountCents: input.amountCents,
-    payerKind: input.payerKind,
-    method: input.method,
+    amountCents,
+    payerKind,
+    method,
     status: "pending",
   });
 }
@@ -360,18 +374,18 @@ export function rehydrateSupportPayment(
 ): SupportPayment {
   const id = assertId(input.id);
   const campaignReference = assertCampaignReference(input.campaignReference);
-  assertAmountCents(input.amountCents);
-  assertPayerKind(input.payerKind);
-  assertMethod(input.method);
-  assertTerminalStatus(input.status);
+  const amountCents = assertAmountCents(input.amountCents);
+  const payerKind = assertPayerKind(input.payerKind);
+  const method = assertMethod(input.method);
+  const status = assertTerminalStatus(input.status);
 
   return buildSupportPayment({
     id,
     campaignReference,
-    amountCents: input.amountCents,
-    payerKind: input.payerKind,
-    method: input.method,
-    status: input.status,
+    amountCents,
+    payerKind,
+    method,
+    status,
   });
 }
 
