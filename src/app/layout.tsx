@@ -79,7 +79,7 @@ function SiteHeader({
       <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <BrandMark />
-          <span>Vivetutiempo</span>
+          <span>Todo el tiempo cuenta</span>
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
           <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
@@ -127,7 +127,7 @@ function SiteFooter({
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:px-6">
-        <p className="font-medium text-foreground">Vivetutiempo</p>
+        <p className="font-medium text-foreground">Todo el tiempo cuenta</p>
         <p>{description}</p>
         <Link href="/ayuda" className="w-fit underline underline-offset-4 transition-colors hover:text-foreground">
           {helpLabel}

@@ -3,7 +3,7 @@
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
   "Share": {
     "heading": "Partekatu orrialde hau",
-    "footerLabel": "Partekatu Vivetutiempo",
+    "footerLabel": "Partekatu Todo el tiempo cuenta",
     "nativeShare": "Partekatu orrialde hau",
     "whatsapp": "Partekatu WhatsApp bidez",
     "telegram": "Partekatu Telegram bidez",
@@ -26,7 +26,7 @@
     "trust": {
       "eyebrow": "Erakundeen babesa",
       "title": "Hutsune bakoitza ospitale batek irekitzen du, ez plataforma anonimo batek.",
-      "description": "Gela bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte paziente batengana iritsi aurretik. Horrela mantentzen da Vivetutiempo segurua eta zentzu klinikoarekin.",
+      "description": "Gela bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte paziente batengana iritsi aurretik. Horrela mantentzen da Todo el tiempo cuenta segurua eta zentzu klinikoarekin.",
       "hospitalsLabel": "Parte hartzen duten ospitaleak",
       "patronsLabel": "Mezenas-erakundeak",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
@@ -61,9 +61,9 @@
       "secondaryCta": "Ikusi hurrengo ekitaldiak"
     },
     "what": {
-      "eyebrow": "Zer da Vivetutiempo",
+      "eyebrow": "Zer da Todo el tiempo cuenta",
       "title": "Zuzeneko kultura itxaronaldia laguntzeko.",
-      "description": "Vivetutiempok ospitaleak eta artistak konektatzen ditu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
+      "description": "Todo el tiempo cuentak ospitaleak eta artistak konektatzen ditu, itxaroteko orduak musikaz, tailerrez eta zuzeneko emanaldiez betetzeko. Doakoa denontzat. Irabazi-asmorik gabea.",
       "steps": ["Ospitaleek hutsuneak argitaratzen dituzte", "Artistek jarduerak proposatzen dituzte", "Ekitaldia argitaratzen da"],
       "primaryCta": "Ikusi hurrengo ekitaldiak",
       "secondaryCta": "Nola funtzionatzen duen"
@@ -71,7 +71,7 @@
   },
   "Help": {
     "eyebrow": "Laguntza",
-    "title": "Nola funtzionatzen du Vivetutiempok",
+    "title": "Nola funtzionatzen du Todo el tiempo cuentak",
     "intro": "Prozesuaren gida labur bat, ospitale, artista eta familientzat.",
     "howItWorks": { "title": "Nola sortzen den une bat", "description": "Lau urrats, arratsalde partekatu bat. Hasi aurretik, administratzaile batek ospitale eta artista bakoitza balioztatzen du; ondoren, urrats bakoitza berrikusten da paziente batengana iritsi aurretik." },
     "steps": { "01": { "role": "Ospitaleak", "text": "Ate bat irekitzen dute gelako agendan: data, ordua eta pazienteek konpainia behar dezaketen lekua." }, "02": { "role": "Artistak", "text": "Tarte irekiak aztertu eta jarduera bat proposatzen dute: musika, ipuin-kontaketa, magia edo tailerra." }, "03": { "role": "Ospitaleak", "text": "Ospitale berak jasotako proposamenak aztertu eta bat baieztatzen du. Une hori programatutako ekitaldi bihurtzen da." }, "04": { "role": "Familiak", "text": "Pazienteek eta familiek datorrena ikusten dute, eta nola joan den partekatzen dute." } },
@@ -80,14 +80,14 @@
       "items": [
         { "question": "Nola baloratzen dira ekitaldiak eta artistak?", "answer": "Erregistratutako erabiltzaileek argitaratutako ekitaldi bat 1etik 5 izarrera balora dezakete, eta ekitaldi bakoitzak bere batez bestekoa erakusten du. Hasierako orriko testigantzak adibide ilustragarriak dira oraindik, ez egiaztatutako iritziak." },
         { "question": "Zer esan nahi dute hutsune baten adin-tarteek (audientzia)?", "answer": "Ospitale batek argitaratzen duen hutsune bakoitzak hurbilketa-adin-tarte bat adierazten du —adibidez, 0–5, 6–12, helduak edo adin guztiak— artistek bertaratuko diren pertsonentzat egokia den jarduera bat proposa dezaten." },
-        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Vivetutiempok ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune baten solairua edo gela proposamen bat aztertzen ari diren artista identifikatuei bakarrik erakusten zaie; ekitaldien agenda publikoan kokapen hori ez da inoiz agertzen. Inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik ez da plataforman erregistratzen." }
+        { "question": "Nola babesten da pazienteen kokapena?", "answer": "Todo el tiempo cuentak ez du inoiz pazienteen datu pertsonalik argitaratzen. Hutsune baten solairua edo gela proposamen bat aztertzen ari diren artista identifikatuei bakarrik erakusten zaie; ekitaldien agenda publikoan kokapen hori ez da inoiz agertzen. Inongo pazienteren izenik, gela-zenbakirik edo ingresatzeko arrazoirik ez da plataforman erregistratzen." }
       ]
     }
   },
   "Finder": {
     "nav": "Aurkitu zure ospitalea",
     "title": "Aurkitu zure ospitalea",
-    "description": "Ikusi Vivetutiempo-n dagoeneko parte hartzen duten ospitaleak eta begiratu zurea horien artean dagoen.",
+    "description": "Ikusi Todo el tiempo cuenta-n dagoeneko parte hartzen duten ospitaleak eta begiratu zurea horien artean dagoen.",
     "search": { "label": "Bilatu izenaren, herriaren edo posta kodearen arabera", "placeholder": "Adibidez: Bilbo, 48013…" },
     "resultCount": { "all": "{count} ospitale aurkituta", "partial": "{count} ospitale aurkituta · {mappable} mapan" },
     "map": { "ariaLabel": "Parte hartzen duten ospitaleen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
@@ -98,10 +98,10 @@
     "nav": "Gutaz",
     "eyebrow": "Gutaz",
     "title": "Irabazi-asmorik gabeko plataforma bat, zuzeneko kultura ospitaleko ohera eramateko.",
-    "intro": "Hemen azaltzen dugu zer den Vivetutiempo, nortzuk parte hartzen duten, pribatutasuna nola babesten den eta zergatik den doakoa. Argitaratzeko edo proposatzeko urratsen xehetasunetarako, ikusi Laguntza.",
+    "intro": "Hemen azaltzen dugu zer den Todo el tiempo cuenta, nortzuk parte hartzen duten, pribatutasuna nola babesten den eta zergatik den doakoa. Argitaratzeko edo proposatzeko urratsen xehetasunetarako, ikusi Laguntza.",
     "purpose": {
       "title": "Gure helburua",
-      "description": "Ospitaleko egonaldi luzeek isolatu egiten dute. Vivetutiempo existitzen da musika, antzerkia eta tailerrak gelara irits daitezen zainketa klinikoa ordeztu gabe, beti ospitalearekin koordinatuta."
+      "description": "Ospitaleko egonaldi luzeek isolatu egiten dute. Todo el tiempo cuenta existitzen da musika, antzerkia eta tailerrak gelara irits daitezen zainketa klinikoa ordeztu gabe, beti ospitalearekin koordinatuta."
     },
     "roles": {
       "title": "Nortzuk parte hartzen duten",
@@ -119,7 +119,7 @@
     },
     "validation": {
       "title": "Balidatutako profilak",
-      "description": "Ez ospitale batek ez artista batek ezin dute plataforman jardun, administratzaile batek profila berrikusi eta onartu arte. Balidazio horrek mantentzen du Vivetutiempo segurua eta zentzu klinikoarekin."
+      "description": "Ez ospitale batek ez artista batek ezin dute plataforman jardun, administratzaile batek profila berrikusi eta onartu arte. Balidazio horrek mantentzen du Todo el tiempo cuenta segurua eta zentzu klinikoarekin."
     },
     "dataStance": {
       "title": "Zer datu argitaratzen ditugun, eta zer ez",
@@ -135,7 +135,7 @@
     },
     "funding": {
       "title": "Zergatik den doakoa",
-      "description": "Vivetutiempo irabazi-asmorik gabeko ekimena da. Ospitaleek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
+      "description": "Todo el tiempo cuenta irabazi-asmorik gabeko ekimena da. Ospitaleek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
     }
   },
   "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten ospitaleetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira solairu bakoitzarekin.", "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Ospitaleek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Oraindik ez dago baloraziorik", "average": "{average} batez beste · {count} balorazio", "averageLabel": "Batez besteko balorazioa: 5etik {value} izar", "title": "Baloratu ekitaldi hau", "yourRating": "Zure balorazioa", "starLabel": "5etik {value} izar", "error": "Ezin izan da balorazioa gorde. Saiatu berriro, mesedez." } },

@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-remote *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "mcp__plugin_engram_engram__mem_save",
+      "mcp__plugin_engram_engram__mem_search",
+      "mcp__plugin_engram_engram__mem_context",
+      "mcp__plugin_engram_engram__mem_doctor",
+      "Read(//c/Users/koldobika/.engram/**)",
+      "Read(//c/Users/koldobika/.config/**)",
+      "Bash(command -v sqlite3)",
+      "mcp__plugin_engram_engram__mem_get_observation",
+      "Bash(git config *)",
+      "Bash(git push *)",
+      "mcp__plugin_engram_engram__mem_session_summary",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(docker info *)",
+      "Bash(npm --version)",
+      "Read(//c/Program Files/nodejs/**)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -v)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/**)",
+      "Read(//c/Users/koldobika/AppData/Roaming/**)",
+      "Read(//c/Users/koldobika/AppData/Local/**)",
+      "Bash(npm -v)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Nodist/**)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" -v)",
+      "Bash(powershell.exe -NoProfile -Command '[Environment]::GetEnvironmentVariable\\('\\\\''Path'\\\\'','\\\\''User'\\\\''\\) -split '\\\\'';'\\\\'' | Where-Object {$_ -match '\\\\''nodejs|Nodist'\\\\''}')",
+      "Bash(powershell.exe -NoProfile -Command '[Environment]::GetEnvironmentVariable\\('\\\\''Path'\\\\'','\\\\''Machine'\\\\''\\) -split '\\\\'';'\\\\'' | Where-Object {$_ -match '\\\\''nodejs|Nodist'\\\\''}')"
+    ]
+  }
+}
