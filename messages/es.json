@@ -3,7 +3,7 @@
   "LanguageSelector": { "label": "Selector de idioma" },
   "Share": {
     "heading": "Compartí esta página",
-    "footerLabel": "Compartí Vivetutiempo",
+    "footerLabel": "Compartí Todo el tiempo cuenta",
     "nativeShare": "Compartir esta página",
     "whatsapp": "Compartir por WhatsApp",
     "telegram": "Compartir por Telegram",
@@ -14,7 +14,7 @@
     "copyError": "No se pudo copiar el enlace"
   },
   "Home": {
-    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, a emocionarse, a cantar, a aprender —y por qué no, a llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
+    "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender —y por qué no, también llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
     "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {
@@ -26,7 +26,7 @@
     "trust": {
       "eyebrow": "Respaldo institucional",
       "title": "Cada hueco lo abre un hospital, no una plataforma anónima.",
-      "description": "Los coordinadores de cada planta revisan y confirman las propuestas antes de que lleguen a un paciente. Así es como Vivetutiempo se mantiene seguro y con sentido clínico.",
+      "description": "Los coordinadores de cada planta revisan y confirman las propuestas antes de que lleguen a un paciente. Así es como Todo el tiempo cuenta se mantiene seguro y con sentido clínico.",
       "hospitalsLabel": "Hospitales participantes",
       "patronsLabel": "Organizaciones mecenas",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
@@ -61,9 +61,9 @@
       "secondaryCta": "Ver próximos eventos"
     },
     "what": {
-      "eyebrow": "Qué es Vivetutiempo",
+      "eyebrow": "Qué es Todo el tiempo cuenta",
       "title": "Cultura en directo para acompañar la espera.",
-      "description": "Vivetutiempo conecta hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
+      "description": "Conectamos hospitales con artistas para llenar las horas de espera con música, talleres y actuaciones en directo. Gratis para todos. Sin ánimo de lucro.",
       "steps": ["Los hospitales publican huecos", "Los artistas proponen actividades", "Se publica el evento"],
       "primaryCta": "Ver próximos eventos",
       "secondaryCta": "Cómo funciona"
@@ -71,7 +71,7 @@
   },
   "Help": {
     "eyebrow": "Ayuda",
-    "title": "Cómo funciona Vivetutiempo",
+    "title": "Cómo funciona Todo el tiempo cuenta",
     "intro": "Una guía rápida del proceso, pensada para hospitales, artistas y familias.",
     "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro pasos, una tarde compartida. Antes de empezar, un administrador valida cada hospital y cada artista; después, cada paso se revisa antes de llegar a un paciente." },
     "steps": { "01": { "role": "Hospitales", "text": "Abren un hueco en la agenda de la planta: una fecha, una hora y un lugar donde a los pacientes les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Hospitales", "text": "El mismo hospital revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Los pacientes y sus familias ven lo que está por llegar y comparten cómo fue." } },
@@ -80,14 +80,14 @@
       "items": [
         { "question": "¿Cómo se valoran los eventos y los artistas?", "answer": "Los usuarios registrados pueden valorar un evento publicado de 1 a 5 estrellas, y cada evento muestra su media. Los testimonios de la portada siguen siendo ejemplos ilustrativos, no reseñas verificadas." },
         { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un hospital indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
-        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Vivetutiempo nunca publica datos personales de pacientes. La planta o sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la habitación o el motivo de ingreso de cualquier paciente no se registran en la plataforma." }
+        { "question": "¿Cómo se protege la ubicación de los pacientes?", "answer": "Todo el tiempo cuenta nunca publica datos personales de pacientes. La planta o sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la habitación o el motivo de ingreso de cualquier paciente no se registran en la plataforma." }
       ]
     }
   },
   "Finder": {
     "nav": "Encuentra tu hospital",
     "title": "Encuentra tu hospital",
-    "description": "Consultá los hospitales que ya forman parte de Vivetutiempo y comprobá si el tuyo está entre ellos.",
+    "description": "Consultá los hospitales que ya forman parte de Todo el tiempo cuenta y comprobá si el tuyo está entre ellos.",
     "search": { "label": "Buscar por nombre, ciudad o código postal", "placeholder": "Por ejemplo: Bilbao, 48013…" },
     "resultCount": { "all": "{count} hospitales encontrados", "partial": "{count} hospitales encontrados · {mappable} en el mapa" },
     "map": { "ariaLabel": "Mapa indicativo de hospitales participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
@@ -98,10 +98,10 @@
     "nav": "Quiénes somos",
     "eyebrow": "Quiénes somos",
     "title": "Una plataforma sin ánimo de lucro para llevar cultura en directo a la cama del hospital.",
-    "intro": "Aquí explicamos qué es Vivetutiempo, quién participa, cómo se protege la privacidad y por qué es gratis. Para el paso a paso de cómo publicar o proponer, visitá la Ayuda.",
+    "intro": "Aquí explicamos qué es Todo el tiempo cuenta, quién participa, cómo se protege la privacidad y por qué es gratis. Para el paso a paso de cómo publicar o proponer, visitá la Ayuda.",
     "purpose": {
       "title": "Nuestro propósito",
-      "description": "Las estancias hospitalarias largas aíslan. Vivetutiempo existe para que la música, el teatro y los talleres lleguen a planta sin sustituir el cuidado clínico, siempre coordinados con el hospital."
+      "description": "Las estancias hospitalarias largas aíslan. Todo el tiempo cuenta existe para que la música, el teatro y los talleres lleguen a planta sin sustituir el cuidado clínico, siempre coordinados con el hospital."
     },
     "roles": {
       "title": "Quién participa",
@@ -119,7 +119,7 @@
     },
     "validation": {
       "title": "Perfiles validados",
-      "description": "Ningún hospital ni artista puede actuar en la plataforma hasta que un administrador revisa y aprueba su perfil. Esa validación es lo que mantiene Vivetutiempo seguro y con sentido clínico."
+      "description": "Ningún hospital ni artista puede actuar en la plataforma hasta que un administrador revisa y aprueba su perfil. Esa validación es lo que mantiene Todo el tiempo cuenta seguro y con sentido clínico."
     },
     "dataStance": {
       "title": "Qué datos publicamos, y qué no",
@@ -135,7 +135,7 @@
     },
     "funding": {
       "title": "Por qué es gratis",
-      "description": "Vivetutiempo es una iniciativa sin ánimo de lucro. Hospitales, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
+      "description": "Todo el tiempo cuenta es una iniciativa sin ánimo de lucro. Hospitales, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
     }
   },
   "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en hospitales participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada planta.", "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los hospitales aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Sin valoraciones todavía", "average": "{average} de media · {count} valoraciones", "averageLabel": "Valoración media: {value} de 5 estrellas", "title": "Valorá este evento", "yourRating": "Tu valoración", "starLabel": "{value} de 5 estrellas", "error": "No se ha podido guardar tu valoración. Volvé a intentarlo." } },

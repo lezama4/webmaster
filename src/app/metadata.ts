@@ -38,7 +38,7 @@ export function absoluteUrl(path: string): string {
   return new URL(path, metadataBase).toString();
 }
 
-export const SITE_NAME = "Vivetutiempo";
+export const SITE_NAME = "Todo el tiempo cuenta";
 
 /**
  * Shared Open Graph / Twitter image: a 1200x630 crop of the homepage hero

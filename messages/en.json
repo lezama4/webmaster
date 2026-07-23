@@ -6,7 +6,7 @@
   "LanguageSelector": { "label": "Language selector" },
   "Share": {
     "heading": "Share this page",
-    "footerLabel": "Share Vivetutiempo",
+    "footerLabel": "Share Todo el tiempo cuenta",
     "nativeShare": "Share this page",
     "whatsapp": "Share via WhatsApp",
     "telegram": "Share via Telegram",
@@ -19,7 +19,7 @@
   "Home": {
     "badge": "Non-profit · free for everyone involved",
     "title": { "firstLine": "We help keep life", "secondLine": "from standing still." },
-    "description": "See them smile again, be moved, sing, learn —and yes, cry— surrounded by the people they love, in moments none of you will forget.",
+    "description": "See them smile again, be moved, sing, learn —and, why not, cry too— surrounded by the people they love, in moments none of you will forget.",
     "ariaRating": "{rating} out of 5 stars",
     "hero": { "imageAlt": "A cellist performs for a group of patients and family members in a hospital common room, with a person in a wheelchair among the audience." },
     "mission": {
@@ -31,7 +31,7 @@
     "trust": {
       "eyebrow": "Institutional backing",
       "title": "Every slot is opened by a hospital, not an anonymous platform.",
-      "description": "Ward coordinators review and confirm proposals before they reach a patient. That's how Vivetutiempo stays safe and clinically sound.",
+      "description": "Ward coordinators review and confirm proposals before they reach a patient. That's how Todo el tiempo cuenta stays safe and clinically sound.",
       "hospitalsLabel": "Participating hospitals",
       "patronsLabel": "Patron organisations",
       "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
@@ -66,9 +66,9 @@
       "secondaryCta": "Browse upcoming events"
     },
     "what": {
-      "eyebrow": "What Vivetutiempo is",
+      "eyebrow": "What Todo el tiempo cuenta is",
       "title": "Live culture to accompany the wait.",
-      "description": "Vivetutiempo connects hospitals with artists to fill waiting hours with music, workshops, and live performances. Free for everyone. Non-profit.",
+      "description": "We connect hospitals with artists to fill waiting hours with music, workshops, and live performances. Free for everyone. Non-profit.",
       "steps": ["Hospitals publish open slots", "Artists propose activities", "The event is published"],
       "primaryCta": "Browse upcoming events",
       "secondaryCta": "How it works"
@@ -76,7 +76,7 @@
   },
   "Help": {
     "eyebrow": "Help",
-    "title": "How Vivetutiempo works",
+    "title": "How Todo el tiempo cuenta works",
     "intro": "A quick guide to the process, for hospitals, artists, and families.",
     "howItWorks": { "title": "How a moment comes together", "description": "Four steps, one shared afternoon. Before any of it begins, an administrator validates every hospital and every artist; after that, each step is reviewed before it reaches a patient." },
     "steps": {
@@ -90,14 +90,14 @@
       "items": [
         { "question": "How are events and artists rated?", "answer": "Registered users can rate a published event 1–5 stars, and each event shows its average. The testimonial quotes on the homepage remain illustrative examples, not verified reviews." },
         { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a hospital publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
-        { "question": "How is patient location protected?", "answer": "Vivetutiempo never publishes patient personal data. A slot's ward or room is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No patient's name, room number, or reason for admission is recorded on the platform at all." }
+        { "question": "How is patient location protected?", "answer": "Todo el tiempo cuenta never publishes patient personal data. A slot's ward or room is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No patient's name, room number, or reason for admission is recorded on the platform at all." }
       ]
     }
   },
   "Finder": {
     "nav": "Find your hospital",
     "title": "Find your hospital",
-    "description": "Check the hospitals that are already part of Vivetutiempo and see if yours is among them.",
+    "description": "Check the hospitals that are already part of Todo el tiempo cuenta and see if yours is among them.",
     "search": { "label": "Search by name, city, or postal code", "placeholder": "For example: Bilbao, 48013…" },
     "resultCount": { "all": "{count} hospitals found", "partial": "{count} hospitals found · {mappable} shown on the map" },
     "map": { "ariaLabel": "Indicative map of participating hospitals", "caption": "Indicative map, not to scale — each point's position is approximate." },
@@ -108,10 +108,10 @@
     "nav": "About us",
     "eyebrow": "About us",
     "title": "A non-profit platform bringing live culture to the hospital bedside.",
-    "intro": "Here we explain what Vivetutiempo is, who takes part, how privacy is protected, and why it's free. For a step-by-step of how to publish or propose, visit Help.",
+    "intro": "Here we explain what Todo el tiempo cuenta is, who takes part, how privacy is protected, and why it's free. For a step-by-step of how to publish or propose, visit Help.",
     "purpose": {
       "title": "Our purpose",
-      "description": "Long hospital stays isolate. Vivetutiempo exists so music, theatre, and workshops reach the ward without replacing clinical care, always coordinated with the hospital."
+      "description": "Long hospital stays isolate. Todo el tiempo cuenta exists so music, theatre, and workshops reach the ward without replacing clinical care, always coordinated with the hospital."
     },
     "roles": {
       "title": "Who takes part",
@@ -129,7 +129,7 @@
     },
     "validation": {
       "title": "Validated profiles",
-      "description": "No hospital or artist can act on the platform until an admin reviews and approves their profile. That validation is what keeps Vivetutiempo safe and clinically sound."
+      "description": "No hospital or artist can act on the platform until an admin reviews and approves their profile. That validation is what keeps Todo el tiempo cuenta safe and clinically sound."
     },
     "dataStance": {
       "title": "What data we publish, and what we don't",
@@ -145,7 +145,7 @@
     },
     "funding": {
       "title": "Why it's free",
-      "description": "Vivetutiempo is a non-profit initiative. Hospitals, artists, and families pay nothing to take part; the project is sustained apart from any transaction between them."
+      "description": "Todo el tiempo cuenta is a non-profit initiative. Hospitals, artists, and families pay nothing to take part; the project is sustained apart from any transaction between them."
     }
   },
   "Events": {
