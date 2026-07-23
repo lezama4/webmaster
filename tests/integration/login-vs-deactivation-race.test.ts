@@ -28,6 +28,19 @@ const dbAvailable = await isDatabaseAvailable();
 const adminActor: Actor = { accountId: "admin-account", role: "admin" };
 const PASSWORD = "correct-password";
 
+// PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+// the domain approveProfile now requires an attributed ReviewInput and a
+// Clock (ADR D21-D24) and returns { profile, review }. This suite's
+// fixtures are unrelated to the review audit trail itself, so a fixed
+// placeholder satisfies the new required shape — PR2 wires the real
+// actor/basis.
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+const PLACEHOLDER_CLOCK = { now: () => new Date() };
+
 describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
   const client = getTestPrismaClient();
   const passwordHasher = new Argon2PasswordHasher();
@@ -49,7 +62,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       account,
       passwordHash: await passwordHasher.hash(PASSWORD),
     });
-    const profile = approveProfile(
+    const { profile } = approveProfile(
       createProfile({
         id: "hospital-profile",
         accountId: account.id,
@@ -57,6 +70,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
         centreType: "hospital",
         name: "San Juan Hospital",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
 
@@ -138,7 +153,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       account,
       passwordHash: await passwordHasher.hash(PASSWORD),
     });
-    const profile = approveProfile(
+    const { profile } = approveProfile(
       createProfile({
         id: "hospital-profile-2",
         accountId: account.id,
@@ -146,6 +161,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
         centreType: "hospital",
         name: "Esperanza Hospital",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
 
