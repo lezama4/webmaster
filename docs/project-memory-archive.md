@@ -360,3 +360,5 @@ only in the code and commit history, not in memory.
 | `feat/support-payments` | 3 commits; lead commit marked "[pending adversarial review]" |
 | `feat/delivery-ui` | 1 commit; 1–5 star event ratings for registered users |
 | `feat/application` | 0 commits ahead of `main` — merged or abandoned |
+
+<!-- preview-db verification probe (2026-07-23) — remove after check -->
