@@ -93,32 +93,85 @@ export const SEED_HOSPITAL_LOCATIONS = [
   "Rambla del Besòs, 7",
   "Paseo do Orzán, 22",
   "Avenida del Bernesga, 14",
+  // widen-beyond-hospitals PR4 — Centro Ocupacional Aravaca's addressLine.
+  "Calle de la Dehesa de Aravaca, 9",
 ] as const;
 
 /**
- * The 10 seeded ACTIVE hospitals' PUBLIC directory fields (Phase 10 + the
- * 10-hospital roster expansion, mirrors `prisma/seed.ts`'s
- * `name`/`city`/`postalCode`). Distinct cities and postal-code prefixes so
- * search-by-name/city/postal-prefix is demonstrable end-to-end against the
- * real seed, without mutating it. Used by both `hospital-directory.spec.ts`
- * (positive assertions) and `non-correlation.spec.ts` (D10: these strings
- * must never appear on the public Events surface).
+ * The 11 seeded ACTIVE centres' PUBLIC directory fields (Phase 10 + the
+ * 10-hospital roster expansion + `widen-beyond-hospitals` PR4's seed
+ * diversification, mirrors `prisma/seed.ts`'s
+ * `name`/`city`/`postalCode`/`centreType`). Distinct cities and postal-code
+ * prefixes so search-by-name/city/postal-prefix is demonstrable end-to-end
+ * against the real seed, without mutating it. Used by both
+ * `hospital-directory.spec.ts` (positive assertions) and
+ * `non-correlation.spec.ts` (D10: these strings must never appear on the
+ * public Events surface).
  *
  * Hospital del Guadiana (Extremadura) is included here (it IS ACTIVE, with
  * `city`/`postalCode`) but has no coordinates and no `addressLine` — it is
  * the seed's deliberate "listed but not pinned" case.
+ *
+ * Four rows carrying a non-hospital `centreType` (Urumea/Monteverde/Besòs/
+ * Bernesga) were repurposed in PR4 from hospitals of the same name/id/city/
+ * postal code — kept as hospitals below (San Juan/del Mar/Santa Clara/San
+ * Rafael/do Orzán/del Guadiana) because their exact NAME backs other e2e
+ * assertions elsewhere in this file's suites (name/city/diacritic search,
+ * city-sort ordering, the no-coordinates case). Centro Ocupacional Aravaca
+ * is a brand-new PR4 row, the sixth `centreType`.
  */
 export const SEED_ACTIVE_HOSPITALS = [
-  { name: "Hospital San Juan", city: "Bilbao", postalCode: "48013" },
-  { name: "Hospital Universitario del Mar", city: "Valencia", postalCode: "46011" },
-  { name: "Hospital Santa Clara", city: "Sevilla", postalCode: "41003" },
-  { name: "Hospital San Rafael", city: "Zaragoza", postalCode: "50009" },
-  { name: "Hospital Urumea", city: "Donostia-San Sebastián", postalCode: "20003" },
-  { name: "Hospital Monteverde", city: "Madrid", postalCode: "28003" },
-  { name: "Hospital del Besòs", city: "Barcelona", postalCode: "08019" },
-  { name: "Hospital do Orzán", city: "A Coruña", postalCode: "15003" },
-  { name: "Hospital del Bernesga", city: "León", postalCode: "24001" },
-  { name: "Hospital del Guadiana", city: "Badajoz", postalCode: "06001" },
+  { name: "Hospital San Juan", city: "Bilbao", postalCode: "48013", centreType: "hospital" },
+  {
+    name: "Hospital Universitario del Mar",
+    city: "Valencia",
+    postalCode: "46011",
+    centreType: "hospital",
+  },
+  { name: "Hospital Santa Clara", city: "Sevilla", postalCode: "41003", centreType: "hospital" },
+  { name: "Hospital San Rafael", city: "Zaragoza", postalCode: "50009", centreType: "hospital" },
+  {
+    name: "Residencia Urumea",
+    city: "Donostia-San Sebastián",
+    postalCode: "20003",
+    centreType: "nursing_home",
+  },
+  {
+    name: "Centro de Día Monteverde",
+    city: "Madrid",
+    postalCode: "28003",
+    centreType: "day_centre",
+  },
+  {
+    name: "Hospital de Día del Besòs",
+    city: "Barcelona",
+    postalCode: "08019",
+    centreType: "day_hospital",
+  },
+  { name: "Hospital do Orzán", city: "A Coruña", postalCode: "15003", centreType: "hospital" },
+  {
+    name: "Unidad de Cuidados Paliativos del Bernesga",
+    city: "León",
+    postalCode: "24001",
+    centreType: "palliative_unit",
+  },
+  { name: "Hospital del Guadiana", city: "Badajoz", postalCode: "06001", centreType: "hospital" },
+  {
+    name: "Centro Ocupacional Aravaca",
+    city: "Madrid",
+    postalCode: "28023",
+    centreType: "occupational_centre",
+  },
+] as const;
+
+/** Every seeded ACTIVE centre's `centreType` value, one per row of `SEED_ACTIVE_HOSPITALS` — all six `CentreType` values are represented (widen-beyond-hospitals PR4). */
+export const SEED_ACTIVE_CENTRE_TYPES = [
+  "hospital",
+  "nursing_home",
+  "day_centre",
+  "day_hospital",
+  "occupational_centre",
+  "palliative_unit",
 ] as const;
 
 /** The one seeded ACTIVE hospital with no coordinates (Phase 4 gap closed, hospital-finder-and-home-clarity follow-up): listed in the directory but renders no map pin, never defaulted to 0,0. */

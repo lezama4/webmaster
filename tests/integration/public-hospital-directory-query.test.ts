@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount } from "@domain/account/Account";
 import {
   approveProfile,
+  CENTRE_TYPES,
   createProfile,
   deactivateProfile,
   rejectProfile,
+  type CentreType,
 } from "@domain/profile/Profile";
 import { PrismaAccountRepository } from "@infrastructure/persistence/prisma/AccountRepository";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
@@ -31,6 +33,7 @@ function nextId(prefix: string): string {
 interface SeedHospitalInput {
   readonly name: string;
   readonly status: "pending" | "active";
+  readonly centreType?: CentreType;
   readonly city?: string;
   readonly postalCode?: string;
   readonly addressLine?: string;
@@ -63,7 +66,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       id: profileId,
       accountId,
       type: "centre",
-      centreType: "hospital",
+      centreType: input.centreType ?? "hospital",
       name: input.name,
       ...(input.city !== undefined ? { city: input.city } : {}),
       ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
@@ -163,10 +166,11 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(results.map((r) => r.name)).toEqual(["Hospital San Juan"]);
   });
 
-  it("exposes exactly the 5 allow-listed keys, with `addressLine` absent from the raw result", async () => {
+  it("exposes exactly the 6 allow-listed keys (incl. centreType), with `addressLine`/`type` absent from the raw result (D19)", async () => {
     await seedHospital({
       name: "Hospital San Juan",
       status: "active",
+      centreType: "hospital",
       city: "Bilbao",
       postalCode: "48013",
       addressLine: "Plaza de Cruces, 12",
@@ -180,10 +184,12 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(results).toHaveLength(1);
     const projection = results[0]!;
     expect(Object.keys(projection).sort()).toEqual(
-      ["city", "latitude", "longitude", "name", "postalCode"].sort(),
+      ["centreType", "city", "latitude", "longitude", "name", "postalCode"].sort(),
     );
+    expect(projection.centreType).toBe("hospital");
     expect(JSON.stringify(projection)).not.toContain("Plaza de Cruces");
     expect(JSON.stringify(projection)).not.toContain("addressLine");
+    expect(JSON.stringify(projection)).not.toContain('"type"');
   });
 
   it("orders active hospitals by city asc (nulls last), then name asc — real Postgres runtime check (resolves Phase 0.1)", async () => {
@@ -266,6 +272,38 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(new Set(results.map((r) => r.city)).size).toBeGreaterThanOrEqual(3);
     expect(new Set(results.map((r) => r.postalCode)).size).toBeGreaterThanOrEqual(3);
     expect(results.some((r) => r.name === "Hospital Esperanza")).toBe(false);
+  });
+
+  it("returns all six centreType values for distinct active centres, excluding a PENDING one of an arbitrary type (4.4, D19)", async () => {
+    // public-hospital-directory spec: "Seed produces all six centre types,
+    // demonstrably filterable" — proves the widened predicate/select against
+    // real Postgres, independent of `prisma/seed.ts`'s own diversified rows.
+    for (const centreType of CENTRE_TYPES) {
+      await seedHospital({
+        name: `Centro ${centreType}`,
+        status: "active",
+        centreType,
+        city: `Ciudad ${centreType}`,
+        postalCode: "00000",
+      });
+    }
+    // A PENDING centre of an arbitrary (non-hospital) type must still never
+    // appear — the security predicate is `type: CENTRE` + `status: ACTIVE`,
+    // never conditioned on `centreType`.
+    await seedHospital({
+      name: "Centro Pendiente",
+      status: "pending",
+      centreType: "palliative_unit",
+    });
+
+    const query = new PrismaPublicHospitalDirectoryQuery(client);
+    const results = await query.listActive();
+
+    const returnedTypes = new Set(results.map((r) => r.centreType));
+    for (const centreType of CENTRE_TYPES) {
+      expect(returnedTypes.has(centreType), `missing centreType "${centreType}"`).toBe(true);
+    }
+    expect(results.some((r) => r.name === "Centro Pendiente")).toBe(false);
   });
 
   it("seed upsert-by-fixed-id is idempotent (4.3): saving the same hospital Profile id twice never duplicates the row", async () => {

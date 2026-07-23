@@ -18,7 +18,8 @@ import {
 // editing this file or the assertions below.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_HOSPITAL_KEYS = ["city", "latitude", "longitude", "name", "postalCode"];
+// widen-beyond-hospitals (D19): `centreType` joined the allow-list.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
 // `id`, `averageStars` and `ratingCount` were admitted by Block 2 (event
 // ratings). Each was checked against D10, not merely D6: `id` is the Event's
 // own id and never the Slot's — the Slot is what belongs to a hospital — and
