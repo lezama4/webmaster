@@ -41,7 +41,7 @@ test.describe("Home clarity block (Home.what) — spec: 'Home Displays an Explan
 
   test("states the platform is free and non-profit, and the three-step flow", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText(/vivetutiempo connects hospitals with artists/i)).toBeVisible();
+    await expect(page.getByText(/we connect hospitals with artists/i)).toBeVisible();
     await expect(page.getByText(/hospitals publish open slots/i)).toBeVisible();
     await expect(page.getByText(/artists propose activities/i)).toBeVisible();
     await expect(page.getByText(/the event is published/i)).toBeVisible();
