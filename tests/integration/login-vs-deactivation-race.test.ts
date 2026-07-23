@@ -43,7 +43,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
     const account = createAccount({
       id: "hospital-account",
       email: "hospital@vtt.test",
-      role: "hospital",
+      role: "centre",
     });
     await accounts.save({
       account,
@@ -53,7 +53,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       createProfile({
         id: "hospital-profile",
         accountId: account.id,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "San Juan Hospital",
       }),
     );
@@ -131,7 +132,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
     const account = createAccount({
       id: "hospital-account-2",
       email: "hospital2@vtt.test",
-      role: "hospital",
+      role: "centre",
     });
     await accounts.save({
       account,
@@ -141,7 +142,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       createProfile({
         id: "hospital-profile-2",
         accountId: account.id,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Esperanza Hospital",
       }),
     );

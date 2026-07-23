@@ -102,57 +102,57 @@ async function main(): Promise<void> {
     createAccount({
       id: IDS.accounts.sanJuan,
       email: "hospital.sanjuan@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.esperanza,
       email: "hospital.esperanza@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.delMar,
       email: "hospital.delmar@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.santaClara,
       email: "hospital.santaclara@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.sanRafael,
       email: "hospital.sanrafael@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.urumea,
       email: "hospital.urumea@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.monteverde,
       email: "hospital.monteverde@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.besos,
       email: "hospital.besos@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.orzan,
       email: "hospital.orzan@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.bernesga,
       email: "hospital.bernesga@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.guadiana,
       email: "hospital.guadiana@vtt.test",
-      role: "hospital",
+      role: "centre",
     }),
     createAccount({
       id: IDS.accounts.clara,
@@ -180,7 +180,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.sanJuan,
       accountId: IDS.accounts.sanJuan,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital San Juan",
       // PUBLIC hospital location (Phase 2, demo data) — Bilbao.
       city: "Bilbao",
@@ -193,7 +194,8 @@ async function main(): Promise<void> {
   const esperanza = createProfile({
     id: IDS.profiles.esperanza,
     accountId: IDS.accounts.esperanza,
-    type: "hospital",
+    type: "centre",
+    centreType: "hospital",
     name: "Hospital Esperanza",
     // PUBLIC hospital location (Phase 2, demo data) — Madrid.
     city: "Madrid",
@@ -211,7 +213,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.delMar,
       accountId: IDS.accounts.delMar,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital Universitario del Mar",
       city: "Valencia",
       postalCode: "46011",
@@ -224,7 +227,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.santaClara,
       accountId: IDS.accounts.santaClara,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital Santa Clara",
       city: "Sevilla",
       postalCode: "41003",
@@ -237,7 +241,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.sanRafael,
       accountId: IDS.accounts.sanRafael,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital San Rafael",
       city: "Zaragoza",
       postalCode: "50009",
@@ -256,7 +261,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.urumea,
       accountId: IDS.accounts.urumea,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital Urumea",
       city: "Donostia-San Sebastián",
       postalCode: "20003",
@@ -269,7 +275,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.monteverde,
       accountId: IDS.accounts.monteverde,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital Monteverde",
       // Separate ACTIVE Madrid hospital, distinct from the PENDING
       // Hospital Esperanza (also Madrid) — different postal code/location.
@@ -284,7 +291,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.besos,
       accountId: IDS.accounts.besos,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital del Besòs",
       city: "Barcelona",
       postalCode: "08019",
@@ -297,7 +305,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.orzan,
       accountId: IDS.accounts.orzan,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital do Orzán",
       city: "A Coruña",
       postalCode: "15003",
@@ -310,7 +319,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.bernesga,
       accountId: IDS.accounts.bernesga,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital del Bernesga",
       city: "León",
       postalCode: "24001",
@@ -327,7 +337,8 @@ async function main(): Promise<void> {
     createProfile({
       id: IDS.profiles.guadiana,
       accountId: IDS.accounts.guadiana,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: "Hospital del Guadiana",
       city: "Badajoz",
       postalCode: "06001",

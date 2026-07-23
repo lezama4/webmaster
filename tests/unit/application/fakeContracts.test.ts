@@ -92,8 +92,8 @@ describe("FakeMatchingUnitOfWork contract (pr2a-M4): the PERSIST phase rolls bac
     const profiles = new InMemoryProfileRepository();
     const matchingUnitOfWork = new FakeMatchingUnitOfWork(slots, proposals, events, profiles);
 
-    const account = anAccount("hospital");
-    const hospitalProfile = aProfile("hospital", "active", { accountId: account.id });
+    const account = anAccount("centre");
+    const hospitalProfile = aProfile("centre", "active", { accountId: account.id });
     await profiles.save(hospitalProfile);
     const actor = actorFor(account, hospitalProfile);
     const slot = anOpenSlot({ hospitalProfileId: hospitalProfile.id });

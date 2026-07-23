@@ -56,7 +56,7 @@ describe.skipIf(!dbAvailable)("race: Slot authorization vs. Admin deactivation (
       },
     });
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
 
     const approvePromise = approveProposal(
       hospitalActor,
@@ -112,7 +112,7 @@ describe.skipIf(!dbAvailable)("race: Slot authorization vs. Admin deactivation (
     });
     expect(finalProfileAfterDeactivation.status).toBe("DEACTIVATED");
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
 
     await expect(
       approveProposal(

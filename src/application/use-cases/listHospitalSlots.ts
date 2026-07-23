@@ -26,11 +26,11 @@ export async function listHospitalSlots(
   actor: Actor,
   deps: ListHospitalSlotsDeps,
 ): Promise<readonly HospitalSlotView[]> {
-  assertRole(actor, "hospital");
+  assertRole(actor, "centre");
   const profile = actor.profileId
     ? await deps.profiles.findById(actor.profileId)
     : null;
-  const activeProfile = assertActiveProfile(profile, "hospital");
+  const activeProfile = assertActiveProfile(profile, "centre");
 
   const records = await deps.hospitalSlotBoardQuery.listForHospital(
     activeProfile.id,

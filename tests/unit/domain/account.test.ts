@@ -19,17 +19,17 @@ describe("Account", () => {
       const created = createAccount({
         id: "account-1",
         email: "someone@vtt.test",
-        role: "hospital",
+        role: "centre",
       });
 
       expect(created.id).toBe("account-1");
       expect(created.email).toBe("someone@vtt.test");
-      expect(created.role).toBe("hospital");
+      expect(created.role).toBe("centre");
     });
 
     it("denies creating an account with an empty email", () => {
       expect(() =>
-        createAccount({ id: "account-1", email: "  ", role: "hospital" }),
+        createAccount({ id: "account-1", email: "  ", role: "centre" }),
       ).toThrow(DomainValidationError);
     });
 
@@ -77,8 +77,8 @@ describe("Account", () => {
   });
 
   describe("canHoldProfile", () => {
-    it("allows a hospital account to hold a profile", () => {
-      expect(canHoldProfile(account("hospital"))).toBe(true);
+    it("allows a centre account to hold a profile", () => {
+      expect(canHoldProfile(account("centre"))).toBe(true);
     });
 
     it("allows an artist account to hold a profile", () => {
@@ -95,8 +95,8 @@ describe("Account", () => {
   });
 
   describe("profileTypeForRole", () => {
-    it("maps the hospital role to the hospital profile type", () => {
-      expect(profileTypeForRole("hospital")).toBe("hospital");
+    it("maps the centre role to the centre profile type", () => {
+      expect(profileTypeForRole("centre")).toBe("centre");
     });
 
     it("maps the artist role to the artist profile type", () => {

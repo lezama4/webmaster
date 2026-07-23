@@ -54,7 +54,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       account: createAccount({
         id: accountId,
         email: `${nextId("hospital")}@vtt.test`,
-        role: "hospital",
+        role: "centre",
       }),
       passwordHash: "unused-in-integration-test",
     });
@@ -62,7 +62,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     let profile = createProfile({
       id: profileId,
       accountId,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: input.name,
       ...(input.city !== undefined ? { city: input.city } : {}),
       ...(input.postalCode !== undefined ? { postalCode: input.postalCode } : {}),
@@ -117,7 +118,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       account: createAccount({
         id: rejectedAccountId,
         email: `${nextId("hospital")}@vtt.test`,
-        role: "hospital",
+        role: "centre",
       }),
       passwordHash: "unused-in-integration-test",
     });
@@ -125,7 +126,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       createProfile({
         id: nextId("profile-hospital"),
         accountId: rejectedAccountId,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital Rechazado",
       }),
     );
@@ -136,7 +138,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       account: createAccount({
         id: deactivatedAccountId,
         email: `${nextId("hospital")}@vtt.test`,
-        role: "hospital",
+        role: "centre",
       }),
       passwordHash: "unused-in-integration-test",
     });
@@ -145,7 +147,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
         createProfile({
           id: nextId("profile-hospital"),
           accountId: deactivatedAccountId,
-          type: "hospital",
+          type: "centre",
+          centreType: "hospital",
           name: "Hospital Desactivado",
         }),
       ),
@@ -280,7 +283,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       account: createAccount({
         id: accountId,
         email: `${nextId("hospital")}@vtt.test`,
-        role: "hospital",
+        role: "centre",
       }),
       passwordHash: "unused-in-integration-test",
     });
@@ -289,7 +292,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       createProfile({
         id: fixedProfileId,
         accountId,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Hospital Idempotency Check",
         city: "Valencia",
       }),

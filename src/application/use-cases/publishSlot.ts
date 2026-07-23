@@ -41,10 +41,10 @@ export async function publishSlot(
   input: PublishSlotInput,
   deps: PublishSlotDeps,
 ): Promise<Slot> {
-  assertRole(actor, "hospital");
+  assertRole(actor, "centre");
 
   return deps.profileUnitOfWork.withLockedProfile(actor.accountId, async (ctx) => {
-    const activeProfile = assertActiveProfile(ctx.profile, "hospital");
+    const activeProfile = assertActiveProfile(ctx.profile, "centre");
 
     const slot = createSlot(
       {

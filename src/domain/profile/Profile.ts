@@ -1,11 +1,45 @@
 import { DomainValidationError, InvalidTransitionError } from "../errors";
 import type { Clock } from "../shared/Clock";
 
-export type ProfileType = "hospital" | "artist";
+export type ProfileType = "centre" | "artist";
 
 export type ProfileStatus = "pending" | "active" | "rejected" | "deactivated";
 
-const PROFILE_TYPES: readonly ProfileType[] = ["hospital", "artist"];
+/**
+ * The six kinds of care centre (ADR D16, `widen-beyond-hospitals`) — an
+ * independent, orthogonal axis from `ProfileType`/`AccountRole`. A `centre`
+ * Profile ALWAYS carries exactly one `CentreType`; an `artist` Profile NEVER
+ * does (invariant enforced in `createProfile`/`rehydrateProfile` below).
+ * "The seventh centre type is data, not code": adding a kind is one enum
+ * value + one migration + one i18n label, never a change to authorization.
+ */
+export type CentreType =
+  | "hospital"
+  | "nursing_home"
+  | "day_centre"
+  | "day_hospital"
+  | "occupational_centre"
+  | "palliative_unit";
+
+export const CENTRE_TYPES: readonly CentreType[] = [
+  "hospital",
+  "nursing_home",
+  "day_centre",
+  "day_hospital",
+  "occupational_centre",
+  "palliative_unit",
+];
+
+/** Rejects any string that is not one of the six known `CentreType` values (ADR D16). */
+export function assertValidCentreType(
+  centreType: string,
+): asserts centreType is CentreType {
+  if (!CENTRE_TYPES.includes(centreType as CentreType)) {
+    throw new DomainValidationError(`Centre type '${centreType}' is invalid`);
+  }
+}
+
+const PROFILE_TYPES: readonly ProfileType[] = ["centre", "artist"];
 const PROFILE_STATUSES: readonly ProfileStatus[] = [
   "pending",
   "active",
@@ -24,7 +58,7 @@ const PROFILE_STATUSES: readonly ProfileStatus[] = [
 declare const PROFILE_BRAND: unique symbol;
 
 /**
- * Hospital/Artist profile awaiting or holding Admin validation.
+ * Centre/Artist profile awaiting or holding Admin validation.
  * State machine: pending -> active | rejected;
  *                active -> deactivated (Admin, M3);
  *                rejected -> pending (re-registration, same profile, M2).
@@ -35,12 +69,18 @@ export type Profile = {
   readonly type: ProfileType;
   readonly name: string;
   readonly status: ProfileStatus;
+  /**
+   * The kind of care centre (ADR D16) — set if and only if `type ===
+   * "centre"`; always `undefined` for `type === "artist"`. Orthogonal to
+   * `type`/`AccountRole`: authorization never reads this field.
+   */
+  readonly centreType?: CentreType;
   /** Set when a re-registration re-enters review (auditable, M2). */
   readonly reviewRequestedAt?: Date;
-  // PUBLIC hospital location (Phase 2, ADR D6-adjacent — NOT the same
+  // PUBLIC centre location (Phase 2, ADR D6-adjacent — NOT the same
   // surface as Slot.location, which stays PRIVATE/ward-level). All optional:
-  // a hospital may register without them and add them later; artists never
-  // populate them. Only meaningful for `type: "hospital"`, but not
+  // a centre may register without them and add them later; artists never
+  // populate them. Only meaningful for `type: "centre"`, but not
   // type-restricted here — nothing prevents leaving them unset for artists.
   readonly city?: string;
   readonly postalCode?: string;
@@ -67,6 +107,7 @@ export interface CreateProfileInput extends ProfileLocationInput {
   readonly id: string;
   readonly accountId: string;
   readonly type: ProfileType;
+  readonly centreType?: CentreType;
   readonly name: string;
 }
 
@@ -74,6 +115,7 @@ export interface RehydrateProfileInput extends ProfileLocationInput {
   readonly id: string;
   readonly accountId: string;
   readonly type: ProfileType;
+  readonly centreType?: CentreType;
   readonly name: string;
   readonly status: ProfileStatus;
   readonly reviewRequestedAt?: Date;
@@ -88,6 +130,30 @@ function assertNonEmpty(field: string, value: string): void {
 function assertValidType(type: ProfileType): void {
   if (!PROFILE_TYPES.includes(type)) {
     throw new DomainValidationError(`Profile type '${type}' is invalid`);
+  }
+}
+
+/**
+ * Enforces the D16/D18 biconditional: `type === "centre"` REQUIRES a valid
+ * `centreType`; `type === "artist"` FORBIDS one. This is the single point
+ * where the role axis (`type`) and the kind axis (`centreType`) are coupled
+ * — everywhere else they stay independent.
+ */
+function assertCentreTypeInvariant(
+  type: ProfileType,
+  centreType: CentreType | undefined,
+): void {
+  if (type === "centre") {
+    if (centreType === undefined) {
+      throw new DomainValidationError(
+        "Profile centreType is required when type is 'centre'",
+      );
+    }
+    assertValidCentreType(centreType);
+  } else if (centreType !== undefined) {
+    throw new DomainValidationError(
+      `Profile centreType must not be set when type is '${type}'`,
+    );
   }
 }
 
@@ -164,6 +230,7 @@ export function createProfile(input: CreateProfileInput): Profile {
   assertNonEmpty("id", input.id);
   assertNonEmpty("accountId", input.accountId);
   assertValidType(input.type);
+  assertCentreTypeInvariant(input.type, input.centreType);
   assertNonEmpty("name", input.name);
   assertValidLocation(input);
 
@@ -173,6 +240,7 @@ export function createProfile(input: CreateProfileInput): Profile {
     type: input.type,
     name: input.name,
     status: "pending",
+    ...(input.centreType !== undefined ? { centreType: input.centreType } : {}),
     ...locationFields(input),
   } as Profile;
 }
@@ -189,6 +257,7 @@ export function rehydrateProfile(input: RehydrateProfileInput): Profile {
   assertNonEmpty("id", input.id);
   assertNonEmpty("accountId", input.accountId);
   assertValidType(input.type);
+  assertCentreTypeInvariant(input.type, input.centreType);
   assertNonEmpty("name", input.name);
   assertValidStatus(input.status);
   assertValidReviewRequestedAt(input.reviewRequestedAt);
@@ -200,6 +269,7 @@ export function rehydrateProfile(input: RehydrateProfileInput): Profile {
     type: input.type,
     name: input.name,
     status: input.status,
+    ...(input.centreType !== undefined ? { centreType: input.centreType } : {}),
     ...(input.reviewRequestedAt !== undefined
       ? { reviewRequestedAt: new Date(input.reviewRequestedAt.getTime()) }
       : {}),

@@ -36,13 +36,13 @@ export async function approveProposal(
   input: ApproveProposalInput,
   deps: ApproveProposalDeps,
 ): Promise<AcceptProposalOutcome> {
-  assertRole(actor, "hospital");
+  assertRole(actor, "centre");
 
   return deps.matchingUnitOfWork.withLockedSlot(
     input.slotId,
     actor.accountId,
     async (lockedSlot, proposals, actorProfile) => {
-      const activeProfile = assertActiveProfile(actorProfile, "hospital");
+      const activeProfile = assertActiveProfile(actorProfile, "centre");
 
       assertOwnsSlot(lockedSlot.hospitalProfileId, activeProfile.id);
 

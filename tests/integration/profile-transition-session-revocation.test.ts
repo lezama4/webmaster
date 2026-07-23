@@ -50,7 +50,8 @@ describe.skipIf(!dbAvailable)(
       const pendingProfile = createProfile({
         id: `${account.id}-pending`,
         accountId: account.id,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Pending Hospital",
       });
       await client.profile.deleteMany({ where: { accountId: account.id } });
@@ -79,7 +80,8 @@ describe.skipIf(!dbAvailable)(
       const pendingProfile = createProfile({
         id: `${account.id}-pending`,
         accountId: account.id,
-        type: "hospital",
+        type: "centre",
+        centreType: "hospital",
         name: "Pending Hospital",
       });
       await client.profile.deleteMany({ where: { accountId: account.id } });

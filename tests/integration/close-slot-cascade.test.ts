@@ -31,7 +31,7 @@ describe.skipIf(!dbAvailable)("closeSlot cascade persistence (4.17, B2)", () => 
     await createSubmittedProposal(client, slot.id, clara.id);
     await createSubmittedProposal(client, slot.id, mateo.id);
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     await closeSlot(hospitalActor, { slotId: slot.id }, slotDeps(client));
 
     const finalSlot = await client.slot.findUniqueOrThrow({ where: { id: slot.id } });

@@ -26,7 +26,7 @@ const admin = actorFor(anAccount("admin"));
 describe("deactivateProfile (Admin-only, active -> deactivated, atomic session revocation, M3)", () => {
   it("deactivates an active Profile: active -> deactivated", async () => {
     const deps = makeDeps();
-    const active = aProfile("hospital", "active", { accountId: "acct-1" });
+    const active = aProfile("centre", "active", { accountId: "acct-1" });
     await deps.profiles.save(active);
 
     const result = await deactivateProfile(admin, { profileId: active.id }, deps);
@@ -49,9 +49,9 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
 
   it("denies a non-Admin actor (Hospital) with ForbiddenError", async () => {
     const deps = makeDeps();
-    const active = aProfile("hospital", "active", { accountId: "acct-1" });
+    const active = aProfile("centre", "active", { accountId: "acct-1" });
     await deps.profiles.save(active);
-    const hospitalActor = actorFor(anAccount("hospital"));
+    const hospitalActor = actorFor(anAccount("centre"));
 
     await expect(
       deactivateProfile(hospitalActor, { profileId: active.id }, deps),
@@ -68,7 +68,7 @@ describe("deactivateProfile (Admin-only, active -> deactivated, atomic session r
 
   it("denies deactivating a Profile that is not active (pending)", async () => {
     const deps = makeDeps();
-    const pending = aProfile("hospital", "pending", { accountId: "acct-1" });
+    const pending = aProfile("centre", "pending", { accountId: "acct-1" });
     await deps.profiles.save(pending);
 
     await expect(

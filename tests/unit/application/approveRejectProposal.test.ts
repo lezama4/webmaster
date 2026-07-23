@@ -46,8 +46,8 @@ async function seedHospital(
   deps: ReturnType<typeof makeDeps>,
   status: "pending" | "active" | "rejected" | "deactivated" = "active",
 ) {
-  const account = anAccount("hospital");
-  const profile = aProfile("hospital", status, { accountId: account.id });
+  const account = anAccount("centre");
+  const profile = aProfile("centre", status, { accountId: account.id });
   await deps.profiles.save(profile);
   return { profile, actor: actorFor(account, profile) };
 }
@@ -156,7 +156,7 @@ describe("approveProposal (ownership 403, cascade, lock-first, pr2a-M1 live-chec
 
   it("denies an Actor whose Account role is 'hospital' but whose live Profile TYPE is 'artist' (pr2a-N1)", async () => {
     const deps = makeDeps();
-    const account = anAccount("hospital");
+    const account = anAccount("centre");
     const mismatchedProfile = aProfile("artist", "active", { accountId: account.id });
     await deps.profiles.save(mismatchedProfile);
     const slot = anOpenSlot({ hospitalProfileId: mismatchedProfile.id });

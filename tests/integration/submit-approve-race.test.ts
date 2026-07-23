@@ -50,7 +50,7 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
       },
     });
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     const mateoActor = actorFor(mateo, mateoAccount.id, "artist");
 
     const approvePromise = approveProposal(
@@ -106,7 +106,7 @@ describe.skipIf(!dbAvailable)("race: submit vs approve (4.11)", () => {
       },
     });
 
-    const hospitalActor = actorFor(hospital, hospitalAccount.id, "hospital");
+    const hospitalActor = actorFor(hospital, hospitalAccount.id, "centre");
     const mateoActor = actorFor(mateo, mateoAccount.id, "artist");
     const submitPromise = submitProposal(
       mateoActor,

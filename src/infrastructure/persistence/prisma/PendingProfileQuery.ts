@@ -3,7 +3,7 @@ import type { PendingProfileQuery } from "@application/ports/PendingProfileQuery
 import type { PrismaClientOrTx } from "./client";
 
 const PROFILE_TYPE_TO_DOMAIN = {
-  HOSPITAL: "hospital",
+  CENTRE: "centre",
   ARTIST: "artist",
 } as const;
 

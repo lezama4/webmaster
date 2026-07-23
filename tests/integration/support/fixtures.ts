@@ -26,7 +26,7 @@ export async function createHospitalProfile(
   const account = createAccount({
     id: nextId("account-hospital"),
     email: `${nextId("hospital")}@vtt.test`,
-    role: "hospital",
+    role: "centre",
   });
   await accounts.save({ account, passwordHash: "unused-in-fixtures" });
 
@@ -34,7 +34,8 @@ export async function createHospitalProfile(
     createProfile({
       id: nextId("profile-hospital"),
       accountId: account.id,
-      type: "hospital",
+      type: "centre",
+      centreType: "hospital",
       name: overrides.name ?? "San Juan Hospital",
     }),
   );

@@ -26,7 +26,7 @@ const STATUS_PILL_BASE = "inline-flex items-center rounded-full px-2.5 py-0.5 te
 
 export default async function HospitalSlotsPage() {
   const actor = await getCurrentActorReadOnly();
-  if (!actor || actor.role !== "hospital") redirect("/login");
+  if (!actor || actor.role !== "centre") redirect("/login");
 
   const [slots, t, tAudience, locale] = await Promise.all([
     listHospitalSlots(actor, hospitalSlotBoardDeps()),

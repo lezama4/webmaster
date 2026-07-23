@@ -13,7 +13,7 @@ function aPendingProfileView(
 ): PendingProfileView {
   return {
     profileId: overrides.profileId ?? "profile-1",
-    type: overrides.type ?? "hospital",
+    type: overrides.type ?? "centre",
     displayName: overrides.displayName ?? "Hospital San Juan",
     requestedAt: overrides.requestedAt ?? new Date("2026-07-01T10:00:00Z"),
   };
@@ -44,7 +44,7 @@ describe("listPendingProfiles (Admin validation queue, 5.3/5.12)", () => {
 
   it("denies a non-admin actor (Hospital) with ForbiddenError", async () => {
     const deps = { pendingProfileQuery: new FakePendingProfileQuery([]) };
-    const hospitalActor = actorFor(anAccount("hospital"));
+    const hospitalActor = actorFor(anAccount("centre"));
 
     await expect(listPendingProfiles(hospitalActor, deps)).rejects.toBeInstanceOf(
       ForbiddenError,

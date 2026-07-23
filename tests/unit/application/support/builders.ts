@@ -8,6 +8,7 @@ import {
   approveProfile,
   createProfile,
   deactivateProfile,
+  type CentreType,
   type Profile,
   type ProfileType,
   rejectProfile,
@@ -40,12 +41,21 @@ export function anAccount(
 export function aProfile(
   type: ProfileType,
   status: "pending" | "active" | "rejected" | "deactivated",
-  overrides: Partial<{ id: string; accountId: string; name: string }> = {},
+  overrides: Partial<{
+    id: string;
+    accountId: string;
+    name: string;
+    centreType: CentreType;
+  }> = {},
 ): Profile {
   const pending = createProfile({
     id: overrides.id ?? nextId(`${type}-profile`),
     accountId: overrides.accountId ?? nextId(`${type}-account`),
     type,
+    // D16 stopgap: every `centre` fixture built by this test suite predates
+    // the CentreType axis, so default to `hospital` (the only kind that
+    // existed) unless a test explicitly asks for another.
+    ...(type === "centre" ? { centreType: overrides.centreType ?? "hospital" } : {}),
     name: overrides.name ?? `${type} name`,
   });
   switch (status) {

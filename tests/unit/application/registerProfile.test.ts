@@ -34,19 +34,20 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
       {
         email: "hospital.sanjuan@vtt.test",
         password: "S3cure!pass",
-        role: "hospital",
+        role: "centre",
         name: "Hospital San Juan",
       },
       deps,
     );
 
     expect(profile.status).toBe("pending");
-    expect(profile.type).toBe("hospital");
+    expect(profile.type).toBe("centre");
+    expect(profile.centreType).toBe("hospital");
     expect(profile.name).toBe("Hospital San Juan");
 
     const record = await deps.accounts.findByEmail("hospital.sanjuan@vtt.test");
     expect(record).not.toBeNull();
-    expect(record!.account.role).toBe("hospital");
+    expect(record!.account.role).toBe("centre");
     expect(profile.accountId).toBe(record!.account.id);
 
     const persisted = await deps.profiles.findByAccountId(record!.account.id);
@@ -185,7 +186,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
         {
           email: "shared@vtt.test",
           password: "S3cure!pass", // CORRECT password — role mismatch alone must still deny.
-          role: "hospital",
+          role: "centre",
           name: "Some Hospital",
         },
         deps,
@@ -339,7 +340,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
         {
           email: "hospital.sanjuan@vtt.test",
           password: "S3cure!pass",
-          role: "hospital",
+          role: "centre",
           name: "Hospital San Juan",
           city: "Bilbao",
           postalCode: "48013",
@@ -369,7 +370,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
         {
           email: "hospital.sanjuan@vtt.test",
           password: "S3cure!pass",
-          role: "hospital",
+          role: "centre",
           name: "Hospital San Juan",
         },
         deps,
@@ -409,7 +410,7 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
           {
             email: "hospital.sanjuan@vtt.test",
             password: "S3cure!pass",
-            role: "hospital",
+            role: "centre",
             name: "Hospital San Juan",
             latitude: 200,
             longitude: 0,

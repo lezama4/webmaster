@@ -1,7 +1,12 @@
 import type { Profile } from "@domain/profile/Profile";
 import type { ProfileRepository } from "@application/ports/ProfileRepository";
 import type { PrismaClientOrTx } from "./client";
-import { profileStatusToPrisma, profileTypeToPrisma, toDomainProfile } from "./mappers";
+import {
+  centreTypeToPrisma,
+  profileStatusToPrisma,
+  profileTypeToPrisma,
+  toDomainProfile,
+} from "./mappers";
 
 /** Prisma adapter for `ProfileRepository` (Phase 4). */
 export class PrismaProfileRepository implements ProfileRepository {
@@ -29,6 +34,10 @@ export class PrismaProfileRepository implements ProfileRepository {
       addressLine: profile.addressLine ?? null,
       latitude: profile.latitude ?? null,
       longitude: profile.longitude ?? null,
+      centreType:
+        profile.centreType !== undefined
+          ? centreTypeToPrisma(profile.centreType)
+          : null,
     };
     await this.client.profile.upsert({
       where: { id: profile.id },
