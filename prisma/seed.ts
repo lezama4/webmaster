@@ -31,12 +31,22 @@ const IDS = {
     // 10-hospital roster expansion (hospital-finder-and-home-clarity apply
     // follow-up): 6 more NEW ACTIVE hospitals, one per remaining region.
     // Esperanza stays PENDING — never promoted, never duplicated.
+    // Ids below are kept EXACTLY as originally seeded (fixed-id upsert, D14/
+    // idempotency) even though four of these rows were repurposed to a
+    // non-hospital `centreType` in `widen-beyond-hospitals` PR4 — only the
+    // row's own name/centreType/status changed, its identity did not.
     urumea: "seed-account-hospital-urumea",
     monteverde: "seed-account-hospital-monteverde",
     besos: "seed-account-hospital-besos",
     orzan: "seed-account-hospital-orzan",
     bernesga: "seed-account-hospital-bernesga",
     guadiana: "seed-account-hospital-guadiana",
+    // widen-beyond-hospitals PR4: ONE new ACTIVE centre, the sixth
+    // `centreType` (`occupational_centre`) that no existing roster row could
+    // safely be repurposed to without breaking a name-dependent e2e/
+    // integration assertion elsewhere (San Juan/del Mar/Santa Clara/San
+    // Rafael/do Orzán/del Guadiana all back other tests by exact name).
+    aravaca: "seed-account-centre-aravaca",
     clara: "seed-account-artist-clara",
     mateo: "seed-account-artist-mateo",
     lucia: "seed-account-artist-lucia",
@@ -54,6 +64,7 @@ const IDS = {
     orzan: "seed-profile-hospital-orzan",
     bernesga: "seed-profile-hospital-bernesga",
     guadiana: "seed-profile-hospital-guadiana",
+    aravaca: "seed-profile-centre-aravaca",
     clara: "seed-profile-artist-clara",
     mateo: "seed-profile-artist-mateo",
     lucia: "seed-profile-artist-lucia",
@@ -155,6 +166,11 @@ async function main(): Promise<void> {
       role: "centre",
     }),
     createAccount({
+      id: IDS.accounts.aravaca,
+      email: "centre.aravaca@vtt.test",
+      role: "centre",
+    }),
+    createAccount({
       id: IDS.accounts.clara,
       email: "artist.clara@vtt.test",
       role: "artist",
@@ -251,19 +267,31 @@ async function main(): Promise<void> {
       longitude: -0.8891,
     }),
   );
-  // 10-hospital roster expansion: 6 more NEW ACTIVE hospitals, one per
+  // 10-hospital roster expansion: 6 more NEW ACTIVE centres, one per
   // remaining region (Gipuzkoa, Madrid, Barcelona, A Coruña, León,
   // Extremadura), same fictional-name register as the entries above (rivers/
   // districts, not real institution names). `addressLine` is populated on
   // every one EXCEPT Guadiana (below), consistent with the same D14
   // non-vacuous-exclusion rule.
+  //
+  // widen-beyond-hospitals PR4 (D19b seed diversification): four of these
+  // six rows were repurposed from `centreType: "hospital"` to one of the
+  // five other kinds, so the public directory demonstrably contains all six
+  // `CentreType` values, not just hospitals. Only `name`/`centreType`
+  // changed — `id`/`city`/`postalCode`/`addressLine`/coordinates are
+  // untouched, so every existing search-by-city/postal-prefix/coordinate
+  // test still holds. San Juan, del Mar, Santa Clara, San Rafael, do Orzán
+  // and del Guadiana were deliberately NOT repurposed: their exact NAME
+  // backs other e2e/integration assertions (case-insensitive name search,
+  // diacritic search, city-sort ordering, the no-coordinates case) — see
+  // `e2e/hospital-directory.spec.ts`.
   const urumea = approveProfile(
     createProfile({
       id: IDS.profiles.urumea,
       accountId: IDS.accounts.urumea,
       type: "centre",
-      centreType: "hospital",
-      name: "Hospital Urumea",
+      centreType: "nursing_home",
+      name: "Residencia Urumea",
       city: "Donostia-San Sebastián",
       postalCode: "20003",
       addressLine: "Paseo del Urumea, 5",
@@ -276,9 +304,9 @@ async function main(): Promise<void> {
       id: IDS.profiles.monteverde,
       accountId: IDS.accounts.monteverde,
       type: "centre",
-      centreType: "hospital",
-      name: "Hospital Monteverde",
-      // Separate ACTIVE Madrid hospital, distinct from the PENDING
+      centreType: "day_centre",
+      name: "Centro de Día Monteverde",
+      // Separate ACTIVE Madrid centre, distinct from the PENDING
       // Hospital Esperanza (also Madrid) — different postal code/location.
       city: "Madrid",
       postalCode: "28003",
@@ -292,8 +320,8 @@ async function main(): Promise<void> {
       id: IDS.profiles.besos,
       accountId: IDS.accounts.besos,
       type: "centre",
-      centreType: "hospital",
-      name: "Hospital del Besòs",
+      centreType: "day_hospital",
+      name: "Hospital de Día del Besòs",
       city: "Barcelona",
       postalCode: "08019",
       addressLine: "Rambla del Besòs, 7",
@@ -320,8 +348,8 @@ async function main(): Promise<void> {
       id: IDS.profiles.bernesga,
       accountId: IDS.accounts.bernesga,
       type: "centre",
-      centreType: "hospital",
-      name: "Hospital del Bernesga",
+      centreType: "palliative_unit",
+      name: "Unidad de Cuidados Paliativos del Bernesga",
       city: "León",
       postalCode: "24001",
       addressLine: "Avenida del Bernesga, 14",
@@ -342,6 +370,24 @@ async function main(): Promise<void> {
       name: "Hospital del Guadiana",
       city: "Badajoz",
       postalCode: "06001",
+    }),
+  );
+  // widen-beyond-hospitals PR4: the sixth `centreType` (`occupational_centre`)
+  // as a brand-new ACTIVE row, distinct fixed id, since no existing roster
+  // row could be repurposed to it without breaking a name-dependent test
+  // (see the roster-expansion comment above).
+  const aravaca = approveProfile(
+    createProfile({
+      id: IDS.profiles.aravaca,
+      accountId: IDS.accounts.aravaca,
+      type: "centre",
+      centreType: "occupational_centre",
+      name: "Centro Ocupacional Aravaca",
+      city: "Madrid",
+      postalCode: "28023",
+      addressLine: "Calle de la Dehesa de Aravaca, 9",
+      latitude: 40.4636,
+      longitude: -3.7972,
     }),
   );
   const clara = approveProfile(
@@ -555,6 +601,7 @@ async function main(): Promise<void> {
       orzan,
       bernesga,
       guadiana,
+      aravaca,
       clara,
       mateo,
       lucia,

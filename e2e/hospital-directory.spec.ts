@@ -27,10 +27,13 @@ import {
 // known fixture-naming patterns from other spec files.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_HOSPITAL_KEYS = ["city", "latitude", "longitude", "name", "postalCode"];
+// widen-beyond-hospitals (D19): `centreType` joined the allow-list; the
+// internal `type` (role) field stays forbidden — see ADR D19 and
+// `PublicHospitalProjection`'s doc comment.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
 
-test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
-  test("returns exactly the allow-listed keys, every ACTIVE hospital, and never leaks addressLine/email/Esperanza", async () => {
+test.describe("GET /api/hospitals — allow-list boundary (D9/D14/D19)", () => {
+  test("returns exactly the allow-listed keys, every ACTIVE centre, and never leaks addressLine/email/type/Esperanza", async () => {
     const ctx = await request.newContext({ baseURL });
     const res = await ctx.get("/api/hospitals");
     expect(res.status()).toBe(200);
@@ -38,7 +41,7 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     const raw = await res.text();
     const body = JSON.parse(raw) as { hospitals: Array<Record<string, unknown>> };
 
-    expect(body.hospitals.length).toBeGreaterThanOrEqual(10);
+    expect(body.hospitals.length).toBeGreaterThanOrEqual(SEED_ACTIVE_HOSPITALS.length);
 
     for (const hospital of body.hospitals) {
       expect(Object.keys(hospital).sort()).toEqual(ALLOWED_HOSPITAL_KEYS);
@@ -48,6 +51,8 @@ test.describe("GET /api/hospitals — allow-list boundary (D9/D14)", () => {
     const cities = new Set(body.hospitals.map((hospital) => hospital.city));
     for (const seeded of SEED_ACTIVE_HOSPITALS) {
       expect(names).toContain(seeded.name);
+      const found = body.hospitals.find((hospital) => hospital.name === seeded.name);
+      expect(found?.centreType, `centreType for ${seeded.name}`).toBe(seeded.centreType);
     }
     expect(cities.size).toBeGreaterThanOrEqual(10);
     expect(names).not.toContain(SEED_PENDING_HOSPITAL_NAME);
