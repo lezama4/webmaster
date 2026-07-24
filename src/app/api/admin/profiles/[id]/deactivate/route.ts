@@ -5,6 +5,10 @@ import { assertCsrfSafe } from "@infrastructure/http/csrfGuard";
 import { toErrorResponse } from "@infrastructure/http/httpErrors";
 import { getCurrentActor } from "@infrastructure/http/sessionCookie";
 
+interface DeactivateProfileRequestBody {
+  readonly basis?: unknown;
+}
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -17,7 +21,11 @@ function json(status: number, body: unknown): Response {
  * deactivation (task 5.11, M3): `active -> deactivated`, cascading a full
  * session revocation for the owning Account, both atomically via
  * `deactivateProfile` (`ProfileUnitOfWork.withLockedProfile`). CSRF-guard →
- * resolve `Actor` → `deactivateProfile` → response.
+ * resolve `Actor` → parse `basis` → `deactivateProfile` → response.
+ *
+ * `basis` (auditable-profile-approval, D24/D27): see `approve/route.ts` for
+ * the full rationale — the domain transition is the AUTHORITATIVE validator,
+ * this handler only coerces the shape.
  */
 export async function POST(
   request: Request,
@@ -32,14 +40,12 @@ export async function POST(
     }
 
     const { id } = await params;
-    // PR4 wiring handoff (auditable-profile-approval): see approve/route.ts
-    // — real basis body-parsing lands with PR4 (D24 route wiring, D27
-    // role-cued copy). The domain remains authoritative regardless.
+    const body = (await request.json().catch(() => ({}))) as DeactivateProfileRequestBody;
     const profile = await deactivateProfile(
       actor,
       {
         profileId: id,
-        basis: "PR4-PENDING: route body-parsing lands with the basis textarea (D24/D27).",
+        basis: typeof body.basis === "string" ? body.basis : "",
       },
       adminDeps(),
     );

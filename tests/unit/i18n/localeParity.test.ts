@@ -143,6 +143,38 @@ describe("Locale parity guard (D13) — repository-wide, all namespaces", () => 
     }
   });
 
+  it("each locale has the auditable-profile-approval basis/legacy keys (D24/D27, PR4)", () => {
+    // Structural-parity pin for the keys this change adds: the basis field
+    // label, the two role-cued prompts (centre/artist), the deactivate
+    // action labels, and the legacy-review label. This is STRUCTURE-only —
+    // it proves the keys exist and are non-empty in all three locales, it
+    // does NOT and cannot assess translation quality. `eu` here is DRAFT and
+    // still requires native-speaker sign-off (design.md D27, tasks.md 5.9)
+    // before merge; a green run of this test must never be cited as if it
+    // were that review.
+    const requiredKeys = [
+      "ProfileActions.deactivate",
+      "ProfileActions.deactivating",
+      "ProfileActions.basis.label",
+      "ProfileActions.basis.placeholder.centre",
+      "ProfileActions.basis.placeholder.artist",
+      "AdminProfiles.review.legacy",
+    ];
+    for (const [label, flat] of [
+      ["es", esFlat],
+      ["eu", euFlat],
+      ["en", enFlat],
+    ] as const) {
+      for (const key of requiredKeys) {
+        expect(flat[key], `${label}.${key} is missing`).toBeTypeOf("string");
+        expect(
+          typeof flat[key] === "string" && (flat[key] as string).trim().length > 0,
+          `${label}.${key} must not be empty`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("ICU placeholder argument sets match across locales for every shared string key", () => {
     const mismatches: string[] = [];
     for (const key of esKeys) {
