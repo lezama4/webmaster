@@ -6,6 +6,7 @@ import type {
   ProfileStatus as PrismaProfileStatus,
   ProfileType as PrismaProfileType,
   ProposalStatus as PrismaProposalStatus,
+  ReviewDecision as PrismaReviewDecision,
   SlotStatus as PrismaSlotStatus,
 } from "@prisma/client";
 import { rehydrateAccount, type Account, type AccountRole } from "@domain/account/Account";
@@ -13,8 +14,10 @@ import {
   rehydrateProfile,
   type CentreType,
   type Profile,
+  type ProfileReview,
   type ProfileStatus,
   type ProfileType,
+  type ReviewDecision,
 } from "@domain/profile/Profile";
 import { rehydrateSlot, type Audience, type Slot, type SlotStatus } from "@domain/slot/Slot";
 import { rehydrateProposal, type Proposal, type ProposalStatus } from "@domain/proposal/Proposal";
@@ -80,6 +83,22 @@ const PROFILE_STATUS_TO_PRISMA: Record<ProfileStatus, PrismaProfileStatus> = {
   active: "ACTIVE",
   rejected: "REJECTED",
   deactivated: "DEACTIVATED",
+};
+
+/**
+ * Bidirectional map for the three `ReviewDecision` kinds (ADR D21,
+ * `auditable-profile-approval`) — mirrors the `CentreType`/`ProfileStatus`
+ * pairs above.
+ */
+const REVIEW_DECISION_TO_DOMAIN: Record<PrismaReviewDecision, ReviewDecision> = {
+  APPROVE: "approve",
+  REJECT: "reject",
+  DEACTIVATE: "deactivate",
+};
+const REVIEW_DECISION_TO_PRISMA: Record<ReviewDecision, PrismaReviewDecision> = {
+  approve: "APPROVE",
+  reject: "REJECT",
+  deactivate: "DEACTIVATE",
 };
 
 const SLOT_STATUS_TO_DOMAIN: Record<PrismaSlotStatus, SlotStatus> = {
@@ -152,6 +171,13 @@ export function profileStatusToPrisma(status: ProfileStatus): PrismaProfileStatu
   return PROFILE_STATUS_TO_PRISMA[status];
 }
 
+export function toDomainReviewDecision(decision: PrismaReviewDecision): ReviewDecision {
+  return REVIEW_DECISION_TO_DOMAIN[decision];
+}
+export function reviewDecisionToPrisma(decision: ReviewDecision): PrismaReviewDecision {
+  return REVIEW_DECISION_TO_PRISMA[decision];
+}
+
 export function slotStatusToPrisma(status: SlotStatus): PrismaSlotStatus {
   return SLOT_STATUS_TO_PRISMA[status];
 }
@@ -194,6 +220,16 @@ export interface ProfileRow {
   // The kind of care centre (ADR D16) — present only for `type: CENTRE`
   // rows; NULL for artists.
   readonly centreType?: PrismaCentreType | null;
+}
+
+/** Minimal row shape for a `ProfileReview` (ADR D21) — immutable, append-only. */
+export interface ProfileReviewRow {
+  readonly id: string;
+  readonly profileId: string;
+  readonly adminAccountId: string;
+  readonly decision: PrismaReviewDecision;
+  readonly basis: string;
+  readonly createdAt: Date;
 }
 
 export interface SlotRow {
@@ -268,6 +304,17 @@ export function toDomainProfile(row: ProfileRow): Profile {
       ? { longitude: row.longitude }
       : {}),
   });
+}
+
+export function toDomainProfileReview(row: ProfileReviewRow): ProfileReview {
+  return {
+    id: row.id,
+    profileId: row.profileId,
+    adminAccountId: row.adminAccountId,
+    decision: toDomainReviewDecision(row.decision),
+    basis: row.basis,
+    at: row.createdAt,
+  };
 }
 
 export function toDomainSlot(row: SlotRow): Slot {

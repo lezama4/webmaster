@@ -6,6 +6,8 @@ import { ForbiddenError } from "@application/errors";
 import { PrismaMatchingUnitOfWork } from "@infrastructure/persistence/prisma/MatchingUnitOfWork";
 import { PrismaProfileRepository } from "@infrastructure/persistence/prisma/ProfileRepository";
 import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/ProfileUnitOfWork";
+import { CryptoIdGenerator } from "@infrastructure/shared/idGenerator";
+import { SystemClock } from "@infrastructure/shared/clock";
 import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 import {
@@ -15,6 +17,11 @@ import {
   createSubmittedProposal,
 } from "./support/fixtures";
 import { actorFor, slotDeps } from "./support/wiring";
+
+// PR2 (auditable-profile-approval): deactivateProfile now requires a real
+// basis (ADR D21-D24) — this suite is about lock ordering, not the review
+// audit trail itself, so a fixed valid basis is enough.
+const DEACTIVATE_BASIS = "Lock-order race test — unrelated to the review audit trail itself.";
 
 /**
  * recheck-pr2a-verify-M2: barrier-based interleave of a Slot-mutating use
@@ -71,8 +78,13 @@ describe.skipIf(!dbAvailable)("race: Slot authorization vs. Admin deactivation (
 
     const deactivatePromise = deactivateProfile(
       adminActor,
-      { profileId: hospital.id },
-      { profiles: new PrismaProfileRepository(client), profileUnitOfWork: new PrismaProfileUnitOfWork(client) },
+      { profileId: hospital.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles: new PrismaProfileRepository(client),
+        profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
+      },
     );
 
     await waitForPostgresLockWait(client, "accounts");
@@ -103,8 +115,13 @@ describe.skipIf(!dbAvailable)("race: Slot authorization vs. Admin deactivation (
 
     await deactivateProfile(
       adminActor,
-      { profileId: hospital.id },
-      { profiles: new PrismaProfileRepository(client), profileUnitOfWork: new PrismaProfileUnitOfWork(client) },
+      { profileId: hospital.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles: new PrismaProfileRepository(client),
+        profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: new SystemClock(),
+      },
     );
 
     const finalProfileAfterDeactivation = await client.profile.findUniqueOrThrow({

@@ -148,7 +148,11 @@ describe("closeSlot (owner-Hospital-only, cascades reject, lock-first, B2, pr2a-
     await deps.proposals.save(p1);
     const admin = actorFor(anAccount("admin"));
 
-    const deactivation = deactivateProfile(admin, { profileId: profile.id }, deps);
+    const deactivation = deactivateProfile(
+      admin,
+      { profileId: profile.id, basis: "M1 race test — deactivated mid-flight." },
+      deps,
+    );
     const closeAttempt = closeSlot(actor, { slotId: slot.id }, deps);
 
     await expect(deactivation).resolves.toMatchObject({ status: "deactivated" });

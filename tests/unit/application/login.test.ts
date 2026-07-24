@@ -11,8 +11,12 @@ import {
   FakeSessionPort,
   InMemoryAccountRepository,
   InMemoryProfileRepository,
+  SequentialIdGenerator,
+  fixedClock,
 } from "./support/fakes";
 import { actorFor, aProfile, anAccount } from "./support/builders";
+
+const DEACTIVATE_BASIS = "Login-race test — unrelated to the review audit trail itself.";
 
 function makeDeps() {
   const accounts = new InMemoryAccountRepository();
@@ -25,6 +29,8 @@ function makeDeps() {
     passwordHasher: new FakePasswordHasher(),
     rateLimiter: new FakeLoginRateLimiter(),
     profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
+    idGenerator: new SequentialIdGenerator("review"),
+    clock: fixedClock,
   };
 }
 
@@ -170,7 +176,7 @@ describe("login", () => {
     // status and deny, never issue a session from a stale pre-lock read.
     const deactivation = deactivateProfile(
       admin,
-      { profileId: profile.id },
+      { profileId: profile.id, basis: DEACTIVATE_BASIS },
       deps,
     );
     const loginAttempt = login(
@@ -202,7 +208,7 @@ describe("login", () => {
     expect(deps.sessions.sessionsForAccount(account.id)).toHaveLength(1);
 
     await expect(
-      deactivateProfile(admin, { profileId: profile.id }, deps),
+      deactivateProfile(admin, { profileId: profile.id, basis: DEACTIVATE_BASIS }, deps),
     ).resolves.toMatchObject({ status: "deactivated" });
 
     // Observable result: login's OWN promise already resolved successfully

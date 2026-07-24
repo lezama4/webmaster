@@ -32,7 +32,17 @@ export async function POST(
     }
 
     const { id } = await params;
-    const profile = await deactivateProfile(actor, { profileId: id }, adminDeps());
+    // PR4 wiring handoff (auditable-profile-approval): see approve/route.ts
+    // — real basis body-parsing lands with PR4 (D24 route wiring, D27
+    // role-cued copy). The domain remains authoritative regardless.
+    const profile = await deactivateProfile(
+      actor,
+      {
+        profileId: id,
+        basis: "PR4-PENDING: route body-parsing lands with the basis textarea (D24/D27).",
+      },
+      adminDeps(),
+    );
 
     return json(200, { id: profile.id, status: profile.status });
   } catch (error) {
