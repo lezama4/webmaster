@@ -148,6 +148,37 @@ describe("listPublicHospitals (public, D9 allow-list via PublicHospitalDirectory
     expect(item.centreType).toBe(hostileItem.centreType);
   });
 
+  it("HOSTILE ADAPTER supplying review/audit fields (D26): reviewBasis, adminAccountId, and reviewedAt are stripped by the field-by-field rebuild", async () => {
+    const hostileItem = {
+      ...aHospital(),
+      // ADR D26 — the audit trail this change introduces (`ProfileReview`:
+      // basis, adminAccountId, decision, at) lives on a table never joined
+      // into this query. Even if a future adapter bug or a compromised port
+      // implementation attached these fields to the returned object anyway,
+      // the fresh-object-literal rebuild in `listPublicHospitals` must still
+      // strip them before they can reach public JSON.
+      reviewBasis: "Convenio VTT-2026-014 verified by phone",
+      adminAccountId: "admin-secret-account-id",
+      reviewedAt: new Date("2026-07-20T10:00:00Z"),
+    } as unknown as PublicHospitalProjection;
+
+    const deps = {
+      publicHospitalDirectoryQuery: new FakePublicHospitalDirectoryQuery([hostileItem]),
+    };
+
+    const result = await listPublicHospitals(deps);
+
+    expect(result).toHaveLength(1);
+    const [item] = result;
+    expect(Object.keys(item).sort()).toEqual(ALLOW_LISTED_FIELDS);
+    expect(item).not.toHaveProperty("reviewBasis");
+    expect(item).not.toHaveProperty("adminAccountId");
+    expect(item).not.toHaveProperty("reviewedAt");
+    // The allow-listed fields themselves must still be forwarded correctly.
+    expect(item.name).toBe(hostileItem.name);
+    expect(item.centreType).toBe(hostileItem.centreType);
+  });
+
   it("does not import or depend on anything beyond the PublicHospitalDirectoryQuery port (no repository, no Prisma)", () => {
     // Structural/compile-time guarantee: the module's only import besides
     // the DTO type is the port interface — verified by this file compiling

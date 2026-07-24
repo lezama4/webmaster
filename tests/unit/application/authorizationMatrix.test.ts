@@ -57,6 +57,8 @@ function makeProfileDeps() {
     profiles,
     sessions,
     profileUnitOfWork: new FakeProfileUnitOfWork(profiles, sessions),
+    idGenerator: new SequentialIdGenerator("review"),
+    clock: fixedClock,
   };
 }
 
@@ -197,10 +199,18 @@ describe("Authorization edge-case matrix — stale session snapshot vs. live sta
     await deps.profiles.save(pending);
 
     await expect(
-      validateProfile(artist, { profileId: pending.id, decision: "approve" }, deps),
+      validateProfile(
+        artist,
+        { profileId: pending.id, decision: "approve", basis: "Authorization matrix test." },
+        deps,
+      ),
     ).rejects.toBeInstanceOf(ForbiddenError);
     await expect(
-      deactivateProfile(patient, { profileId: pending.id }, deps),
+      deactivateProfile(
+        patient,
+        { profileId: pending.id, basis: "Authorization matrix test." },
+        deps,
+      ),
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 

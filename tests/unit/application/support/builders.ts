@@ -26,6 +26,20 @@ function nextId(prefix: string): string {
   return `${prefix}-${++sequence}`;
 }
 
+/**
+ * PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+ * `approveProfile`/`rejectProfile`/`deactivateProfile` now require an
+ * attributed `ReviewInput` (ADR D21-D24). This builder produces fixtures
+ * for tests unrelated to the review audit trail itself, so a fixed
+ * placeholder satisfies the new required shape — PR2 wires the real
+ * actor/basis through `validateProfile`/`deactivateProfile`.
+ */
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+
 export function anAccount(
   role: AccountRole,
   overrides: Partial<{ id: string; email: string }> = {},
@@ -62,11 +76,15 @@ export function aProfile(
     case "pending":
       return pending;
     case "active":
-      return approveProfile(pending);
+      return approveProfile(pending, PLACEHOLDER_REVIEW, fixedClock).profile;
     case "rejected":
-      return rejectProfile(pending);
+      return rejectProfile(pending, PLACEHOLDER_REVIEW, fixedClock).profile;
     case "deactivated":
-      return deactivateProfile(approveProfile(pending));
+      return deactivateProfile(
+        approveProfile(pending, PLACEHOLDER_REVIEW, fixedClock).profile,
+        PLACEHOLDER_REVIEW,
+        fixedClock,
+      ).profile;
   }
 }
 

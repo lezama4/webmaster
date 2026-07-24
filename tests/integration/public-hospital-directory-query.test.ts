@@ -24,6 +24,19 @@ import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./suppo
  */
 const dbAvailable = await isDatabaseAvailable();
 
+// PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+// approveProfile/rejectProfile/deactivateProfile now require an attributed
+// ReviewInput and a Clock (ADR D21-D24) and return { profile, review }.
+// This suite's fixtures are unrelated to the review audit trail itself, so
+// a fixed placeholder satisfies the new required shape — PR2 wires the
+// real actor/basis.
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+const PLACEHOLDER_CLOCK = { now: () => new Date() };
+
 let profileCounter = 0;
 function nextId(prefix: string): string {
   profileCounter += 1;
@@ -76,7 +89,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     });
 
     if (input.status === "active") {
-      profile = approveProfile(profile);
+      profile = approveProfile(profile, PLACEHOLDER_REVIEW, PLACEHOLDER_CLOCK).profile;
     }
 
     await profiles.save(profile);
@@ -93,13 +106,15 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       }),
       passwordHash: "unused-in-integration-test",
     });
-    const profile = approveProfile(
+    const { profile } = approveProfile(
       createProfile({
         id: nextId("profile-artist"),
         accountId,
         type: "artist",
         name,
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
   }
@@ -125,7 +140,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       }),
       passwordHash: "unused-in-integration-test",
     });
-    const rejected = rejectProfile(
+    const { profile: rejected } = rejectProfile(
       createProfile({
         id: nextId("profile-hospital"),
         accountId: rejectedAccountId,
@@ -133,6 +148,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
         centreType: "hospital",
         name: "Hospital Rechazado",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(rejected);
 
@@ -145,7 +162,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       }),
       passwordHash: "unused-in-integration-test",
     });
-    const deactivated = deactivateProfile(
+    const { profile: deactivated } = deactivateProfile(
       approveProfile(
         createProfile({
           id: nextId("profile-hospital"),
@@ -154,7 +171,11 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
           centreType: "hospital",
           name: "Hospital Desactivado",
         }),
-      ),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
+      ).profile,
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(deactivated);
 
@@ -326,7 +347,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       passwordHash: "unused-in-integration-test",
     });
 
-    const hospital = approveProfile(
+    const { profile: hospital } = approveProfile(
       createProfile({
         id: fixedProfileId,
         accountId,
@@ -335,6 +356,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
         name: "Hospital Idempotency Check",
         city: "Valencia",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
 
     try {

@@ -11,7 +11,7 @@
  */
 import type { Account } from "@domain/account/Account";
 import type { Event } from "@domain/event/Event";
-import type { Profile } from "@domain/profile/Profile";
+import type { Profile, ProfileReview } from "@domain/profile/Profile";
 import type { Proposal } from "@domain/proposal/Proposal";
 import type { Rating } from "@domain/rating/Rating";
 import type { Clock } from "@domain/shared/Clock";
@@ -420,9 +420,16 @@ export class FakeMatchingUnitOfWork implements MatchingUnitOfWork {
  * `withLockedProfile` call, reads the LIVE Profile inside the critical
  * section, and rolls BOTH the profile store and the session store back when
  * `work` throws — a transition and its session effect are one atomic unit.
+ *
+ * `auditable-profile-approval` PR2 (D23): also holds an in-memory,
+ * append-only `reviews` list backing `ctx.saveReview` — rolled back
+ * alongside the profile/session/slot stores on a `work` failure, so the
+ * unit-level tests can prove D23 atomicity without a real Postgres
+ * transaction. `reviewsForProfile` exposes it read-only for assertions.
  */
 export class FakeProfileUnitOfWork implements ProfileUnitOfWork {
   private queue: Promise<unknown> = Promise.resolve();
+  private reviews: ProfileReview[] = [];
 
   constructor(
     private readonly profiles: InMemoryProfileRepository,
@@ -441,11 +448,15 @@ export class FakeProfileUnitOfWork implements ProfileUnitOfWork {
       const profileSnapshot = this.profiles.snapshot();
       const sessionSnapshot = new Map(this.sessionPort.sessions);
       const slotsSnapshot = this.slots.snapshot();
+      const reviewsSnapshot = [...this.reviews];
       try {
         const profile = await this.profiles.findByAccountId(accountId);
         return await work({
           profile,
           saveProfile: (p: Profile) => this.profiles.save(p),
+          saveReview: async (review: ProfileReview) => {
+            this.reviews.push(review);
+          },
           sessions: this.sessionsForWork,
           slots: this.slots,
         });
@@ -453,11 +464,17 @@ export class FakeProfileUnitOfWork implements ProfileUnitOfWork {
         this.profiles.restore(profileSnapshot); // atomic rollback
         this.sessionPort.sessions = sessionSnapshot;
         this.slots.restore(slotsSnapshot);
+        this.reviews = reviewsSnapshot;
         throw error;
       }
     });
     this.queue = run.catch(() => undefined);
     return run;
+  }
+
+  /** Every persisted `ProfileReview` for `profileId`, in insertion order (D21 append-only history). */
+  reviewsForProfile(profileId: string): readonly ProfileReview[] {
+    return this.reviews.filter((r) => r.profileId === profileId);
   }
 }
 

@@ -75,6 +75,16 @@ enum EventStatus {
   COMPLETED
 }
 
+// The three closed admin decisions a ProfileReview can record (ADR D21,
+// `auditable-profile-approval`). Deliberately distinct from ProfileStatus:
+// a ReviewDecision is the recorded ACT, a ProfileStatus is the resulting
+// STATE. A typo'd decision cannot be persisted (mirrors CentreType).
+enum ReviewDecision {
+  APPROVE
+  REJECT
+  DEACTIVATE
+}
+
 model Account {
   id           String      @id @default(cuid())
   email        String      @unique
@@ -162,7 +172,32 @@ model Profile {
   // ARTIST side
   proposals Proposal[] @relation("ArtistProposals")
 
+  // Append-only admin decision audit trail (ADR D21, `auditable-profile-approval`).
+  // Pre-existing profiles have ZERO rows here after the migration — read as
+  // "no basis recorded (predates auditing)", NEVER back-filled (ADR D25).
+  reviews ProfileReview[]
+
   @@map("profiles")
+}
+
+// An append-only audit record of a single admin decision on a Profile (ADR
+// D21). Never updated, never deleted — the only operation is `create`. Not
+// back-filled for pre-existing profiles (ADR D25). `adminAccountId` is a
+// stored id, not a hard FK-to-self requirement (design's explicit call, to
+// keep this migration simple and additive) — the audit purpose only needs
+// the id value, not referential-integrity enforcement against Account.
+model ProfileReview {
+  id             String         @id @default(cuid())
+  profileId      String
+  profile        Profile        @relation(fields: [profileId], references: [id])
+  adminAccountId String
+  decision       ReviewDecision
+  basis          String
+  createdAt      DateTime       @default(now())
+
+  // Read side ordered by createdAt (and id as a stable tiebreaker, D21).
+  @@index([profileId, createdAt])
+  @@map("profile_reviews")
 }
 
 model Slot {

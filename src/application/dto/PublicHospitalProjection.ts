@@ -44,7 +44,17 @@ export interface PublicHospitalProjection {
   readonly centreType: CentreType;
 }
 
-/** Named fields that must NEVER appear on the public hospital projection (D9/D10). */
+/**
+ * Named fields that must NEVER appear on the public hospital projection
+ * (D9/D10). `reviewBasis`, `adminAccountId`, `reviewedBy`, `reviewedAt`,
+ * `decision` and `reviews` (D26) are the `ProfileReview` audit trail
+ * (`auditable-profile-approval`) — structurally impossible to leak here
+ * already, since `ProfileReview` lives on a separate table never joined
+ * into `PublicHospitalDirectoryQuery` (see that file), but named explicitly
+ * so an accidental future edit that tries to surface "last approved by" or
+ * a review basis on this projection fails `tsc` at the interface edit,
+ * before any test runs.
+ */
 type ForbiddenPublicHospitalKey =
   | "addressLine"
   | "id"
@@ -61,7 +71,13 @@ type ForbiddenPublicHospitalKey =
   | "eventId"
   | "upcomingEventCount"
   | "nextEventAt"
-  | "hasUpcomingEvents";
+  | "hasUpcomingEvents"
+  | "reviewBasis"
+  | "adminAccountId"
+  | "reviewedBy"
+  | "reviewedAt"
+  | "decision"
+  | "reviews";
 
 type AssertNever<T extends never> = T;
 

@@ -11,6 +11,7 @@ import { PrismaProfileUnitOfWork } from "@infrastructure/persistence/prisma/Prof
 import { PrismaLoginRateLimiter } from "@infrastructure/auth/loginRateLimiter";
 import { Argon2PasswordHasher } from "@infrastructure/auth/passwordHasher";
 import { createPrismaSessionPort } from "@infrastructure/auth/session";
+import { CryptoIdGenerator } from "@infrastructure/shared/idGenerator";
 import { createDeferred, waitForPostgresLockWait } from "./support/barrier";
 import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./support/db";
 
@@ -27,6 +28,21 @@ const dbAvailable = await isDatabaseAvailable();
 
 const adminActor: Actor = { accountId: "admin-account", role: "admin" };
 const PASSWORD = "correct-password";
+
+// PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+// the domain approveProfile now requires an attributed ReviewInput and a
+// Clock (ADR D21-D24) and returns { profile, review }. This suite's
+// fixtures are unrelated to the review audit trail itself, so a fixed
+// placeholder satisfies the new required shape — PR2 wires the real
+// actor/basis.
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+const PLACEHOLDER_CLOCK = { now: () => new Date() };
+// PR2 (this batch): deactivateProfile now requires a real basis + idGenerator/clock deps (D23).
+const DEACTIVATE_BASIS = "Race-test deactivation — unrelated to the review audit trail itself.";
 
 describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
   const client = getTestPrismaClient();
@@ -49,7 +65,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       account,
       passwordHash: await passwordHasher.hash(PASSWORD),
     });
-    const profile = approveProfile(
+    const { profile } = approveProfile(
       createProfile({
         id: "hospital-profile",
         accountId: account.id,
@@ -57,6 +73,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
         centreType: "hospital",
         name: "San Juan Hospital",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
 
@@ -72,8 +90,13 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
 
     const deactivatePromise = deactivateProfile(
       adminActor,
-      { profileId: profile.id },
-      { profiles, profileUnitOfWork: deactivateUoW },
+      { profileId: profile.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles,
+        profileUnitOfWork: deactivateUoW,
+        idGenerator: new CryptoIdGenerator(),
+        clock: PLACEHOLDER_CLOCK,
+      },
     );
 
     await deactivateLockAcquired.promise; // deactivation now holds the Account lock.
@@ -111,7 +134,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       where: { accountId: account.id },
     });
     expect(liveSessions).toHaveLength(0); // login never created one.
-  });
+  }, 15_000); // PR2 (D23): saveReview's extra round-trip against remote Neon dev needs headroom beyond the 5s default.
 
   /**
    * pr2b-M5: the review's second, previously-unaddressed gap — this suite
@@ -138,7 +161,7 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       account,
       passwordHash: await passwordHasher.hash(PASSWORD),
     });
-    const profile = approveProfile(
+    const { profile } = approveProfile(
       createProfile({
         id: "hospital-profile-2",
         accountId: account.id,
@@ -146,6 +169,8 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
         centreType: "hospital",
         name: "Esperanza Hospital",
       }),
+      PLACEHOLDER_REVIEW,
+      PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
 
@@ -172,8 +197,13 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
 
     const deactivatePromise = deactivateProfile(
       adminActor,
-      { profileId: profile.id },
-      { profiles, profileUnitOfWork: new PrismaProfileUnitOfWork(client) },
+      { profileId: profile.id, basis: DEACTIVATE_BASIS },
+      {
+        profiles,
+        profileUnitOfWork: new PrismaProfileUnitOfWork(client),
+        idGenerator: new CryptoIdGenerator(),
+        clock: PLACEHOLDER_CLOCK,
+      },
     );
 
     await waitForPostgresLockWait(client, "accounts");
@@ -208,5 +238,5 @@ describe.skipIf(!dbAvailable)("race: login vs deactivation (4.22, M3)", () => {
       const sessions = createPrismaSessionPort(client);
       expect(await sessions.resolveValid(issuedSessionId)).toBeNull();
     }
-  });
+  }, 15_000); // PR2 (D23): saveReview's extra round-trip against remote Neon dev needs headroom beyond the 5s default.
 });

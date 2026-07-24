@@ -1,4 +1,4 @@
-import type { Profile } from "@domain/profile/Profile";
+import type { Profile, ProfileReview } from "@domain/profile/Profile";
 import type { SlotRepository } from "@application/ports/SlotRepository";
 import type { SessionPort } from "./SessionPort";
 
@@ -11,6 +11,13 @@ export interface LockedProfileContext {
   readonly profile: Profile | null;
   /** Persists a Profile status transition inside the same transaction. */
   saveProfile(profile: Profile): Promise<void>;
+  /**
+   * Persists an append-only `ProfileReview` row inside the SAME transaction
+   * as `saveProfile` (ADR D23) — a status change without its attributed
+   * review, or vice versa, must be impossible. No update/delete counterpart
+   * exists: the only operation is appending a new row (ADR D21).
+   */
+  saveReview(review: ProfileReview): Promise<void>;
   /**
    * Transaction-scoped session operations: a status transition and its
    * `revokeAllForAccount`, or a live-status check and its `create`, are one

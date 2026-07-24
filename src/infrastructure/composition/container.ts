@@ -13,6 +13,7 @@ import type { PublishSlotDeps } from "@application/use-cases/publishSlot";
 import type { ListPublishedEventsDeps } from "@application/use-cases/listPublishedEvents";
 import type { ListPublicHospitalsDeps } from "@application/use-cases/listPublicHospitals";
 import type { ListPendingProfilesDeps } from "@application/use-cases/listPendingProfiles";
+import type { ListActiveProfilesDeps } from "@application/use-cases/listActiveProfiles";
 import type { ListHospitalSlotsDeps } from "@application/use-cases/listHospitalSlots";
 import type { ListOpenSlotsDeps } from "@application/use-cases/listOpenSlots";
 import type { RateEventDeps } from "@application/use-cases/rateEvent";
@@ -27,6 +28,7 @@ import { PrismaEventRepository } from "@infrastructure/persistence/prisma/EventR
 import { PrismaPublicEventProjectionQuery } from "@infrastructure/persistence/prisma/PublicEventProjectionQuery";
 import { PrismaPublicHospitalDirectoryQuery } from "@infrastructure/persistence/prisma/PublicHospitalDirectoryQuery";
 import { PrismaPendingProfileQuery } from "@infrastructure/persistence/prisma/PendingProfileQuery";
+import { PrismaActiveProfileQuery } from "@infrastructure/persistence/prisma/ActiveProfileQuery";
 import { PrismaHospitalSlotBoardQuery } from "@infrastructure/persistence/prisma/HospitalSlotBoardQuery";
 import { PrismaOpenSlotListingQuery } from "@infrastructure/persistence/prisma/OpenSlotListingQuery";
 import { PrismaRatingRepository } from "@infrastructure/persistence/prisma/RatingRepository";
@@ -162,16 +164,24 @@ export function matchingDeps(): MatchingDeps {
 /**
  * Shared Admin deps (tasks 5.3/5.11): `validateProfile` and
  * `deactivateProfile` declare the identical Deps shape.
+ *
+ * `idGenerator`/`clock` (auditable-profile-approval PR2, D23): stamp the
+ * `ProfileReview` id and timestamp for each admin decision — same
+ * singletons every other use case's deps already use.
  */
 export interface AdminDeps {
   readonly profiles: ProfileRepository;
   readonly profileUnitOfWork: ProfileUnitOfWork;
+  readonly idGenerator: IdGenerator;
+  readonly clock: Clock;
 }
 
 export function adminDeps(): AdminDeps {
   return {
     profiles: new PrismaProfileRepository(prismaClient),
     profileUnitOfWork: new PrismaProfileUnitOfWork(prismaClient),
+    idGenerator: new CryptoIdGenerator(),
+    clock: new SystemClock(),
   };
 }
 
@@ -179,6 +189,17 @@ export function adminDeps(): AdminDeps {
 export function pendingProfilesDeps(): ListPendingProfilesDeps {
   return {
     pendingProfileQuery: new PrismaPendingProfileQuery(prismaClient),
+  };
+}
+
+/**
+ * `listActiveProfiles` deps — Admin active-profile listing
+ * (auditable-profile-approval, PR4/5.6 — closes the "no deactivate UI"
+ * scope gap).
+ */
+export function activeProfilesDeps(): ListActiveProfilesDeps {
+  return {
+    activeProfileQuery: new PrismaActiveProfileQuery(prismaClient),
   };
 }
 

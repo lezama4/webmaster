@@ -4,7 +4,12 @@ import type {
   LockedProfileWork,
   ProfileUnitOfWork,
 } from "@application/ports/ProfileUnitOfWork";
-import { profileStatusToPrisma, toDomainProfile, type ProfileRow } from "./mappers";
+import {
+  profileStatusToPrisma,
+  reviewDecisionToPrisma,
+  toDomainProfile,
+  type ProfileRow,
+} from "./mappers";
 import { createPrismaSessionPort } from "../../auth/session";
 import { PrismaSlotRepository } from "./SlotRepository";
 
@@ -57,6 +62,23 @@ export class PrismaProfileUnitOfWork implements ProfileUnitOfWork {
               data: {
                 status: profileStatusToPrisma(updated.status),
                 reviewRequestedAt: updated.reviewRequestedAt ?? null,
+              },
+            });
+          },
+          // ADR D23: appends the review row using the SAME transaction
+          // handle `tx` that `saveProfile`/`sessions` already use — no new
+          // transaction, no second round-trip, so a failure anywhere in
+          // `work` rolls back the status change, the review, and the
+          // session effect together as one unit.
+          saveReview: async (review) => {
+            await tx.profileReview.create({
+              data: {
+                id: review.id,
+                profileId: review.profileId,
+                adminAccountId: review.adminAccountId,
+                decision: reviewDecisionToPrisma(review.decision),
+                basis: review.basis,
+                createdAt: review.at,
               },
             });
           },

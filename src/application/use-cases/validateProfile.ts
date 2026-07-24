@@ -1,7 +1,14 @@
-import { approveProfile, rejectProfile, type Profile } from "@domain/profile/Profile";
+import {
+  approveProfile,
+  rejectProfile,
+  type Profile,
+  type ReviewInput,
+} from "@domain/profile/Profile";
+import type { Clock } from "@domain/shared/Clock";
 import { DomainValidationError } from "@domain/errors";
 import { NotFoundError } from "@application/errors";
 import type { Actor } from "@application/Actor";
+import type { IdGenerator } from "@application/ports/IdGenerator";
 import type { ProfileRepository } from "@application/ports/ProfileRepository";
 import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertRole } from "./shared/guards";
@@ -9,20 +16,33 @@ import { assertRole } from "./shared/guards";
 export interface ValidateProfileInput {
   readonly profileId: string;
   readonly decision: "approve" | "reject";
+  /**
+   * The admin's verification basis (ADR D21-D24): required, non-blank,
+   * bounded — validated authoritatively inside the domain transition, never
+   * only here. Route-level parsing supplies this from the request body
+   * (PR4); the use case does not trust it beyond passing it through.
+   */
+  readonly basis: string;
 }
 
 export interface ValidateProfileDeps {
   readonly profiles: ProfileRepository;
   readonly profileUnitOfWork: ProfileUnitOfWork;
+  readonly idGenerator: IdGenerator;
+  readonly clock: Clock;
 }
 
 /**
  * Admin-only validation decision on a `pending` Profile (also covers the
  * `rejected -> pending` re-registration queue — M2, task 5.12: the SAME
- * queue, no separate UI/use-case path). The reject branch revokes every
- * live session for the Profile's Account, atomically with the status
- * transition, via `ProfileUnitOfWork.withLockedProfile` (D7/M3) — a failure
- * between the two steps leaves no partial state.
+ * queue, no separate UI/use-case path). Each decision requires and records
+ * an attributed `ProfileReview` (ADR D21-D24): the acting admin's identity
+ * comes from `actor.accountId` — the resolved, live-session identity, NEVER
+ * a client-supplied value (ADR D23) — and the review is persisted via
+ * `ctx.saveReview` INSIDE the SAME `ProfileUnitOfWork.withLockedProfile`
+ * transaction as the status transition and, on reject, the session
+ * revocation — a failure between any of these steps leaves NO partial state
+ * (D23 atomicity).
  */
 export async function validateProfile(
   actor: Actor,
@@ -54,12 +74,21 @@ export async function validateProfile(
         throw new NotFoundError(`Profile '${input.profileId}' does not exist`);
       }
 
-      const updated =
+      // D23: the acting admin's identity is ALWAYS actor.accountId — the
+      // resolved, live-session identity — never any input-supplied field.
+      const reviewInput: ReviewInput = {
+        adminAccountId: actor.accountId,
+        basis: input.basis,
+        reviewId: deps.idGenerator.next(),
+      };
+
+      const { profile: updated, review } =
         input.decision === "approve"
-          ? approveProfile(profile)
-          : rejectProfile(profile);
+          ? approveProfile(profile, reviewInput, deps.clock)
+          : rejectProfile(profile, reviewInput, deps.clock);
 
       await ctx.saveProfile(updated);
+      await ctx.saveReview(review);
 
       if (input.decision === "reject") {
         await ctx.sessions.revokeAllForAccount(profile.accountId);

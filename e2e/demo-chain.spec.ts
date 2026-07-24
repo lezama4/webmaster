@@ -26,6 +26,15 @@ test("demo chain: register -> admin approve -> publish -> propose -> accept -> a
   browser,
   page,
 }) => {
+  // Each admin approval now also persists an attributed ProfileReview in the
+  // same transaction (auditable-profile-approval, D23) and the queue page
+  // re-fetches both the pending AND active listings on refresh — one more
+  // DB round trip per approval than before, against the remote Neon dev
+  // host. This flow does THREE approvals plus the full publish/propose/
+  // accept/auto-reject/public-browse chain; extended explicitly rather than
+  // silently retried.
+  test.setTimeout(90_000);
+
   const runId = uniqueSuffix();
   const password = "DemoChainPass123!";
 

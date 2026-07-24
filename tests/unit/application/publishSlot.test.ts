@@ -127,7 +127,11 @@ describe("publishSlot (active-Hospital gate, atomically persisted through the Pr
     // the use case reads the LIVE Profile in the lock rather than trusting
     // the actor's stale 'active' snapshot.
     await expect(
-      deactivateProfile(admin, { profileId: profile.id }, deps),
+      deactivateProfile(
+        admin,
+        { profileId: profile.id, basis: "Race test — unrelated to the review audit trail itself." },
+        deps,
+      ),
     ).resolves.toMatchObject({ status: "deactivated" });
 
     await expect(publishSlot(actor, slotInput, deps)).rejects.toBeInstanceOf(
