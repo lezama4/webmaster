@@ -50,6 +50,9 @@ export async function resetDatabase(client: PrismaClient): Promise<void> {
   await client.slot.deleteMany();
   await client.session.deleteMany();
   await client.loginAttemptWindow.deleteMany();
+  // ProfileReview FKs to Profile with ON DELETE RESTRICT (ADR D21,
+  // `auditable-profile-approval`) — MUST be cleared before profile.deleteMany().
+  await client.profileReview.deleteMany();
   await client.profile.deleteMany();
   await client.account.deleteMany();
 }

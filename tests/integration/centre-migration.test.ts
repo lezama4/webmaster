@@ -29,6 +29,18 @@ import { getTestPrismaClient, isDatabaseAvailable, resetDatabase } from "./suppo
  * suite's own fixtures are what round-trip through the migrated shape —
  * see the file-level `beforeEach(resetDatabase)` note in `./support/db.ts`.
  */
+// PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+// approveProfile now requires an attributed ReviewInput and a Clock (ADR
+// D21-D24) and returns { profile, review }. This suite's fixtures are
+// unrelated to the review audit trail itself, so a fixed placeholder
+// satisfies the new required shape — PR2 wires the real actor/basis.
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+const PLACEHOLDER_CLOCK = { now: () => new Date() };
+
 const dbAvailable = await isDatabaseAvailable();
 
 describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () => {
@@ -109,7 +121,7 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
       });
       await accounts.save({ account: hospitalAccount, passwordHash });
 
-      const hospitalProfile = approveProfile(
+      const { profile: hospitalProfile } = approveProfile(
         createProfile({
           id: "migration-profile-hospital",
           accountId: hospitalAccount.id,
@@ -122,6 +134,8 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
           latitude: 43.263,
           longitude: -2.935,
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(hospitalProfile);
 
@@ -146,13 +160,15 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
         role: "artist",
       });
       await accounts.save({ account: artistAccount, passwordHash });
-      const artistProfile = approveProfile(
+      const { profile: artistProfile } = approveProfile(
         createProfile({
           id: "migration-profile-artist",
           accountId: artistAccount.id,
           type: "artist",
           name: "Clara Romero",
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(artistProfile);
 
@@ -212,7 +228,7 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
         role: "centre",
       });
       await accounts.save({ account, passwordHash });
-      const profile = approveProfile(
+      const { profile } = approveProfile(
         createProfile({
           id: "migration-count-profile",
           accountId: account.id,
@@ -220,6 +236,8 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
           centreType: "hospital",
           name: "Hospital Count Check",
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(profile);
 
@@ -257,7 +275,7 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
         role: "centre",
       });
       await accounts.save({ account: centreAccount, passwordHash });
-      const centreProfile = approveProfile(
+      const { profile: centreProfile } = approveProfile(
         createProfile({
           id: "migration-index-profile-centre",
           accountId: centreAccount.id,
@@ -265,6 +283,8 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
           centreType: "hospital",
           name: "Hospital Index Check",
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(centreProfile);
 
@@ -274,13 +294,15 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
         role: "artist",
       });
       await accounts.save({ account: claraAccount, passwordHash });
-      const clara = approveProfile(
+      const { profile: clara } = approveProfile(
         createProfile({
           id: "migration-index-profile-clara",
           accountId: claraAccount.id,
           type: "artist",
           name: "Clara",
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(clara);
 
@@ -290,13 +312,15 @@ describe.skipIf(!dbAvailable)("centre migration survival (D17, Phase 1.9)", () =
         role: "artist",
       });
       await accounts.save({ account: mateoAccount, passwordHash });
-      const mateo = approveProfile(
+      const { profile: mateo } = approveProfile(
         createProfile({
           id: "migration-index-profile-mateo",
           accountId: mateoAccount.id,
           type: "artist",
           name: "Mateo",
         }),
+        PLACEHOLDER_REVIEW,
+        PLACEHOLDER_CLOCK,
       );
       await profiles.save(mateo);
 

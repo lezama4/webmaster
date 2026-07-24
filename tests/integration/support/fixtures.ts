@@ -16,6 +16,21 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${counter}`;
 }
 
+/**
+ * PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+ * `approveProfile` now requires an attributed `ReviewInput` (ADR D21-D24).
+ * These integration fixtures build already-`active` profiles for tests that
+ * exercise unrelated behaviour (races, slot lifecycle, etc.), not the review
+ * audit trail itself, so a fixed placeholder satisfies the new required
+ * shape. PR2 wires the real actor/basis through `validateProfile` — this
+ * placeholder is NOT semantic wiring, just a mechanical compile fix.
+ */
+const PLACEHOLDER_REVIEW = {
+  adminAccountId: "fixture-admin",
+  basis: "Fixture-only placeholder basis (PR2 wires the real actor/basis).",
+  reviewId: "fixture-review",
+};
+
 export async function createHospitalProfile(
   client: PrismaClient,
   overrides: { readonly name?: string } = {},
@@ -30,7 +45,7 @@ export async function createHospitalProfile(
   });
   await accounts.save({ account, passwordHash: "unused-in-fixtures" });
 
-  const profile = approveProfile(
+  const { profile } = approveProfile(
     createProfile({
       id: nextId("profile-hospital"),
       accountId: account.id,
@@ -38,6 +53,8 @@ export async function createHospitalProfile(
       centreType: "hospital",
       name: overrides.name ?? "San Juan Hospital",
     }),
+    PLACEHOLDER_REVIEW,
+    clock,
   );
   await profiles.save(profile);
   return { account, profile };
@@ -57,13 +74,15 @@ export async function createArtistProfile(
   });
   await accounts.save({ account, passwordHash: "unused-in-fixtures" });
 
-  const profile = approveProfile(
+  const { profile } = approveProfile(
     createProfile({
       id: nextId("profile-artist"),
       accountId: account.id,
       type: "artist",
       name: overrides.name ?? "Clara the Artist",
     }),
+    PLACEHOLDER_REVIEW,
+    clock,
   );
   await profiles.save(profile);
   return { account, profile };

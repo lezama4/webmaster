@@ -289,22 +289,163 @@ function assertStatus(
   }
 }
 
-/** Admin approval: pending -> active. */
-export function approveProfile(profile: Profile): Profile {
+/**
+ * The three closed decisions an Admin can attach to a `ProfileReview`
+ * (ADR D21). Deliberately distinct from `ProfileStatus`: a `ReviewDecision`
+ * is the recorded ACT, a `ProfileStatus` is the resulting STATE.
+ */
+export type ReviewDecision = "approve" | "reject" | "deactivate";
+
+export const REVIEW_DECISIONS: readonly ReviewDecision[] = [
+  "approve",
+  "reject",
+  "deactivate",
+];
+
+/** Rejects any string that is not one of the three known `ReviewDecision` values (ADR D21). */
+export function assertValidReviewDecision(
+  decision: string,
+): asserts decision is ReviewDecision {
+  if (!REVIEW_DECISIONS.includes(decision as ReviewDecision)) {
+    throw new DomainValidationError(`Review decision '${decision}' is invalid`);
+  }
+}
+
+/**
+ * An append-only audit record of a single admin decision on a Profile (ADR
+ * D21). Immutable after creation: this module exposes no mutator and no
+ * bare constructor for it — the ONLY way to obtain one is as the `review`
+ * half of `approveProfile`/`rejectProfile`/`deactivateProfile`'s return
+ * value, so a `ProfileReview` can never exist without the transition it
+ * documents having actually happened.
+ */
+export interface ProfileReview {
+  readonly id: string;
+  readonly profileId: string;
+  readonly adminAccountId: string;
+  readonly decision: ReviewDecision;
+  readonly basis: string;
+  readonly at: Date;
+}
+
+/**
+ * The caller-supplied half of a `ProfileReview` (ADR D23): the acting
+ * admin's identity (sourced by the caller from the resolved, live session —
+ * NEVER from client input, see `Actor.accountId`), the verification basis,
+ * and the id to stamp the resulting review row with (from the caller's
+ * `IdGenerator` port). The domain does not generate either the id or the
+ * timestamp itself — `reviewId` is a parameter (mirrors `Profile.id`'s
+ * origin) and `at` comes from the `clock` parameter, exactly like
+ * `reactivateProfile`'s existing `Clock` parameter.
+ */
+export interface ReviewInput {
+  readonly adminAccountId: string;
+  readonly basis: string;
+  readonly reviewId: string;
+}
+
+/**
+ * The maximum TRIMMED length of a `ProfileReview.basis` (ADR D24, T-15):
+ * long enough for a real verification note, short enough to not be a
+ * storage-abuse or rendering vector for an unbounded audit field.
+ */
+export const MAX_REVIEW_BASIS_LENGTH = 1000;
+
+/**
+ * Reads the raw basis ONCE, trims ONCE, validates the trimmed value, and
+ * returns exactly that trimmed value for storage — the same
+ * read-once/field-by-field discipline `createProfile` uses (ADR D24). A
+ * blank/whitespace-only or over-bound basis throws `DomainValidationError`
+ * BEFORE any status change, so this MUST run before `assertStatus` (or, if
+ * called after, only after that flip already threw — either order and the
+ * profile's input value is unaffected either way, but ordering it first
+ * keeps every transition consistent).
+ */
+function assertValidBasis(basis: string): string {
+  const trimmed = basis.trim();
+  if (trimmed.length === 0) {
+    throw new DomainValidationError("Profile review basis must not be empty");
+  }
+  if (trimmed.length > MAX_REVIEW_BASIS_LENGTH) {
+    throw new DomainValidationError(
+      `Profile review basis must not exceed ${MAX_REVIEW_BASIS_LENGTH} characters`,
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * Builds the `ProfileReview` half of a transition's result. Never exported:
+ * the ONLY callers are the three admin transitions below, so a
+ * `ProfileReview` can never be fabricated outside a transition that also
+ * produced the matching status change.
+ */
+function buildReview(
+  profileId: string,
+  decision: ReviewDecision,
+  input: ReviewInput,
+  basis: string,
+  clock: Clock,
+): ProfileReview {
+  assertNonEmpty("review adminAccountId", input.adminAccountId);
+  assertNonEmpty("review id", input.reviewId);
+  return {
+    id: input.reviewId,
+    profileId,
+    adminAccountId: input.adminAccountId,
+    decision,
+    basis,
+    at: clock.now(),
+  };
+}
+
+/** Admin approval: pending -> active. Requires and records an attributed basis (ADR D21-D24). */
+export function approveProfile(
+  profile: Profile,
+  review: ReviewInput,
+  clock: Clock,
+): { profile: Profile; review: ProfileReview } {
+  const basis = assertValidBasis(review.basis);
   assertStatus(profile, "pending", "approve");
-  return { ...profile, status: "active" };
+  const updated: Profile = { ...profile, status: "active" };
+  return {
+    profile: updated,
+    review: buildReview(updated.id, "approve", review, basis, clock),
+  };
 }
 
-/** Admin rejection: pending -> rejected. */
-export function rejectProfile(profile: Profile): Profile {
+/** Admin rejection: pending -> rejected. Requires and records an attributed basis (ADR D21-D24). */
+export function rejectProfile(
+  profile: Profile,
+  review: ReviewInput,
+  clock: Clock,
+): { profile: Profile; review: ProfileReview } {
+  const basis = assertValidBasis(review.basis);
   assertStatus(profile, "pending", "reject");
-  return { ...profile, status: "rejected" };
+  const updated: Profile = { ...profile, status: "rejected" };
+  return {
+    profile: updated,
+    review: buildReview(updated.id, "reject", review, basis, clock),
+  };
 }
 
-/** Admin deactivation (M3): active -> deactivated. Terminal in Block 1. */
-export function deactivateProfile(profile: Profile): Profile {
+/**
+ * Admin deactivation (M3): active -> deactivated. Terminal in Block 1.
+ * Requires and records an attributed basis (ADR D21-D24) — arguably the
+ * highest-stakes decision, revoking an already-trusted node.
+ */
+export function deactivateProfile(
+  profile: Profile,
+  review: ReviewInput,
+  clock: Clock,
+): { profile: Profile; review: ProfileReview } {
+  const basis = assertValidBasis(review.basis);
   assertStatus(profile, "active", "deactivate");
-  return { ...profile, status: "deactivated" };
+  const updated: Profile = { ...profile, status: "deactivated" };
+  return {
+    profile: updated,
+    review: buildReview(updated.id, "deactivate", review, basis, clock),
+  };
 }
 
 /**

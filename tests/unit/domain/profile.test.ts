@@ -4,20 +4,35 @@ import { DomainValidationError, InvalidTransitionError } from "@domain/errors";
 import {
   approveProfile,
   assertValidCentreType,
+  assertValidReviewDecision,
   CENTRE_TYPES,
   type CreateProfileInput,
   createProfile,
   deactivateProfile,
+  MAX_REVIEW_BASIS_LENGTH,
   type Profile,
   reactivateProfile,
   rehydrateProfile,
   rejectProfile,
+  REVIEW_DECISIONS,
+  type ReviewInput,
 } from "@domain/profile/Profile";
 import type { Clock } from "@domain/shared/Clock";
 
 const NOW = new Date("2026-07-10T12:00:00Z");
 
 const fixedClock: Clock = { now: () => NOW };
+
+/**
+ * A valid `ReviewInput` for the three admin transitions (D21-D24). Tests
+ * that only care about the resulting Profile status use this as-is; tests
+ * that assert on the review's fields override individual keys.
+ */
+const REVIEW: ReviewInput = {
+  adminAccountId: "admin-1",
+  basis: "Convenio VTT-2026-014 confirmed by phone with the centre's named contact.",
+  reviewId: "review-1",
+};
 
 function pendingProfile(overrides: Partial<CreateProfileInput> = {}): Profile {
   const type = overrides.type ?? "centre";
@@ -301,13 +316,21 @@ describe("Profile state machine", () => {
 
   describe("approveProfile (pending -> active)", () => {
     it("transitions a pending profile to active", () => {
-      const approved = approveProfile(pendingProfile());
+      const { profile: approved } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       expect(approved.status).toBe("active");
     });
 
     it("preserves the profile identity and data", () => {
-      const approved = approveProfile(pendingProfile({ type: "artist", name: "Clara" }));
+      const { profile: approved } = approveProfile(
+        pendingProfile({ type: "artist", name: "Clara" }),
+        REVIEW,
+        fixedClock,
+      );
 
       expect(approved.id).toBe("profile-1");
       expect(approved.accountId).toBe("account-1");
@@ -318,77 +341,132 @@ describe("Profile state machine", () => {
     it("does not mutate the original profile", () => {
       const original = pendingProfile();
 
-      approveProfile(original);
+      approveProfile(original, REVIEW, fixedClock);
 
       expect(original.status).toBe("pending");
     });
 
     it("denies approving an already active profile", () => {
-      const active = approveProfile(pendingProfile());
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      expect(() => approveProfile(active)).toThrow(InvalidTransitionError);
+      expect(() => approveProfile(active, REVIEW, fixedClock)).toThrow(
+        InvalidTransitionError,
+      );
     });
 
     it("denies approving a rejected profile", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      expect(() => approveProfile(rejected)).toThrow(InvalidTransitionError);
+      expect(() => approveProfile(rejected, REVIEW, fixedClock)).toThrow(
+        InvalidTransitionError,
+      );
     });
   });
 
   describe("rejectProfile (pending -> rejected)", () => {
     it("transitions a pending profile to rejected", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       expect(rejected.status).toBe("rejected");
     });
 
     it("denies rejecting an already rejected profile", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      expect(() => rejectProfile(rejected)).toThrow(InvalidTransitionError);
+      expect(() => rejectProfile(rejected, REVIEW, fixedClock)).toThrow(
+        InvalidTransitionError,
+      );
     });
 
     it("denies rejecting an active profile", () => {
-      const active = approveProfile(pendingProfile());
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      expect(() => rejectProfile(active)).toThrow(InvalidTransitionError);
+      expect(() => rejectProfile(active, REVIEW, fixedClock)).toThrow(
+        InvalidTransitionError,
+      );
     });
   });
 
   describe("deactivateProfile (active -> deactivated, Admin M3)", () => {
     it("transitions an active profile to deactivated", () => {
-      const active = approveProfile(pendingProfile());
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      const deactivated = deactivateProfile(active);
+      const { profile: deactivated } = deactivateProfile(
+        active,
+        REVIEW,
+        fixedClock,
+      );
 
       expect(deactivated.status).toBe("deactivated");
     });
 
     it("denies deactivating a pending profile", () => {
-      expect(() => deactivateProfile(pendingProfile())).toThrow(
-        InvalidTransitionError,
-      );
+      expect(() =>
+        deactivateProfile(pendingProfile(), REVIEW, fixedClock),
+      ).toThrow(InvalidTransitionError);
     });
 
     it("denies deactivating a rejected profile", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
-      expect(() => deactivateProfile(rejected)).toThrow(InvalidTransitionError);
+      expect(() => deactivateProfile(rejected, REVIEW, fixedClock)).toThrow(
+        InvalidTransitionError,
+      );
     });
 
     it("denies deactivating an already deactivated profile", () => {
-      const deactivated = deactivateProfile(approveProfile(pendingProfile()));
-
-      expect(() => deactivateProfile(deactivated)).toThrow(
-        InvalidTransitionError,
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
       );
+      const { profile: deactivated } = deactivateProfile(
+        active,
+        REVIEW,
+        fixedClock,
+      );
+
+      expect(() =>
+        deactivateProfile(deactivated, REVIEW, fixedClock),
+      ).toThrow(InvalidTransitionError);
     });
   });
 
   describe("reactivateProfile (rejected -> pending, re-registration M2)", () => {
     it("transitions a rejected profile back to pending", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       const reactivated = reactivateProfile(rejected, fixedClock);
 
@@ -396,7 +474,11 @@ describe("Profile state machine", () => {
     });
 
     it("reactivates the SAME profile (identity preserved, no new profile)", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       const reactivated = reactivateProfile(rejected, fixedClock);
 
@@ -407,7 +489,11 @@ describe("Profile state machine", () => {
     });
 
     it("records the re-registration as a new review request (fresh timestamp)", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       const reactivated = reactivateProfile(rejected, fixedClock);
 
@@ -415,7 +501,11 @@ describe("Profile state machine", () => {
     });
 
     it("denies reactivating an active profile", () => {
-      const active = approveProfile(pendingProfile());
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
 
       expect(() => reactivateProfile(active, fixedClock)).toThrow(
         InvalidTransitionError,
@@ -429,7 +519,16 @@ describe("Profile state machine", () => {
     });
 
     it("denies reactivating a deactivated profile (no reactivation path in Block 1)", () => {
-      const deactivated = deactivateProfile(approveProfile(pendingProfile()));
+      const { profile: active } = approveProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
+      const { profile: deactivated } = deactivateProfile(
+        active,
+        REVIEW,
+        fixedClock,
+      );
 
       expect(() => reactivateProfile(deactivated, fixedClock)).toThrow(
         InvalidTransitionError,
@@ -437,12 +536,192 @@ describe("Profile state machine", () => {
     });
 
     it("supports the full re-review loop: rejected -> pending -> active", () => {
-      const rejected = rejectProfile(pendingProfile());
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
       const reReviewed = reactivateProfile(rejected, fixedClock);
 
-      const approved = approveProfile(reReviewed);
+      const { profile: approved } = approveProfile(
+        reReviewed,
+        REVIEW,
+        fixedClock,
+      );
 
       expect(approved.status).toBe("active");
+    });
+
+    it("(D22 regression pin) takes only (profile, clock) and returns a bare Profile — no third argument, no 'review' in its return", () => {
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
+
+      const reactivated = reactivateProfile(rejected, fixedClock);
+
+      expect(reactivated.status).toBe("pending");
+      expect((reactivated as unknown as { review?: unknown }).review).toBeUndefined();
+    });
+  });
+
+  describe("ProfileReview (D21-D24): approve/reject/deactivate require and record an attributed basis", () => {
+    function activeProfile(): Profile {
+      return approveProfile(pendingProfile(), REVIEW, fixedClock).profile;
+    }
+
+    describe("a blank or whitespace-only basis is denied BEFORE any status change", () => {
+      it.each(["", "   "])("approveProfile denies basis %j", (basis) => {
+        const profile = pendingProfile();
+
+        expect(() =>
+          approveProfile(profile, { ...REVIEW, basis }, fixedClock),
+        ).toThrow(DomainValidationError);
+        expect(profile.status).toBe("pending");
+      });
+
+      it.each(["", "   "])("rejectProfile denies basis %j", (basis) => {
+        const profile = pendingProfile();
+
+        expect(() =>
+          rejectProfile(profile, { ...REVIEW, basis }, fixedClock),
+        ).toThrow(DomainValidationError);
+        expect(profile.status).toBe("pending");
+      });
+
+      it.each(["", "   "])("deactivateProfile denies basis %j", (basis) => {
+        const profile = activeProfile();
+
+        expect(() =>
+          deactivateProfile(profile, { ...REVIEW, basis }, fixedClock),
+        ).toThrow(DomainValidationError);
+        expect(profile.status).toBe("active");
+      });
+    });
+
+    it("(scripted-request scenario) a direct domain call with an empty basis is denied identically — the domain, not the UI, is the authoritative gate", () => {
+      const profile = pendingProfile();
+
+      expect(() =>
+        approveProfile(profile, { ...REVIEW, basis: "" }, fixedClock),
+      ).toThrow(DomainValidationError);
+    });
+
+    it("rejects a basis whose trimmed length exceeds MAX_REVIEW_BASIS_LENGTH", () => {
+      const profile = pendingProfile();
+      const overLong = "a".repeat(MAX_REVIEW_BASIS_LENGTH + 1);
+
+      expect(() =>
+        approveProfile(profile, { ...REVIEW, basis: overLong }, fixedClock),
+      ).toThrow(DomainValidationError);
+      expect(profile.status).toBe("pending");
+    });
+
+    it("accepts a basis exactly at the MAX_REVIEW_BASIS_LENGTH bound", () => {
+      const profile = pendingProfile();
+      const maxBasis = "a".repeat(MAX_REVIEW_BASIS_LENGTH);
+
+      const { review } = approveProfile(
+        profile,
+        { ...REVIEW, basis: maxBasis },
+        fixedClock,
+      );
+
+      expect(review.basis).toBe(maxBasis);
+    });
+
+    it("the basis is trimmed once, validated trimmed, and stored trimmed", () => {
+      const profile = pendingProfile();
+
+      const { review } = approveProfile(
+        profile,
+        { ...REVIEW, basis: `  ${REVIEW.basis}  ` },
+        fixedClock,
+      );
+
+      expect(review.basis).toBe(REVIEW.basis);
+    });
+
+    it("approveProfile returns both the transitioned profile and an attributed 'approve' review", () => {
+      const profile = pendingProfile();
+
+      const { profile: updated, review } = approveProfile(
+        profile,
+        REVIEW,
+        fixedClock,
+      );
+
+      expect(updated.status).toBe("active");
+      expect(review.profileId).toBe(profile.id);
+      expect(review.adminAccountId).toBe(REVIEW.adminAccountId);
+      expect(review.basis).toBe(REVIEW.basis);
+      expect(review.at).toEqual(NOW);
+      expect(review.decision).toBe("approve");
+    });
+
+    it("rejectProfile returns both the transitioned profile and an attributed 'reject' review", () => {
+      const profile = pendingProfile();
+
+      const { profile: updated, review } = rejectProfile(
+        profile,
+        REVIEW,
+        fixedClock,
+      );
+
+      expect(updated.status).toBe("rejected");
+      expect(review.adminAccountId).toBe(REVIEW.adminAccountId);
+      expect(review.basis).toBe(REVIEW.basis);
+      expect(review.at).toEqual(NOW);
+      expect(review.decision).toBe("reject");
+    });
+
+    it("deactivateProfile returns both the transitioned profile and an attributed 'deactivate' review", () => {
+      const profile = activeProfile();
+
+      const { profile: updated, review } = deactivateProfile(
+        profile,
+        REVIEW,
+        fixedClock,
+      );
+
+      expect(updated.status).toBe("deactivated");
+      expect(review.adminAccountId).toBe(REVIEW.adminAccountId);
+      expect(review.basis).toBe(REVIEW.basis);
+      expect(review.at).toEqual(NOW);
+      expect(review.decision).toBe("deactivate");
+    });
+
+    it("a client-supplied admin id has no bearing on anything but the argument passed — the recorded id is whatever the caller (the resolved session, per D23) supplied", () => {
+      const profile = pendingProfile();
+
+      const { review } = approveProfile(
+        profile,
+        { ...REVIEW, adminAccountId: "admin-live-session-id" },
+        fixedClock,
+      );
+
+      expect(review.adminAccountId).toBe("admin-live-session-id");
+    });
+  });
+
+  describe("assertValidReviewDecision (D21)", () => {
+    it("accepts each of the three known ReviewDecision values", () => {
+      for (const decision of REVIEW_DECISIONS) {
+        expect(() => assertValidReviewDecision(decision)).not.toThrow();
+      }
+    });
+
+    it("rejects an unknown string", () => {
+      expect(() => assertValidReviewDecision("revoke")).toThrow(
+        DomainValidationError,
+      );
+    });
+
+    it("rejects an empty string", () => {
+      expect(() => assertValidReviewDecision("")).toThrow(
+        DomainValidationError,
+      );
     });
   });
 

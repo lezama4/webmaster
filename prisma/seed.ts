@@ -104,6 +104,20 @@ async function main(): Promise<void> {
   const scheduledAt = (daysFromNow: number): Date =>
     new Date(seedNow.getTime() + daysFromNow * DAY_MS);
 
+  // PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+  // approveProfile now requires an attributed ReviewInput (ADR D21-D24).
+  // This seed script builds demo profiles directly against the domain, not
+  // through the admin validateProfile use case, so a fixed placeholder
+  // basis satisfies the new required shape. It is NOT a real audit record
+  // and MUST NOT be read as one; no ProfileReview row from this placeholder
+  // is asserted anywhere. Real admin-authored bases only ever come from the
+  // admin UI/route once PR2/PR4 land.
+  const SEED_REVIEW = {
+    adminAccountId: IDS.accounts.admin,
+    basis: "Seed data — demo profile approved directly for local/demo setup.",
+    reviewId: "seed-review-placeholder",
+  };
+
   const accounts = [
     createAccount({
       id: IDS.accounts.admin,
@@ -192,7 +206,7 @@ async function main(): Promise<void> {
     }),
   ] as const;
 
-  const sanJuan = approveProfile(
+  const { profile: sanJuan } = approveProfile(
     createProfile({
       id: IDS.profiles.sanJuan,
       accountId: IDS.accounts.sanJuan,
@@ -206,6 +220,8 @@ async function main(): Promise<void> {
       latitude: 43.263,
       longitude: -2.935,
     }),
+    SEED_REVIEW,
+    clock,
   );
   const esperanza = createProfile({
     id: IDS.profiles.esperanza,
@@ -225,7 +241,7 @@ async function main(): Promise<void> {
   // search is demonstrable. `addressLine` is POPULATED with a distinctive
   // string on every one of them (D14) — a null `addressLine` here would
   // make the exclusion tests pass vacuously, asserting nothing.
-  const delMar = approveProfile(
+  const { profile: delMar } = approveProfile(
     createProfile({
       id: IDS.profiles.delMar,
       accountId: IDS.accounts.delMar,
@@ -238,8 +254,10 @@ async function main(): Promise<void> {
       latitude: 39.4699,
       longitude: -0.3763,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const santaClara = approveProfile(
+  const { profile: santaClara } = approveProfile(
     createProfile({
       id: IDS.profiles.santaClara,
       accountId: IDS.accounts.santaClara,
@@ -252,8 +270,10 @@ async function main(): Promise<void> {
       latitude: 37.3891,
       longitude: -5.9845,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const sanRafael = approveProfile(
+  const { profile: sanRafael } = approveProfile(
     createProfile({
       id: IDS.profiles.sanRafael,
       accountId: IDS.accounts.sanRafael,
@@ -266,6 +286,8 @@ async function main(): Promise<void> {
       latitude: 41.6488,
       longitude: -0.8891,
     }),
+    SEED_REVIEW,
+    clock,
   );
   // 10-hospital roster expansion: 6 more NEW ACTIVE centres, one per
   // remaining region (Gipuzkoa, Madrid, Barcelona, A Coruña, León,
@@ -285,7 +307,7 @@ async function main(): Promise<void> {
   // backs other e2e/integration assertions (case-insensitive name search,
   // diacritic search, city-sort ordering, the no-coordinates case) — see
   // `e2e/hospital-directory.spec.ts`.
-  const urumea = approveProfile(
+  const { profile: urumea } = approveProfile(
     createProfile({
       id: IDS.profiles.urumea,
       accountId: IDS.accounts.urumea,
@@ -298,8 +320,10 @@ async function main(): Promise<void> {
       latitude: 43.318,
       longitude: -1.981,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const monteverde = approveProfile(
+  const { profile: monteverde } = approveProfile(
     createProfile({
       id: IDS.profiles.monteverde,
       accountId: IDS.accounts.monteverde,
@@ -314,8 +338,10 @@ async function main(): Promise<void> {
       latitude: 40.4378,
       longitude: -3.7003,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const besos = approveProfile(
+  const { profile: besos } = approveProfile(
     createProfile({
       id: IDS.profiles.besos,
       accountId: IDS.accounts.besos,
@@ -328,8 +354,10 @@ async function main(): Promise<void> {
       latitude: 41.4145,
       longitude: 2.2153,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const orzan = approveProfile(
+  const { profile: orzan } = approveProfile(
     createProfile({
       id: IDS.profiles.orzan,
       accountId: IDS.accounts.orzan,
@@ -342,8 +370,10 @@ async function main(): Promise<void> {
       latitude: 43.3713,
       longitude: -8.3936,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const bernesga = approveProfile(
+  const { profile: bernesga } = approveProfile(
     createProfile({
       id: IDS.profiles.bernesga,
       accountId: IDS.accounts.bernesga,
@@ -356,12 +386,14 @@ async function main(): Promise<void> {
       latitude: 42.5987,
       longitude: -5.5671,
     }),
+    SEED_REVIEW,
+    clock,
   );
   // Deliberate exception (spec gap closed): a hospital that registered
   // before setting its map position — `city`/`postalCode` are populated,
   // `latitude`/`longitude`/`addressLine` stay null. Demonstrates "listed in
   // results but renders no pin, never defaulted to 0,0".
-  const guadiana = approveProfile(
+  const { profile: guadiana } = approveProfile(
     createProfile({
       id: IDS.profiles.guadiana,
       accountId: IDS.accounts.guadiana,
@@ -371,12 +403,14 @@ async function main(): Promise<void> {
       city: "Badajoz",
       postalCode: "06001",
     }),
+    SEED_REVIEW,
+    clock,
   );
   // widen-beyond-hospitals PR4: the sixth `centreType` (`occupational_centre`)
   // as a brand-new ACTIVE row, distinct fixed id, since no existing roster
   // row could be repurposed to it without breaking a name-dependent test
   // (see the roster-expansion comment above).
-  const aravaca = approveProfile(
+  const { profile: aravaca } = approveProfile(
     createProfile({
       id: IDS.profiles.aravaca,
       accountId: IDS.accounts.aravaca,
@@ -389,22 +423,28 @@ async function main(): Promise<void> {
       latitude: 40.4636,
       longitude: -3.7972,
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const clara = approveProfile(
+  const { profile: clara } = approveProfile(
     createProfile({
       id: IDS.profiles.clara,
       accountId: IDS.accounts.clara,
       type: "artist",
       name: "Clara Romero",
     }),
+    SEED_REVIEW,
+    clock,
   );
-  const mateo = approveProfile(
+  const { profile: mateo } = approveProfile(
     createProfile({
       id: IDS.profiles.mateo,
       accountId: IDS.accounts.mateo,
       type: "artist",
       name: "Mateo Díaz",
     }),
+    SEED_REVIEW,
+    clock,
   );
   const lucia = createProfile({
     id: IDS.profiles.lucia,

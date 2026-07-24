@@ -6,6 +6,23 @@ import type { ProfileRepository } from "@application/ports/ProfileRepository";
 import type { ProfileUnitOfWork } from "@application/ports/ProfileUnitOfWork";
 import { assertRole } from "./shared/guards";
 
+// PR2 wiring handoff (auditable-profile-approval, PR1/domain-only batch):
+// approveProfile/rejectProfile now require an attributed ReviewInput and a
+// Clock (ADR D21-D24), and return { profile, review } instead of a bare
+// Profile. PR2 threads the REAL adminAccountId (actor.accountId), a real
+// `basis` on ValidateProfileInput, and deps.idGenerator/deps.clock through
+// here, and persists the returned review via ctx.saveReview(...) in the
+// same withLockedProfile transaction (D23). Until then this placeholder
+// keeps the use case compiling and behaviourally unchanged — the review
+// half of the result is discarded, not persisted, exactly as before this
+// change (no ProfileReview row is written by this batch).
+const PR2_PLACEHOLDER_REVIEW = {
+  adminAccountId: "PR2-PENDING-actor.accountId",
+  basis: "PR2-PENDING: basis threading lands with saveReview wiring.",
+  reviewId: "PR2-PENDING-idGenerator",
+};
+const PR2_PLACEHOLDER_CLOCK = { now: () => new Date() };
+
 export interface ValidateProfileInput {
   readonly profileId: string;
   readonly decision: "approve" | "reject";
@@ -54,10 +71,11 @@ export async function validateProfile(
         throw new NotFoundError(`Profile '${input.profileId}' does not exist`);
       }
 
-      const updated =
+      // PR2-PENDING: placeholder review context — see note above imports.
+      const { profile: updated } =
         input.decision === "approve"
-          ? approveProfile(profile)
-          : rejectProfile(profile);
+          ? approveProfile(profile, PR2_PLACEHOLDER_REVIEW, PR2_PLACEHOLDER_CLOCK)
+          : rejectProfile(profile, PR2_PLACEHOLDER_REVIEW, PR2_PLACEHOLDER_CLOCK);
 
       await ctx.saveProfile(updated);
 
