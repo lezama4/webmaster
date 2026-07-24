@@ -260,13 +260,31 @@ export async function registerViaUi(
   await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
 }
 
-/** Approves a pending Profile (matched by its display name) from the Admin validation queue. `adminPage` must already be an authenticated admin session. */
+/**
+ * Approves a pending Profile (matched by its display name) from the Admin
+ * validation queue. `adminPage` must already be an authenticated admin
+ * session. Fills the required basis textarea first (auditable-profile-
+ * approval, D24) — the approve button stays disabled until it is non-blank.
+ *
+ * Scoped to `#pending-profiles` (not a bare `li` text filter): once approved,
+ * the SAME displayName reappears in the page's `#active-profiles` section
+ * (PR4/5.6), so an unscoped filter would still find one match afterwards.
+ */
 export async function approveProfileByName(adminPage: Page, displayName: string): Promise<void> {
   await adminPage.goto("/admin/profiles");
-  const row = adminPage.locator("li").filter({ hasText: displayName });
+  const row = adminPage.locator("#pending-profiles li").filter({ hasText: displayName });
   await expect(row).toBeVisible();
+  await row.locator("textarea").fill("E2E fixture approval — verification basis for test setup.");
   await row.getByRole("button", { name: "Approve" }).click();
-  await expect(row).toHaveCount(0);
+  // Approve now triggers a `saveReview` write (auditable-profile-approval,
+  // D23) on top of the existing status transition, and `router.refresh()`
+  // re-fetches BOTH the pending and active listings before the row
+  // disappears — one more round trip against the remote Neon dev host than
+  // before this change. The default 5s expect timeout is occasionally too
+  // tight for that combined latency; extended explicitly rather than
+  // silently retried (same rationale as the integration suite's per-test
+  // timeout bump in login-vs-deactivation-race.test.ts).
+  await expect(row).toHaveCount(0, { timeout: 15_000 });
 }
 
 /** Publishes a Slot via the real Hospital dashboard form. `hospitalPage` must already be an authenticated, approved Hospital session. */

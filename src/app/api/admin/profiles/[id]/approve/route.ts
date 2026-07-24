@@ -5,6 +5,10 @@ import { assertCsrfSafe } from "@infrastructure/http/csrfGuard";
 import { toErrorResponse } from "@infrastructure/http/httpErrors";
 import { getCurrentActor } from "@infrastructure/http/sessionCookie";
 
+interface ValidateProfileRequestBody {
+  readonly basis?: unknown;
+}
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -16,8 +20,18 @@ function json(status: number, body: unknown): Response {
  * `POST /api/admin/profiles/[id]/approve` — Admin-only Profile approval
  * (task 5.3). Also covers the `rejected -> pending` re-registration queue
  * (M2, task 5.12) — the SAME endpoint, no separate path. CSRF-guard →
- * resolve `Actor` → `validateProfile` → response. Admin-only enforcement
- * lives in `validateProfile`.
+ * resolve `Actor` → parse `basis` → `validateProfile` → response.
+ * Admin-only enforcement lives in `validateProfile`.
+ *
+ * `basis` (auditable-profile-approval, D24/D27): coerced with `String(...)`
+ * per the codebase's existing thin-route convention (see
+ * `registerProfile`'s route). This handler does NOT itself reject a blank
+ * basis — the domain transition is the AUTHORITATIVE validator (D24), so a
+ * blank/whitespace-only basis reaches `validateProfile`, throws a
+ * `DomainValidationError`, and `toErrorResponse` maps it to 422. Coercing
+ * `undefined`/non-string here to `""` keeps that single failure path, rather
+ * than adding a second, route-level rejection that could drift from the
+ * domain's rule.
  */
 export async function POST(
   request: Request,
@@ -32,20 +46,13 @@ export async function POST(
     }
 
     const { id } = await params;
-    // PR4 wiring handoff (auditable-profile-approval): this route sends no
-    // body yet — parsing a real `basis` from the request (with a friendly
-    // early rejection) is PR4's scope (D24 route wiring, D27 role-cued
-    // copy). The domain remains the authoritative validator regardless, so
-    // this placeholder cannot silently produce a persisted review: a blank
-    // basis is rejected by `validateProfile`'s domain call before any
-    // status change. This keeps the route compiling without doing PR4's UI
-    // work.
+    const body = (await request.json().catch(() => ({}))) as ValidateProfileRequestBody;
     const profile = await validateProfile(
       actor,
       {
         profileId: id,
         decision: "approve",
-        basis: "PR4-PENDING: route body-parsing lands with the basis textarea (D24/D27).",
+        basis: typeof body.basis === "string" ? body.basis : "",
       },
       adminDeps(),
     );

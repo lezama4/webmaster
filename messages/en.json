@@ -179,9 +179,11 @@
   "AdminProfiles": {
     "title": "Profile validation queue", "description": "Review centres and artists waiting for approval. Profiles that register again after a rejection show up here too — same queue, no separate list.", "requested": "Requested {date}", "types": { "centre": "Care centre", "artist": "Artist" },
     "centreType": { "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
-    "empty": { "title": "Nothing to review", "description": "New centre and artist registrations will appear here as soon as they come in." }
+    "empty": { "title": "Nothing to review", "description": "New centre and artist registrations will appear here as soon as they come in." },
+    "active": { "title": "Active centres and artists", "description": "Profiles already approved. Deactivate one if it no longer meets the platform's requirements.", "empty": { "title": "No active profiles", "description": "Profiles that get approved will appear here." } },
+    "review": { "legacy": "No basis recorded (predates auditing)" }
   },
-  "ProfileActions": { "approve": "Approve", "approving": "Approving…", "reject": "Reject", "rejecting": "Rejecting…", "error": "The action could not be completed.", "genericError": "Something went wrong. Please try again." },
+  "ProfileActions": { "approve": "Approve", "approving": "Approving…", "reject": "Reject", "rejecting": "Rejecting…", "deactivate": "Deactivate", "deactivating": "Deactivating…", "error": "The action could not be completed.", "genericError": "Something went wrong. Please try again.", "basis": { "label": "Verification basis", "placeholder": { "centre": "Verification basis: agreement/reference no. or out-of-band contact with the centre confirming its institutional identity.", "artist": "Verification basis: identity checked and safeguarding commitment recorded for presence with vulnerable people." } } },
   "HospitalSlots": {
     "title": "Your slots", "description": "Publish a moment for artists to propose an activity, then review the proposals you receive.", "noProposals": "No proposals yet.",
     "empty": { "title": "No slots yet", "description": "Slots you publish will appear here along with the proposals artists send in." },
