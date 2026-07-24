@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton } from "@ui/components/ui";
 
-const DESTINATION_BY_ROLE: Record<string, string> = { admin: "/admin/profiles", hospital: "/hospital/slots", artist: "/artist/slots", patient: "/events" };
+// Keyed by the post-rename role value: `centre` (was `hospital` before
+// widen-beyond-hospitals, ADR D16). The dashboard route stays /hospital/slots
+// — internal identifiers were deliberately NOT renamed — but the KEY must be
+// the current role, or a centre logs in and lands on /events instead of its
+// own slot board (Codex review, HIGH).
+const DESTINATION_BY_ROLE: Record<string, string> = { admin: "/admin/profiles", centre: "/hospital/slots", artist: "/artist/slots", patient: "/events" };
 
 export default function LoginPage() {
   const t = useTranslations("Login");

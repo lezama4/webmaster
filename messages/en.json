@@ -190,7 +190,7 @@
     "slotStatus": { "open": "Open", "filled": "Filled", "closed": "Closed" }, "proposalStatus": { "submitted": "Pending review", "accepted": "Accepted", "rejected": "Rejected" }
   },
   "PublishSlot": {
-    "title": "Publish a slot", "description": "Open a moment in the centre's agenda for artists to propose an activity.", "submit": "Publish slot", "publishing": "Publishing…", "locationHint": "Visible to registered artists browsing this slot — never shown on the public events page.",
+    "title": "Publish a slot", "description": "Open a moment in the centre's agenda for artists to propose an activity.", "submit": "Publish slot", "publishing": "Publishing…", "publicHint": "The title and description appear on the public events page. Don't include the ward, the room, or any personal details — for the exact place use the location field below, which only artists see.", "locationHint": "Visible to registered artists browsing this slot — never shown on the public events page.",
     "fields": { "title": "Title", "description": "Description", "dateTime": "Date and time", "duration": "Duration (minutes)", "location": "Location", "audience": "Target audience" },
     "errors": { "failure": "The slot could not be published. Check the details and try again.", "generic": "Something went wrong. Please try again." }
   },

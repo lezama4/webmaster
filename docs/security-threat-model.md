@@ -50,8 +50,21 @@ change and are recorded below: `centreType` is now a **public, allow-listed
 field** on the directory (D19), and the widening **raises the safeguarding bar**
 for more vulnerable populations — recorded as an accepted, documented,
 demo-scoped open risk (T-22). D10 cross-surface non-correlation was
-re-assessed and **holds** (public events carry no location or centre identity,
-so `type + city` narrows no event).
+re-assessed: the **structural** guarantee holds — no public read path adds a
+centre-identifying field to an event, the ward/room `location` is excluded by
+the D6 allow-list, and `type + city` on the directory adds no join key — so the
+platform never links a centre to an event on a visitor's behalf. What it does
+**not** guarantee (Codex review, corrected here) is the **content** of the two
+centre-authored free-text fields that legitimately reach the public event
+projection, the event `title` and the slot `description`: these are not
+content-scanned, so a centre that types its own name or a ward/room into them
+discloses its own event. That is the centre's editorial choice about its own
+activity, not a platform leak of third-party data, but the earlier wording
+("events carry no location at all") overstated it. Mitigation: the slot-publish
+form now warns the author that title/description are public and that the exact
+place belongs in the private `location` field (`PublishSlot.publicHint`). A
+content filter on free text is not attempted — it cannot be made complete — and
+the residual is recorded here rather than asserted away.
 
 **Scope note — `auditable-profile-approval` (accountable admin decisions,
 D21–D27).** Implemented and verified locally against real PostgreSQL (Neon

@@ -166,7 +166,7 @@ All CI references are to run 29905717933 on `482aefd`.
 | E2E/demo chain | Implemented (5 specs, 12 tests) | Executed in CI against real PostgreSQL and a seeded database. | **Implemented; tested-and-executed** against CI, **not** against the deployed URL. |
 | Production deployment and public URL | Deployed at <https://webmaster-lemon.vercel.app> | Live request check: five routes return 200 and `/events` renders the seeded published Event. | **Deployed and serving seeded data.** No recorded production smoke/demo-chain run (tasks 7.7/7.8). |
 | Security headers, CSP, logging, dependency scanning | Not implemented | None. | **Pending** — no CSP/HSTS/frame-ancestors anywhere, no middleware, no logging in `src/`, no Dependabot or audit step in CI. |
-| Block 2 ratings / Block 3 simulated support payments | Absent from `main` | No source/test/security review on this branch. | **Deferred**. |
+| Block 2 ratings / Block 3 simulated support payments | Both merged to `main` and deployed | Block 2: `src/domain/rating`, `rateEvent`/`listMyEventRatings`, the `/api/events/[id]/rate` route, integration + e2e (PR #10). Block 3: `src/domain/support-payment`, `simulateSupportPayment`, `FakePaymentGateway` — a deliberately persistence-free simulation seam that passed eight rounds of dual adversarial review (PR #12). | **Shipped.** Block 3 is a simulated seam by design (no real provider, no persistence, no route to move money); the boundary is documented in `docs/simulated-payment-security-review.md`. |
 
 ## 3. TFM delivery requirements
 

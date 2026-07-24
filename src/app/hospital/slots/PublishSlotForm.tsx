@@ -32,6 +32,12 @@ export function PublishSlotForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md" noValidate>
       <div className="flex flex-col gap-1"><h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2><p className="text-sm text-muted">{t("description")}</p></div>
+      {/* Title + description are centre-authored free text that DOES reach the
+          public event projection (D6 excludes the private `location` field, but
+          not these). The platform cannot content-scan them, so warn the author
+          not to type a ward/room or the centre's own identity here — that is
+          the honest boundary of the D10 non-correlation guarantee (Codex review). */}
+      <p className="text-xs text-muted">{t("publicHint")}</p>
       <Field label={t("fields.title")} htmlFor="title"><input id="title" name="title" type="text" required value={form.title} onChange={(e) => update("title", e.target.value)} className={inputClasses} /></Field>
       <Field label={t("fields.description")} htmlFor="description"><textarea id="description" name="description" required rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClasses} /></Field>
       <div className="grid gap-4 sm:grid-cols-2"><Field label={t("fields.dateTime")} htmlFor="scheduledAt"><input id="scheduledAt" name="scheduledAt" type="datetime-local" required value={form.scheduledAt} onChange={(e) => update("scheduledAt", e.target.value)} className={inputClasses} /></Field><Field label={t("fields.duration")} htmlFor="durationMinutes"><input id="durationMinutes" name="durationMinutes" type="number" min={1} required value={form.durationMinutes} onChange={(e) => update("durationMinutes", e.target.value)} className={inputClasses} /></Field></div>

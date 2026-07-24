@@ -572,7 +572,7 @@ describe("Profile state machine", () => {
     }
 
     describe("a blank or whitespace-only basis is denied BEFORE any status change", () => {
-      it.each(["", "   "])("approveProfile denies basis %j", (basis) => {
+      it.each(["", "   ", "​", "﻿", "­", "⁠", "​ ​"])("approveProfile denies basis %j", (basis) => {
         const profile = pendingProfile();
 
         expect(() =>
@@ -581,7 +581,7 @@ describe("Profile state machine", () => {
         expect(profile.status).toBe("pending");
       });
 
-      it.each(["", "   "])("rejectProfile denies basis %j", (basis) => {
+      it.each(["", "   ", "​", "﻿", "­", "⁠", "​ ​"])("rejectProfile denies basis %j", (basis) => {
         const profile = pendingProfile();
 
         expect(() =>
@@ -590,7 +590,7 @@ describe("Profile state machine", () => {
         expect(profile.status).toBe("pending");
       });
 
-      it.each(["", "   "])("deactivateProfile denies basis %j", (basis) => {
+      it.each(["", "   ", "​", "﻿", "­", "⁠", "​ ​"])("deactivateProfile denies basis %j", (basis) => {
         const profile = activeProfile();
 
         expect(() =>

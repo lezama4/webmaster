@@ -361,9 +361,19 @@ export const MAX_REVIEW_BASIS_LENGTH = 1000;
  * profile's input value is unaffected either way, but ordering it first
  * keeps every transition consistent).
  */
+/**
+ * At least one VISIBLE character: not whitespace, not a control char (`\p{Cc}`),
+ * not a format char (`\p{Cf}` — zero-width space U+200B, BOM U+FEFF, soft hyphen
+ * U+00AD, word joiner U+2060, …). `String.trim()` alone does NOT strip these, so
+ * a basis of only zero-width characters would otherwise pass as non-empty and
+ * persist a visually-blank audit reason (Codex review). The audit trail's whole
+ * point is a real, readable justification.
+ */
+const HAS_VISIBLE_CHARACTER = /[^\s\p{Cc}\p{Cf}]/u;
+
 function assertValidBasis(basis: string): string {
   const trimmed = basis.trim();
-  if (trimmed.length === 0) {
+  if (!HAS_VISIBLE_CHARACTER.test(trimmed)) {
     throw new DomainValidationError("Profile review basis must not be empty");
   }
   if (trimmed.length > MAX_REVIEW_BASIS_LENGTH) {
