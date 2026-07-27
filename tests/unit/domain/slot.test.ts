@@ -238,6 +238,16 @@ describe("Slot state machine", () => {
       ).toThrow(DomainValidationError);
     });
 
+    it("rejects a broken clock returning an invalid current time (pr1-N2)", () => {
+      const brokenClock: Clock = { now: () => new Date(NaN) };
+
+      // Without validating clock.now(), `scheduledAtMs <= NaN` is silently
+      // false and ANY future/past date would pass the strictly-future guard.
+      expect(() => createSlot(slotInput(), brokenClock)).toThrow(
+        DomainValidationError,
+      );
+    });
+
     it("mutating the input Date after creation does not affect the Slot", () => {
       const input = new Date("2026-08-01T17:00:00Z");
       const originalMs = input.getTime();

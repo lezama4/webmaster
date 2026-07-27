@@ -166,7 +166,17 @@ function assertValidAudience(audience: Audience): void {
 export function createSlot(input: CreateSlotInput, clock: Clock): Slot {
   const scheduledAtMs = input.scheduledAt.getTime();
   assertFiniteScheduledAt(scheduledAtMs);
-  if (scheduledAtMs <= clock.now().getTime()) {
+  // The injected clock is validated too (pr1-N2): a broken clock returning
+  // `new Date(NaN)` yields a NaN `nowMs`, and `scheduledAtMs <= NaN` is
+  // silently `false` — the strictly-future guard would pass for ANY date.
+  // Fail fast instead of trusting the comparison.
+  const nowMs = clock.now().getTime();
+  if (!Number.isFinite(nowMs)) {
+    throw new DomainValidationError(
+      "Slot clock returned an invalid current time",
+    );
+  }
+  if (scheduledAtMs <= nowMs) {
     throw new DomainValidationError(
       "Slot scheduledAt must be strictly in the future",
     );

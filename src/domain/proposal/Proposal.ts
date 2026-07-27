@@ -40,10 +40,35 @@ export interface RehydrateProposalInput extends CreateProposalInput {
   readonly status: ProposalStatus;
 }
 
+/**
+ * Text bounds for the Artist's free-text pitch (pr1-M2, T-15). `message` was
+ * previously unvalidated — an unbounded field is a storage-abuse and
+ * rendering vector. Mirrors `Slot.description`: a non-empty required message
+ * (an empty pitch is not a proposal), trimmed and capped.
+ */
+export const MESSAGE_MIN_LENGTH = 1;
+export const MESSAGE_MAX_LENGTH = 2000;
+
 function assertNonEmpty(field: string, value: string): void {
   if (value.trim().length === 0) {
     throw new DomainValidationError(`Proposal ${field} must not be empty`);
   }
+}
+
+/**
+ * Reads the message once, trims once, validates the trimmed length against the
+ * bounds, and returns the trimmed value for storage — the same
+ * read-once/normalise-once discipline the Slot and Profile factories use. A
+ * blank or over-bound message throws before the Proposal is built.
+ */
+function normaliseMessage(message: string): string {
+  const trimmed = message.trim();
+  if (trimmed.length < MESSAGE_MIN_LENGTH || trimmed.length > MESSAGE_MAX_LENGTH) {
+    throw new DomainValidationError(
+      `Proposal message must be between ${MESSAGE_MIN_LENGTH} and ${MESSAGE_MAX_LENGTH} characters (got ${trimmed.length})`,
+    );
+  }
+  return trimmed;
 }
 
 function assertValidStatus(status: ProposalStatus): void {
@@ -64,12 +89,13 @@ function assertFields(input: CreateProposalInput): void {
  */
 export function createProposal(input: CreateProposalInput): Proposal {
   assertFields(input);
+  const message = normaliseMessage(input.message);
 
   return {
     id: input.id,
     slotId: input.slotId,
     artistProfileId: input.artistProfileId,
-    message: input.message,
+    message,
     status: "submitted",
   } as Proposal;
 }
@@ -84,12 +110,13 @@ export function createProposal(input: CreateProposalInput): Proposal {
 export function rehydrateProposal(input: RehydrateProposalInput): Proposal {
   assertFields(input);
   assertValidStatus(input.status);
+  const message = normaliseMessage(input.message);
 
   return {
     id: input.id,
     slotId: input.slotId,
     artistProfileId: input.artistProfileId,
-    message: input.message,
+    message,
     status: input.status,
   } as Proposal;
 }
