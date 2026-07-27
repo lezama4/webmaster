@@ -1,7 +1,41 @@
 # Vivetutiempo TFM Readiness Report and Master Finding Tracker
 
-**Assessment date:** 2026-07-22 (supersedes the 2026-07-12 assessment)  
-**Revision assessed:** `482aefd` on `main`
+**Assessment date:** 2026-07-27 (supersedes the 2026-07-22 assessment)  
+**Revision assessed:** `94026a5` on `main`
+
+> ## Update — 2026-07-27 (what landed since the 07-22 revision)
+>
+> The 07-22 body below was written against the **hospital-only baseline**
+> (`482aefd`) with `widen-beyond-hospitals` still unmerged. Since then the
+> following merged to `main` and deployed to production via Vercel. This block
+> is authoritative where it disagrees with the dated body underneath.
+>
+> - **`widen-beyond-hospitals` (PRs #17–#24) — MERGED + DEPLOYED.** The six
+>   centre types (ADRs D16–D20) are live in the deployed code. The **Basque
+>   (`eu`) native review remains OPEN** (§1.1), and the production **database
+>   still needs reseeding** for the six types to be *visible* in the live demo
+>   (author action) — the code path is deployed, the demo data is not yet.
+> - **`auditable-profile-approval` (PRs #25–#29) — MERGED + DEPLOYED.** Admin
+>   approve/reject/deactivate now require and persist an attributed, append-only
+>   `ProfileReview` atomically with the status transition (ADRs D21–D27).
+> - **Block 2 (ratings, PR #10) and Block 3 (simulated support payments, PR #12)
+>   — MERGED.** Block 3 is a persistence-free simulation seam by design and
+>   passed eight rounds of dual adversarial review (see its verify-report).
+> - **Codex review fixes (PR #30) — MERGED + DEPLOYED.** Live login-redirect
+>   bug fixed; review-basis invisible-character validation; the D10 free-text
+>   honesty correction in the threat model.
+> - **In review, NOT yet merged/deployed:**
+>   - **`harden/domain-integrity` (PR #31)** closes the domain findings this
+>     report still marks OPEN below — **pr1-M1** (full Slot/Proposal status
+>     matrix), **pr1-M2** (Proposal `message` bounds), **pr1-N1/N2** (clock
+>     validation). 693 unit tests, CI green.
+>   - **`harden/security-headers` (PR #32)** adds the security headers, a
+>     nonce-based CSP, Dependabot and a CI dependency-audit job — closing the
+>     "no headers / no CSP / no dependency scanning" gap called out in §2 and
+>     §5. Verified against a production build; CI (incl. e2e under CSP) green.
+>   - Once these two merge, **no structural finding in this report remains
+>     OPEN**; what stays are author-only delivery items (public repo, memoria,
+>     deck, video, Basque review) and the tracked `sharp` transitive advisories.
 
 **Method.** Unlike the 2026-07-12 revision of this report — which ran no
 commands and audited source statically — this revision was produced by
@@ -101,13 +135,13 @@ on `482aefd` — `test` job 360/360, `e2e` job 12/12.
 | planning-N2; pr2a-N3 | MINOR | Open-Slot visibility, future scheduling and non-N+1 listing need an explicit query contract. | PARTIAL | Domain bounds and a dedicated `OpenSlotListingQuery` exist, and the listing is exercised end to end by `e2e/demo-chain.spec.ts`. There is still no dedicated integration test asserting the query contract itself (single query, no N+1, future-only). |
 | planning-N3 | MINOR | “No PII” was inaccurate for accounts and hospital-context data. | RESOLVED in documentation | Threat model classifies email, location and messages as sensitive; retention implementation remains open (T-21). |
 | pr1-B1 | BLOCKER | Prisma must persist deactivation and re-review audit state. | RESOLVED | Schema/migrations include `DEACTIVATED` and `reviewRequestedAt`; `schema-migration.test.ts` executed in CI against an empty PostgreSQL database. Full append-only review history remains explicitly backlog. |
-| pr1-M1; threat-model-T07 | MAJOR | Aggregate rehydration must reject all inconsistent Slot/Proposal status matrices. | OPEN | Re-read on this revision: `assertValidSlotAggregate` still rejects only `open + accepted` (`src/domain/slot/aggregate.ts:37-44`). A `filled` Slot with no accepted Proposal, multiple accepted Proposals, or submitted Proposals on a non-open Slot are all still accepted. |
-| pr1-M2; threat-model-T15 | MAJOR | Profile name and Proposal message need bounded, normalised input. | OPEN | Re-read on this revision: `Proposal`'s `assertFields` validates only id/slotId/artistProfileId — `message` is unvalidated (`Proposal.ts:55-59`); `Profile` applies only `assertNonEmpty("name", …)` (`Profile.ts:167,192`). Slot title/description/location *are* bounded, so this is specifically a Profile/Proposal gap. |
+| pr1-M1; threat-model-T07 | MAJOR | Aggregate rehydration must reject all inconsistent Slot/Proposal status matrices. | RESOLVED (PR #31, in review) | `assertValidSlotAggregate` now enforces the full matrix: `filled` ⇒ exactly one accepted proposal and no submitted; `open`/`closed` ⇒ no accepted; a `submitted` proposal may exist only while `open`. Covered by the new `tests/unit/domain/slotAggregate.test.ts`. |
+| pr1-M2; threat-model-T15 | MAJOR | Proposal message needs bounded, normalised input. | RESOLVED (PR #31, in review) | `Proposal.message` is now bounded `[1, 2000]` and trimmed on both create and rehydrate (`Proposal.ts`), mapping to `422` at the HTTP boundary. (Profile `name` was already `assertNonEmpty`; Slot title/description/location were already bounded.) |
 | pr1-M3 | MAJOR | Hexagonal boundaries must reject outer-layer, IO and persistence dependencies. | RESOLVED | ESLint blocks aliases, relative outer-layer imports, Node built-ins and restricted globals; negative lint tests exist and `npm run lint` is green in CI. |
 | pr1-M4 | MAJOR | Secrets must be ignored and local database exposure controlled. | OPEN | Re-read on this revision: `.env*` is ignored, but Compose still publishes `5432:5432` on all interfaces with a predictable dev password (`docker-compose.yml:10-11`). Local-only, but unchanged. |
-| pr1-N1 | MINOR | `reviewRequestedAt` must be valid and immutable after reactivation. | OPEN | Re-read on this revision: `reactivateProfile` still stores raw `clock.now()` without validation (`Profile.ts:244-247`). |
-| pr1-N2 | MINOR | Slot creation must reject an invalid clock result. | OPEN | Re-read on this revision: `createSlot` validates the input date but still compares it against an unchecked `clock.now()` (`Slot.ts:166-169`); a `NaN` clock result makes the comparison silently false. |
-| pr1-N3 | MINOR | Domain integrity/abuse test gaps must be closed. | OPEN | The aggregate, profile-name, Proposal-message and invalid-clock gaps above remain. |
+| pr1-N1 | MINOR | `reviewRequestedAt` must be valid after reactivation. | RESOLVED (PR #31, in review) | `reactivateProfile` (and the `ProfileReview` timestamp) now validate the injected clock reading is finite before persisting it, so an invalid Date can never poison the audit trail. |
+| pr1-N2 | MINOR | Slot creation must reject an invalid clock result. | RESOLVED (PR #31, in review) | `createSlot` now validates `clock.now()` is finite before the comparison; a `NaN` clock result throws instead of silently passing the strictly-future guard. |
+| pr1-N3 | MINOR | Domain integrity/abuse test gaps must be closed. | RESOLVED (PR #31, in review) | The aggregate-matrix, Proposal-message-bound and invalid-clock gaps are now closed with executed unit tests (`slotAggregate.test.ts` plus extended proposal/slot/profile suites, 693 green). |
 | pr1-N4 | MINOR | Playwright must support deployed smoke targets. | PARTIAL | `PLAYWRIGHT_BASE_URL` is honoured and disables the local web server (`playwright.config.ts:4-20`), and five E2E specs (12 tests) now execute in CI against a local server. No run against the *deployed* URL is recorded. |
 | pr2-plan-B1/B3; pr2b-N1 | BLOCKER/MINOR | Schema/migration identifiers and partial unique indexes must be exact and demonstrably enforced. | RESOLVED | `partial-index-catalog.test.ts` asserts the real catalog identifiers and `duplicate-submission.test.ts` proves behavioural rejection of a duplicate insert — both executed in CI. |
 | pr2-plan-M1/M2; pr2a-M6; pr2b-M5 | MAJOR | Every declared race needs forced overlap and both required orderings. | RESOLVED | Nine barrier-forced race files now execute in CI: `submit-approve`, `submit-close`, `approve-close`, `approve-reject`, `close-reject`, `matching-race`, `duplicate-submission`, `login-vs-deactivation`, `slot-auth-vs-deactivation`, plus `registration-race`. `tests/integration/support/barrier.ts` provides the controllable overlap. |
@@ -127,9 +161,12 @@ on `482aefd` — `test` job 360/360, `e2e` job 12/12.
 This change generalises the product from hospital-only to six centre types
 (hospital, nursing home, day centre, day hospital, occupational centre,
 palliative unit) via a generic `CENTRE` role plus a separate `CentreType` axis
-(ADRs D16–D20). It is **implemented on a local feature-branch chain (PR1–PR6),
-verified against real PostgreSQL (Neon `dev`), and NOT yet merged to `main` or
-deployed.** The evidence below is local/dev, not a CI run and not production.
+(ADRs D16–D20). As of 2026-07-27 it is **MERGED to `main` (PRs #17–#24) and
+deployed.** The per-item evidence below was captured against real PostgreSQL
+(Neon `dev`) during development and now also runs in CI. **Two gates remain
+author-only:** the Basque (`eu`) native review (blocking for copy quality), and
+reseeding the production database so the six types are *visible* in the live
+demo — the deployed code supports them, the production demo data does not yet.
 
 | Item | Status | Evidence / note |
 | --- | --- | --- |
@@ -165,7 +202,7 @@ All CI references are to run 29905717933 on `482aefd`.
 | Seed data and reproducible demo accounts | Implemented (`prisma/seed.ts`, idempotent upserts on fixed ids) | Seeded in the CI e2e job and relied on by the E2E assertions. | **Implemented; tested-and-executed**. |
 | E2E/demo chain | Implemented (5 specs, 12 tests) | Executed in CI against real PostgreSQL and a seeded database. | **Implemented; tested-and-executed** against CI, **not** against the deployed URL. |
 | Production deployment and public URL | Deployed at <https://webmaster-lemon.vercel.app> | Live request check: five routes return 200 and `/events` renders the seeded published Event. | **Deployed and serving seeded data.** No recorded production smoke/demo-chain run (tasks 7.7/7.8). |
-| Security headers, CSP, logging, dependency scanning | Not implemented | None. | **Pending** — no CSP/HSTS/frame-ancestors anywhere, no middleware, no logging in `src/`, no Dependabot or audit step in CI. |
+| Security headers, CSP, dependency scanning | Implemented (PR #32, in review) | Verified against a production build; CI e2e passes under the strict CSP. | **Implemented, in review.** HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy and Permissions-Policy on every route (`next.config.ts`); a per-request nonce CSP (`middleware.ts`, `script-src` nonce + `strict-dynamic`, `frame-ancestors 'none'`); Dependabot + a `npm audit` CI job. **Still not implemented:** application security logging (no logger in `src/`) — the one item from this row that PR #32 does not cover. |
 | Block 2 ratings / Block 3 simulated support payments | Both merged to `main` and deployed | Block 2: `src/domain/rating`, `rateEvent`/`listMyEventRatings`, the `/api/events/[id]/rate` route, integration + e2e (PR #10). Block 3: `src/domain/support-payment`, `simulateSupportPayment`, `FakePaymentGateway` — a deliberately persistence-free simulation seam that passed eight rounds of dual adversarial review (PR #12). | **Shipped.** Block 3 is a simulated seam by design (no real provider, no persistence, no route to move money); the boundary is documented in `docs/simulated-payment-security-review.md`. |
 
 ## 3. TFM delivery requirements
@@ -270,15 +307,20 @@ The eight items from the 2026-07-12 revision, with their current state:
 ### Residual work, in priority order
 
 1. **Make the repository public** (or publish a mirror) — the only hard delivery
-   requirement currently unmet.
-2. **Add the production hardening that does not exist at all:** security headers
-   and a CSP, request body-size/schema validation, privacy-safe security
-   logging, and dependency scanning (Dependabot or an audit step in CI).
-3. **Close the remaining domain-integrity findings:** aggregate status matrix,
-   Profile/Proposal text bounds, Clock-output validation, re-review timestamp.
-4. **Record production evidence** (tasks 7.7/7.8) if the author wants a deployed
+   requirement currently unmet (author action).
+2. **Merge PR #31 and PR #32** — domain-integrity and security hardening are
+   implemented, verified and CI-green, awaiting the author's merge (each merge
+   triggers a production deploy).
+3. ~~Add production hardening (security headers, CSP, dependency scanning)~~ —
+   **done in PR #32**, in review. Residual within this item: application
+   security **logging** (no logger in `src/`) and request body **schema/size**
+   validation are still not implemented.
+4. ~~Close the remaining domain-integrity findings~~ — **done in PR #31**, in
+   review (aggregate matrix, Proposal message bounds, clock validation).
+5. **Record production evidence** (tasks 7.7/7.8) if the author wants a deployed
    smoke result in the defence.
-5. **Produce the deck and the video** against this revision.
+6. **Produce the deck and the video** against this revision; **complete the
+   memoria** and the Basque native review.
 
 ## Final readiness decision
 
@@ -295,15 +337,18 @@ and covered by executed evidence.
 
 The three qualifications must be stated plainly rather than glossed:
 
-1. **It is not production-hardened.** There are no security headers, no CSP, no
-   logging and no dependency scanning. This is a defensible TFM MVP, not an
-   Internet-ready service, and the threat model says so per control.
-2. **The repository is private**, which fails a stated delivery requirement.
-3. **The six-centre-type generalisation (`widen-beyond-hospitals`) is not yet
-   merged or deployed.** It is implemented and verified locally against real
-   PostgreSQL, but the deployed site is still the hospital-only baseline, its
-   Basque copy is a draft pending native review (Phase 6.10, blocking), and two
-   manual copy reviews remain open. It should be presented as demonstrable in
-   the seeded `dev` environment, not as live in production (see section 1.1).
+1. **Production hardening is now largely in place** (PR #32, in review):
+   security headers, a nonce-based CSP and dependency scanning, verified against
+   a production build. What is still absent is application security **logging**
+   and request body **schema/size** validation — so it remains a defensible TFM
+   MVP, not an Internet-ready service, and the threat model says so per control.
+2. **The repository is private**, which fails a stated delivery requirement
+   (author action — the one hard blocker that no code change can resolve).
+3. **The six-centre-type generalisation (`widen-beyond-hospitals`) is merged and
+   deployed**, but its Basque copy is still a draft pending native review
+   (Phase 6.10, blocking for copy quality) and the production database has not
+   yet been reseeded, so the six types are demonstrable in the seeded `dev`
+   environment and in the deployed *code*, not yet in the live demo *data*
+   (see section 1.1).
 
 Blocks 2 and 3 remain future work and are claimed nowhere.
