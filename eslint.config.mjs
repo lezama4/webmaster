@@ -40,6 +40,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone tooling scripts (deck generators) — Node/CommonJS build
+    // helpers, not application code, so the app's TS/boundary rules (no
+    // `require()`, etc.) do not apply to them.
+    "docs/**",
   ]),
   // Hexagonal boundary rules (design ADR D5): domain/ is framework-free and
   // must not depend on Next.js, Prisma, or outer layers. application/ may
