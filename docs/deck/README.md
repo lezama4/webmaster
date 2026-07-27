@@ -1,36 +1,38 @@
-# TFM defence deck
+# Presentation decks
 
-`../tfm-defense-deck.pptx` is the generated defence deck (17 slides, 16:9),
-built from `generate-deck.js` and following the structure of
-[`../slides-outline.md`](../slides-outline.md).
+Two decks, two audiences. Do not mix them up.
+
+| File | Audience | Purpose |
+|------|----------|---------|
+| [`../tfm-pitch-deck.pptx`](../tfm-pitch-deck.pptx) | **Non-technical** | **Sell the idea.** This is the deck for the submission **Slides** field and the pitch video — no jargon, the human story of "Todo el tiempo cuenta". Generator: `generate-pitch-deck.js`. |
+| [`../tfm-defense-deck.pptx`](../tfm-defense-deck.pptx) | Technical | The full technical / repository deck (17 slides): architecture, state machines, security, testing. Generator: `generate-deck.js`. |
+
+Per the master's brief, the **technical explanation lives in the repository**
+(the defence deck plus the docs), and the **Slides and video are the
+non-technical pitch**. The video narration that matches the pitch deck is
+[`../pitch-video-script.md`](../pitch-video-script.md).
 
 ## Regenerate
 
 ```bash
-npm install pptxgenjs   # once, in this folder or globally
-node generate-deck.js   # writes tfm-defense-deck.pptx here
+npm install pptxgenjs          # once, in this folder or globally
+node generate-pitch-deck.js    # writes tfm-pitch-deck.pptx
+node generate-deck.js          # writes tfm-defense-deck.pptx
 ```
 
-## Before the defence — author actions
+## Before submitting — author actions
 
-The deck carries explicit `[AUTOR]` placeholders that only you can fill:
+- **Pitch deck, slide 1** — replace `[AUTOR]` with your name / project line.
+- Give the deck one visual pass in PowerPoint. Pixel-level visual QA (overflow /
+  overlap) was **not** run in the authoring environment (no LibreOffice there);
+  structural validation (opens cleanly, 16:9, no shape crosses a slide boundary)
+  and content QA both passed.
+- Host the `.pptx` (or a PDF export) with **"anyone with the link — Viewer"**
+  access and test it in an incognito window before pasting the URL in the form.
 
-- **Slide 1** — your name, master's programme, academic year, supervisor.
-- **Slide 12** — refresh the exact test/CI counts on the day of the defence.
-- **Slide 14** — decide how the live demo runs (recorded vs. live).
-- **Slide 15** — if the repository is still private at the defence, state it.
+## Defence deck — status wording
 
-## Status reflected
-
-Content is current as of 2026-07-27: the six centre types are merged and
-deployed; Blocks 2 and 3 are merged; domain-integrity (PR #31) and security
-hardening (PR #32) are implemented and in review. Adjust the "in review" wording
-to "merged" on the status slides (4, 11, 13, 15) once those PRs land.
-
-## Visual QA note
-
-The deck passed structural validation (opens cleanly, 17 slides, correct 16:9
-geometry, no shape crosses a slide boundary) and content QA. Pixel-level visual
-QA (text-overflow / overlap) was **not** run in the authoring environment
-because LibreOffice was unavailable there — give it one pass in PowerPoint and
-nudge any tight text box before presenting.
+`tfm-defense-deck.pptx` still says "en revisión (PR #31/#32)" on its status
+slides (4, 11, 13, 15) and carries a "repo privado" note on slide 15. Both are
+now stale: PRs #31/#32 are merged and deployed and the repository is public —
+update that wording if you ever present the technical deck.
