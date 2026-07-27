@@ -75,6 +75,29 @@ jobs:
       - name: Test (unit + Postgres integration/concurrency)
         run: npm run test
 
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Pin npm to match the lockfile
+        run: npm install -g npm@11.18.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Gate on CRITICAL only. High-severity transitive advisories (currently
+      # via `sharp`, pulled by Next's image optimiser) are tracked by
+      # Dependabot; raising the bar to `high` here would require a Next upgrade
+      # the maintainer must vet first — see the PR description.
+      - name: Audit dependencies (fail on critical)
+        run: npm audit --audit-level=critical
+
   e2e:
     runs-on: ubuntu-latest
 
