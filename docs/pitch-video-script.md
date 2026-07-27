@@ -1,87 +1,122 @@
-# Guion de vídeo — "Todo el tiempo cuenta" (pitch, no técnico)
+# Guion de vídeo — "Todo el tiempo cuenta"
 
-**Objetivo:** explicar el proyecto a una persona **no técnica** y **vender la
-idea**. Nada de arquitectura, código ni jerga — eso vive en el repositorio.
-**Duración objetivo:** 2:30–3:00. **Tono:** cálido, cercano, humano. Habla en
-primera persona del plural ("queremos", "conectamos"), mirando a cámara.
+**Para quién:** la dirección y el equipo de un hospital o centro de cuidado.
+**Objetivo:** explicarles qué es el proyecto y **ofrecérselo** — como quien pone
+una herramienta útil en sus manos, sin coste y sin letra pequeña.
+**Duración objetivo:** 8–10 minutos. **Tono:** cálido, cercano, tranquilizador y
+práctico. Háblales de tú/vosotros, mirando a cámara, sin prisa. **Sin cifras.**
 
-> Los marcadores `[EN PANTALLA]` indican qué slide del pitch (`tfm-pitch-deck.pptx`)
-> mostrar detrás. Los tiempos son orientativos: prioriza que suene natural sobre
-> clavar el segundo.
+> Los marcadores `[EN PANTALLA]` indican qué diapositiva del deck
+> (`tfm-pitch-deck.pptx`) mostrar detrás. Los tiempos son orientativos: que
+> suene natural importa más que clavar el segundo. Donde veas `[AUTOR]`, adapta
+> con tus palabras o con el nombre real del centro si lo diriges a uno concreto.
 
 ---
 
-### 0:00 · Gancho — el problema humano
+### 0:00 · Vuestra realidad
 **[EN PANTALLA: Slide 1 — "Todo el tiempo cuenta"]**
 
-> "Piensa en alguien ingresado en un hospital. O en una residencia de mayores.
-> O en una familia que acompaña, hora tras hora. Hay algo que todos comparten:
-> el tiempo se hace eterno. Y ese tiempo pesa."
+> "Si trabajáis en un hospital, en una residencia o en un centro de día, hay una
+> escena que conocéis de sobra: personas que pasan muchas horas esperando,
+> acompañando o recuperándose. Y sus familias, al lado, viviendo esas mismas
+> horas. Es un tiempo que pesa.
+>
+> Seguro que más de una vez habéis pensado: 'Qué bien vendría traer aquí un poco
+> de música, un taller, un rato distinto'. Y seguro que también sabéis lo otro:
+> que organizarlo, en el día a día, es complicado. Por eso he preparado esto, y
+> hoy os lo quiero enseñar."
 
-### 0:22 · La idea
+### 1:00 · Qué es
+**[EN PANTALLA: Slide 5 — "Todo el tiempo cuenta" (la solución)]**
+
+> "Se llama Todo el tiempo cuenta. Es una plataforma pensada para vosotros: para
+> que llevar una actividad cultural a vuestro centro sea tan sencillo como decir
+> 'tenemos esta tarde libre'. Nada de llamadas, hojas de cálculo ni buscar
+> contactos. Vosotros abrís el hueco, y las personas que quieren aportar os
+> llegan a través de la plataforma."
+
+### 2:00 · Por qué le importa a vuestra gente
 **[EN PANTALLA: Slide 3 — "Ese tiempo puede convertirse en vida"]**
 
-> "Pero ese tiempo no tiene por qué ser tiempo perdido. Un concierto en la sala,
-> un taller de acuarela, un cuentacuentos para los más pequeños… una actividad
-> cambia el día de una persona. Le devuelve una sonrisa, compañía, dignidad."
+> "Y quiero empezar por lo que de verdad importa: vuestras personas. Un concierto
+> en la sala, un taller de acuarela, un cuentacuentos para los más pequeños… una
+> actividad no es solo entretenimiento. Rompe la rutina. Devuelve una sonrisa.
+> Da compañía donde a veces sobra silencio. Y, sobre todo, cuida algo que a veces
+> se nos escapa: cómo se vive ese tiempo. Cuidar a alguien también es cuidar sus
+> horas."
 
-### 0:42 · Por qué es difícil
-**[EN PANTALLA: Slide 4 — "Lo difícil no es la cultura. Es coordinarla."]**
-
-> "Y aquí está el problema de verdad: lo difícil no es la cultura. Es
-> coordinarla. ¿Quién tiene un hueco libre? ¿Qué artista puede ir? ¿Quién da el
-> permiso? ¿Cómo se avisa a las familias sin exponer datos delicados? Sin una
-> herramienta que lo ordene, la buena voluntad se queda en nada."
-
-### 1:05 · La solución
-**[EN PANTALLA: Slide 5 — "Todo el tiempo cuenta"]**
-
-> "Eso es lo que hace Todo el tiempo cuenta. Es una plataforma que conecta los
-> centros de cuidado con artistas dispuestos a aportar, para llevar actividades a
-> quienes más las necesitan. Simple, segura, y pensada para el mundo real de un
-> hospital o una residencia."
-
-### 1:25 · Cómo funciona
+### 3:00 · Cómo funciona, desde vuestro lado
 **[EN PANTALLA: Slide 6 — "Cómo funciona" (los 4 pasos)]**
 
-> "Y funciona en cuatro pasos. Uno: el centro abre una tarde libre en su agenda.
-> Dos: varios artistas ofrecen lo que saben hacer. Tres: el centro elige la
-> propuesta que mejor encaja con sus personas — no la primera que llega. Y
-> cuatro: nace un evento real, que las familias pueden ver. Así de sencillo por
-> fuera."
+> "¿Y cómo funciona para vosotros? En cuatro pasos, y ninguno os da trabajo de
+> más.
+>
+> Uno: abrís una tarde. Publicáis en vuestra agenda que tenéis un hueco para una
+> actividad. Dos: los artistas proponen. Varios ofrecen lo que saben hacer para
+> ese momento. Tres: vosotros elegís. Y cuatro: la actividad se confirma y se
+> convierte en un evento real, que las familias pueden ver. Vosotros ponéis el
+> hueco; la plataforma se encarga del lío de coordinar."
 
-### 1:52 · A quién ayuda
+### 4:15 · Vosotros mandáis
+**[EN PANTALLA: Slide 8 — "Por qué es distinto" (foco en "el centro elige")]**
+
+> "Y esto es importante, porque sé lo que preocupa en un centro: quién decide qué
+> pasa dentro de vuestras paredes. La respuesta es clara: vosotros. Aquí no es
+> 'el primero que llega'. Vosotros veis las propuestas y elegís la que mejor
+> encaja con vuestras personas, con vuestro espacio, con vuestro momento. Nada
+> ocurre sin vuestro visto bueno. La herramienta os facilita el trabajo; nunca
+> os quita el control."
+
+### 5:15 · Lo que cuida: privacidad y dignidad
+**[EN PANTALLA: Slide 8 — "Privacidad y dignidad"]**
+
+> "Y hay algo en lo que he puesto un cuidado especial, porque en un entorno de
+> salud es lo primero: la privacidad y la dignidad de las personas. Todo el
+> tiempo cuenta no toca ningún dato clínico, no gestiona historiales, no sabe ni
+> quiere saber nada médico. Y lo que se hace público de una actividad es solo lo
+> necesario para que una familia pueda enterarse: qué se hace y cuándo. Nunca en
+> qué habitación está alguien, ni datos personales, ni nada delicado. La
+> intimidad de vuestra gente se queda dentro, donde tiene que estar."
+
+### 6:15 · Sea cual sea vuestro centro
 **[EN PANTALLA: Slide 7 — "A quién ayuda" + los seis tipos de centro]**
 
-> "Y ayuda a tres a la vez: a las personas, que reciben un rato de vida; a las
-> familias, que ven que a los suyos los acompañan, no solo los atienden; y a los
-> artistas, que encuentran dónde su talento suma de verdad. Y no es solo para
-> hospitales: sirve para residencias, centros de día, hospitales de día, centros
-> ocupacionales y unidades de cuidados paliativos."
+> "Y no está pensado solo para hospitales. Sirve igual para una residencia de
+> mayores, un centro de día, un hospital de día, un centro ocupacional o una
+> unidad de cuidados paliativos. Porque el tiempo pesa en todos, y en todos se
+> puede convertir en algo mejor. Sea cual sea vuestro centro, esto es para
+> vosotros."
 
-### 2:15 · Por qué es distinto + ya es real
-**[EN PANTALLA: Slide 8 — "Por qué es distinto", luego Slide 9 — "Está funcionando hoy"]**
+### 7:15 · No es una promesa: ya funciona
+**[EN PANTALLA: Slide 9 — "Está funcionando hoy"]**
 
-> "Lo hace distinto que el centro elige, que respeta la privacidad y la dignidad
-> de las personas, y que no busca lucro, sino bienestar. Y lo más importante:
-> esto no es una idea en un papel. Está funcionando hoy."
+> "Quiero ser muy honesto en una cosa: esto no es una idea sobre el papel ni una
+> maqueta bonita para una presentación. Es una plataforma real, que funciona hoy,
+> probada y lista para usarse. No os traigo un proyecto para dentro de dos años.
+> Os traigo algo que ya está en marcha y que quiero poner en vuestras manos."
 
-### 2:38 · Cierre
-**[EN PANTALLA: Slide 9 — "Convertir tiempo de espera en tiempo de vida, a escala"]**
+### 8:15 · La invitación
+**[EN PANTALLA: Slide 9 — "Convertir tiempo de espera en tiempo de vida"]**
 
-> "Porque, al final, todo cabe en una frase: convertir el tiempo de espera en
-> tiempo de vida. A escala. Gracias."
+> "Y aquí es donde entráis vosotros. No os pido dinero ni compromisos raros: es
+> una herramienta hecha para ayudar, sin ánimo de lucro. Lo que os propongo es
+> sencillo: empezar juntos. Que vuestro centro sea uno de los que convierten el
+> tiempo de espera en tiempo de vida.
+>
+> Vosotros ya cuidáis de las personas cada día. Dejadme ayudaros a cuidar también
+> su tiempo. Gracias."
 
 ---
 
 ## Notas de grabación
 
-- **Grábalo contra la versión desplegada** si muestras la web en algún plano; que
-  lo que se vea coincida con lo que hay en vivo.
-- Si intercalas capturas de la plataforma, prioriza la **página pública de
-  eventos** (es la cara amable y sin datos sensibles).
-- Ritmo pausado: es un tema humano, no un anuncio de producto. Deja respirar las
-  frases de gancho ("el tiempo pesa", "está funcionando hoy").
-- Sube el resultado con acceso **"cualquiera con el enlace"** (igual que los
-  slides y el repo) y pruébalo en incógnito antes de pegar la URL en el
-  formulario.
+- **Ritmo pausado y cercano.** No es un anuncio: es una conversación con alguien
+  que cuida de personas. Deja respirar las frases ("el tiempo pesa", "vosotros
+  mandáis", "ya funciona hoy").
+- **Mira a cámara** como si tuvieras delante a la dirección del centro.
+- Si en algún plano enseñas la plataforma, muestra la **página pública de
+  eventos** — es la cara amable y sin ningún dato sensible.
+- Si diriges el vídeo a un centro concreto, personaliza la apertura y el cierre
+  con su nombre: se nota y suma mucho.
+- Sube el resultado con acceso **"cualquiera con el enlace"** y pruébalo en una
+  ventana de incógnito antes de pegar la URL en el formulario.
