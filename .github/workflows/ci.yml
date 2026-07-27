@@ -5,10 +5,10 @@
 # The integration tests self-guard on database availability; with the Postgres
 # service below + DATABASE_URL set, they EXECUTE here (they SKIP locally).
 #
-# NOTE: full reliability of the concurrency/race suite depends on the pending
-# PR 2b remediation (finding pr2b-M3: run integration tests serially + apply
-# migrations in a global setup; pr2b-M5: barrier-force every declared race).
-# Until that lands, treat integration results here as indicative, not final.
+# The PR-2b remediation this comment used to flag as pending has landed: the
+# integration project runs serially with migrations applied in a global setup,
+# and every declared race is barrier-forced. Integration/e2e results here are
+# final, not indicative.
 name: CI
 
 on:
