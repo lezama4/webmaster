@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Application dependencies. Grouped so a routine bump is one PR, not dozens.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+
+  # Keep the CI workflow actions patched (supply-chain surface).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
