@@ -103,7 +103,10 @@ not structural: the Slot/Proposal aggregate status matrix is still incomplete,
 Profile names and Proposal messages are still unbounded, and the deployment has
 no security headers, no CSP, no dependency scanning and no logging
 implementation. One TFM delivery requirement is also unmet for a non-technical
-reason: **the repository is private**.
+reason: **the repository is private**. *(Superseded 2026-07-27: every item in
+this 07-22 paragraph is now closed — the hardening and domain gaps landed in
+PRs #31/#32, and the repository was made public. See the top-of-document
+update block.)*
 
 Blocks 2 (ratings) and 3 (simulated patronage) remain future scope and are not
 claimed anywhere in this report.
@@ -210,17 +213,17 @@ All CI references are to run 29905717933 on `482aefd`.
 | Requirement | Status | Evidence / missing work |
 | --- | --- | --- |
 | Complete README | **Substantially complete** | Setup, run and test commands, the live URL (`README.md:26`) and the full seed-credential table (`README.md:153-167`) are present. One stale sentence remains at `README.md:195`, claiming E2E evidence must not be asserted in CI — CI has run the `e2e` job since. |
-| Public repository | **Not met** | Verified via `gh repo view`: <https://github.com/lezama4/webmaster> is **PRIVATE**. The TFM requires a public repository; a private one cannot be inspected by the tribunal. |
+| Public repository | **Met (2026-07-27)** | <https://github.com/lezama4/webmaster> is **public** — verified anonymously (unauthenticated GitHub API and repo page both return HTTP 200), so the tribunal can inspect it without a login. A pre-publication secret sweep of the working tree and the full git history found no real credentials (only `.env.example` placeholders, `localhost` CI values and the documented demo seed password). |
 | Working deployment URL | **Met** | <https://webmaster-lemon.vercel.app> returns 200 on `/`, `/events`, `/ayuda`, `/login` and `/register`, and `/events` renders the seeded published Event. |
-| Slides | **Draft exists, not final** | `docs/slides-outline.md` is an outline with placeholders. Produce the actual deck/PDF. |
+| Slides | **Deck built, not final** | `docs/tfm-defense-deck.pptx` is the produced 17-slide deck (generator: `docs/deck/`). Still author-only: fill the `[AUTOR]` placeholders, give it a visual pass, and host it to obtain a shareable URL for the submission form. |
 | Video | **Script exists, not final** | `docs/video-script.md` is a script. Record/export only against the deployed revision. |
 | Test credentials | **Met** | `prisma/seed.ts` creates the seven accounts and `README.md:153-167` documents each one with its demo role. |
 | Reproducible full demo | **Met in CI; not recorded against production** | `e2e/demo-chain.spec.ts` runs the whole chain (register → admin approve → publish → propose → accept → auto-reject rival → public browse) and passed in CI. The same chain has not been recorded against the deployed URL. |
 
-> **TODO (autor):** the private repository is the one delivery requirement that
-> is unambiguously unmet and cannot be fixed by a documentation change. Decide
-> whether to make <https://github.com/lezama4/webmaster> public before
-> submission, or to publish a mirror, and record the decision here.
+> **RESOLVED (2026-07-27):** the repository was made public before submission,
+> after a pre-publication secret sweep (working tree + full history) confirmed no
+> real credentials were present. This was the one hard delivery requirement no
+> documentation change could satisfy; it is now met.
 
 > **TODO (autor):** decide whether to run and record tasks 7.7 (manual full-chain
 > walkthrough against production) and 7.8 (`PLAYWRIGHT_BASE_URL` pointed at the
@@ -301,8 +304,9 @@ The eight items from the 2026-07-12 revision, with their current state:
    production walkthrough.
 8. ⚠️ **Finalize the academic package.** **In progress.** README, threat model,
    memoria, slides and video script are updated from this verified revision.
-   The repository is still **private**, and the deck and video are still to be
-   produced.
+   The repository is now **public** (2026-07-27) and the deck is built
+   (`docs/tfm-defense-deck.pptx`); the memoria finalisation, the deck's
+   `[AUTOR]` placeholders and the video are still to be produced.
 
 ### Residual work, in priority order
 
@@ -342,8 +346,10 @@ The three qualifications must be stated plainly rather than glossed:
    a production build. What is still absent is application security **logging**
    and request body **schema/size** validation — so it remains a defensible TFM
    MVP, not an Internet-ready service, and the threat model says so per control.
-2. **The repository is private**, which fails a stated delivery requirement
-   (author action — the one hard blocker that no code change can resolve).
+2. **The repository is public** (2026-07-27) — the stated delivery requirement is
+   now met, and a pre-publication secret sweep confirmed no real credentials are
+   exposed. What remains author-only here is the memoria, the slides URL and the
+   video.
 3. **The six-centre-type generalisation (`widen-beyond-hospitals`) is merged and
    deployed**, but its Basque copy is still a draft pending native review
    (Phase 6.10, blocking for copy quality) and the production database has not
