@@ -175,6 +175,19 @@ function assertValidReviewRequestedAt(reviewRequestedAt: Date | undefined): void
 }
 
 /**
+ * Validates a reading taken from the injected `Clock` (pr1-N1). A broken clock
+ * returning `new Date(NaN)` would otherwise be stored verbatim as an
+ * `at`/`reviewRequestedAt` timestamp, poisoning the audit trail with an
+ * invalid date. Returns the validated Date so callers read the clock once.
+ */
+function assertValidClockReading(now: Date): Date {
+  if (!Number.isFinite(now.getTime())) {
+    throw new DomainValidationError("Profile clock returned an invalid time");
+  }
+  return now;
+}
+
+/**
  * Validates the OPTIONAL public-location fields (Phase 2). Every field is
  * optional — a hospital may register without a location and add it later —
  * but when `latitude`/`longitude` ARE present they must be finite numbers
@@ -405,7 +418,7 @@ function buildReview(
     adminAccountId: input.adminAccountId,
     decision,
     basis,
-    at: clock.now(),
+    at: assertValidClockReading(clock.now()),
   };
 }
 
@@ -464,5 +477,6 @@ export function deactivateProfile(
  */
 export function reactivateProfile(profile: Profile, clock: Clock): Profile {
   assertStatus(profile, "rejected", "reactivate");
-  return { ...profile, status: "pending", reviewRequestedAt: clock.now() };
+  const reviewRequestedAt = assertValidClockReading(clock.now());
+  return { ...profile, status: "pending", reviewRequestedAt };
 }

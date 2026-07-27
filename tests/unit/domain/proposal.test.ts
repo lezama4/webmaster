@@ -64,6 +64,50 @@ describe("Proposal state machine", () => {
     });
   });
 
+  describe("message bounds (pr1-M2, T-15)", () => {
+    it("rejects an empty message", () => {
+      expect(() => submittedProposal({ message: "" })).toThrow(
+        DomainValidationError,
+      );
+    });
+
+    it("rejects a whitespace-only message", () => {
+      expect(() => submittedProposal({ message: "   " })).toThrow(
+        DomainValidationError,
+      );
+    });
+
+    it("rejects a message longer than 2000 characters", () => {
+      expect(() => submittedProposal({ message: "M".repeat(2001) })).toThrow(
+        DomainValidationError,
+      );
+    });
+
+    it("accepts a message at the 2000-character boundary", () => {
+      const proposal = submittedProposal({ message: "M".repeat(2000) });
+
+      expect(proposal.message).toHaveLength(2000);
+    });
+
+    it("normalises (trims) the stored message", () => {
+      const proposal = submittedProposal({ message: "  Hello ward  " });
+
+      expect(proposal.message).toBe("Hello ward");
+    });
+
+    it("rejects an over-bound message on rehydration too", () => {
+      expect(() =>
+        rehydrateProposal({
+          id: "proposal-1",
+          slotId: "slot-1",
+          artistProfileId: "artist-profile-1",
+          message: "M".repeat(2001),
+          status: "submitted",
+        }),
+      ).toThrow(DomainValidationError);
+    });
+  });
+
   describe("rehydrateProposal (M1: validated reconstruction from persisted data)", () => {
     it("rehydrates a proposal in 'accepted' state (a status createProposal can never produce)", () => {
       const proposal = rehydrateProposal({

@@ -500,6 +500,21 @@ describe("Profile state machine", () => {
       expect(reactivated.reviewRequestedAt).toEqual(NOW);
     });
 
+    it("rejects a broken clock returning an invalid time (pr1-N1)", () => {
+      const { profile: rejected } = rejectProfile(
+        pendingProfile(),
+        REVIEW,
+        fixedClock,
+      );
+      const brokenClock: Clock = { now: () => new Date(NaN) };
+
+      // Without validation the invalid Date would be stored verbatim as
+      // reviewRequestedAt, poisoning the audit trail.
+      expect(() => reactivateProfile(rejected, brokenClock)).toThrow(
+        DomainValidationError,
+      );
+    });
+
     it("denies reactivating an active profile", () => {
       const { profile: active } = approveProfile(
         pendingProfile(),

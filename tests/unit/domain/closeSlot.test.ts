@@ -124,11 +124,15 @@ describe("closeSlot (pure domain cascade, B2)", () => {
 
   it("denies closing a filled slot", () => {
     const filled = fillSlot(openSlot());
+    // A filled slot is only a consistent aggregate WITH its one accepted
+    // proposal; pass that so the transition guard (not the aggregate check)
+    // is what rejects the close.
+    const accepted = acceptProposalTransition(proposal("proposal-1"));
 
     expect(() =>
       closeSlot({
         slot: filled,
-        proposals: [],
+        proposals: [accepted],
         clock: fixedClock,
         actingHospitalProfileId: OWNER,
       }),

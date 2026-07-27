@@ -140,11 +140,15 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
 
   it("denies accepting on a filled slot", () => {
     const filled = fillSlot(openSlot());
+    // A filled slot is only a consistent aggregate WITH its one accepted
+    // proposal and no submitted rivals — so the only proposal to target is
+    // the already-accepted one, and the transition guard rejects it.
+    const accepted = acceptProposalTransition(proposal("proposal-1"));
 
     expect(() =>
       acceptProposal({
         slot: filled,
-        proposals: [proposal("proposal-1")],
+        proposals: [accepted],
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
@@ -155,11 +159,14 @@ describe("acceptProposal (pure domain invariant, ADR D4)", () => {
 
   it("denies accepting on a closed slot", () => {
     const closed = closeSlot(openSlot());
+    // A closed slot's consistent aggregate has only rejected proposals (close
+    // cascade-rejects every rival), so the target is necessarily terminal.
+    const rejected = rejectProposal(proposal("proposal-1"));
 
     expect(() =>
       acceptProposal({
         slot: closed,
-        proposals: [proposal("proposal-1")],
+        proposals: [rejected],
         proposalId: "proposal-1",
         eventId: "event-1",
         clock: fixedClock,
