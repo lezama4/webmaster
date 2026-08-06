@@ -99,17 +99,29 @@ export async function getCurrentActor(): Promise<Actor | null> {
  *
  * An invalid/expired cookie simply yields `null` here (the page can redirect
  * to /login); the stale cookie is cleared by the next MUTATING request, which
- * goes through `getCurrentActor`. Page views deliberately do NOT extend the
- * idle window — only actions (POST routes) do, via `getCurrentActor`'s touch.
- * `profileStatus` is a snapshot for display/gating hints only; every mutation
- * still re-checks live status inside its transaction (M6).
+ * goes through `getCurrentActor`. A page view DOES extend the idle window (via
+ * the `touch` below) — the 30-min idle timeout is measured from ANY activity,
+ * not only mutations, so an actively-browsing user (reloading/navigating) is
+ * not logged out; only a session with no requests at all for 30 min expires.
+ * `touch` writes `lastActiveAt` in the DB, never a cookie, so it stays a valid
+ * render-context read. `profileStatus` is a snapshot for display/gating hints
+ * only; every mutation still re-checks live status inside its transaction (M6).
  */
 export async function getCurrentActorReadOnly(): Promise<Actor | null> {
   const token = await getSessionToken();
   if (!token) return null;
 
-  const session = await sessionPort().resolveValid(token);
+  const sessions = sessionPort();
+  const session = await sessions.resolveValid(token);
   if (!session) return null;
+
+  // Count a page view as activity: extend the idle window so an actively
+  // browsing user (reloading/navigating) is not logged out at the 30-min idle
+  // mark — only a genuinely idle session (no requests at all for 30 min) then
+  // expires. `touch` writes `lastActiveAt` in the DB, NEVER a cookie, so it is
+  // permitted in this render context. Best-effort: the actor is taken from the
+  // already-validated `resolveValid`; a raced expiry is cleared next request.
+  await sessions.touch(token);
 
   const account = await accountRepository().findById(session.accountId);
   if (!account) return null;
