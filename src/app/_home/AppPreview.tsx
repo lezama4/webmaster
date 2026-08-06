@@ -7,37 +7,103 @@ import { Reveal } from "./Reveal";
  * section carries an explicit "Próximamente" badge plus a concept disclaimer.
  * The platform's claim elsewhere is "it works today" (the web); this section
  * is clearly future/vision, never presented as a shipped feature.
+ *
+ * The screens are drawn richer than plain skeletons (app bar, cards, star
+ * rows, a map with pins, a bottom tab bar) so they read as a real product —
+ * but the CONTENT is decorative shapes, not translated copy, so it stays
+ * locale-neutral.
  */
 
-function Bar({ w, tone = "muted" }: { w: string; tone?: "muted" | "primary" | "strong" }) {
-  const bg =
-    tone === "primary" ? "bg-primary/70" : tone === "strong" ? "bg-foreground/70" : "bg-foreground/12";
-  return <span className={`block h-2 rounded-full ${bg}`} style={{ width: w }} aria-hidden="true" />;
+const STAR = "★";
+
+function Stars({ filled }: { filled: number }) {
+  return (
+    <span className="text-[9px] leading-none tracking-tight" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span key={i} className={i < filled ? "text-[#e0a24a]" : "text-foreground/20"}>
+          {STAR}
+        </span>
+      ))}
+    </span>
+  );
 }
 
-/** A concept phone: a device frame around a simplified, skeleton screen. */
-function Phone({ label, children }: { label: string; children: React.ReactNode }) {
+function Bar({ w, tone = "muted" }: { w: string; tone?: "muted" | "strong" | "primary" }) {
+  const bg = tone === "primary" ? "bg-primary/70" : tone === "strong" ? "bg-foreground/75" : "bg-foreground/15";
+  return <span className={`block h-1.5 rounded-full ${bg}`} style={{ width: w }} aria-hidden="true" />;
+}
+
+/** A small pill (date chip / type chip). */
+function Chip({ tone = "primary" }: { tone?: "primary" | "accent" }) {
+  const c = tone === "accent" ? "bg-accent/20 text-accent" : "bg-primary/18 text-primary";
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative aspect-[9/19] w-[200px] overflow-hidden rounded-[2.1rem] border-[6px] border-foreground/85 bg-background shadow-xl sm:w-[210px]">
-        <span
-          className="absolute left-1/2 top-2 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-foreground/25"
-          aria-hidden="true"
-        />
-        <div className="flex h-full flex-col gap-3 px-3.5 pb-4 pt-7">{children}</div>
+    <span className={`inline-flex h-3.5 w-10 items-center rounded-full ${c}`} aria-hidden="true">
+      <span className="mx-auto h-1 w-6 rounded-full bg-current opacity-70" />
+    </span>
+  );
+}
+
+/** A tiny event card: date chip, title, artist row, rating. */
+function EventCard({ filled }: { filled: number }) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-surface p-2.5">
+      <div className="flex items-center justify-between">
+        <Chip />
+        <Stars filled={filled} />
       </div>
-      <span className="text-sm font-medium">{label}</span>
+      <Bar w="88%" tone="strong" />
+      <div className="flex items-center gap-1.5 pt-0.5">
+        <span className="h-4 w-4 rounded-full bg-accent/40" aria-hidden="true" />
+        <Bar w="45%" />
+      </div>
     </div>
   );
 }
 
-/** A small stand-in "card" inside a phone screen. */
-function MiniCard({ accent = false }: { accent?: boolean }) {
+/** Bottom tab bar with three simple icons; the first is active. */
+function TabBar() {
+  const icon = "h-4 w-4";
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3">
-      <Bar w="45%" tone={accent ? "primary" : "muted"} />
-      <Bar w="85%" tone="strong" />
-      <Bar w="60%" />
+    <div className="mt-auto flex items-center justify-around border-t border-border pt-2">
+      <svg viewBox="0 0 24 24" className={`${icon} text-primary`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+      </svg>
+      <svg viewBox="0 0 24 24" className={`${icon} text-foreground/35`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="2.5" />
+      </svg>
+      <svg viewBox="0 0 24 24" className={`${icon} text-foreground/35`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+      </svg>
+    </div>
+  );
+}
+
+/** Device shell: bezel, notch, status bar, screen content. */
+function Phone({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative aspect-[9/19] w-[196px] overflow-hidden rounded-[2.1rem] border-[7px] border-foreground/85 bg-background shadow-xl sm:w-[208px]">
+        <span className="absolute left-1/2 top-2 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-foreground/25" aria-hidden="true" />
+        <div className="flex h-full flex-col px-3 pb-3 pt-6">
+          {/* status bar */}
+          <div className="flex items-center justify-between px-0.5 pb-2">
+            <span className="text-[9px] font-semibold text-foreground/50">9:41</span>
+            <span className="flex items-center gap-0.5" aria-hidden="true">
+              <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+              <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+              <span className="h-1.5 w-3 rounded-[3px] bg-foreground/30" />
+            </span>
+          </div>
+          {/* app header */}
+          <div className="flex items-center gap-2 pb-3">
+            <span className="h-4 w-4 rounded-md bg-primary" aria-hidden="true" />
+            <Bar w="42%" tone="strong" />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5">{children}</div>
+          <TabBar />
+        </div>
+      </div>
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }
@@ -62,30 +128,65 @@ export async function AppPreview() {
         </div>
 
         <div className="flex flex-wrap items-start justify-center gap-10 sm:gap-12">
-          {/* Screen 1 — discover events */}
+          {/* Screen 1 — discover events: a feed of event cards with ratings */}
           <Phone label={t("app.screen1")}>
-            <Bar w="55%" tone="strong" />
-            <MiniCard accent />
-            <MiniCard />
-            <MiniCard />
+            <EventCard filled={5} />
+            <EventCard filled={4} />
+            <EventCard filled={5} />
           </Phone>
-          {/* Screen 2 — find your centre (a "map" band over a couple of rows) */}
+
+          {/* Screen 2 — find your centre: a map with pins + a result card */}
           <Phone label={t("app.screen2")}>
-            <Bar w="65%" tone="strong" />
-            <div className="h-24 rounded-2xl border border-border bg-surface" aria-hidden="true" />
-            <MiniCard />
-            <MiniCard accent />
-          </Phone>
-          {/* Screen 3 — coordinate activities (a small "form") */}
-          <Phone label={t("app.screen3")}>
-            <Bar w="60%" tone="strong" />
-            <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3">
-              <Bar w="35%" />
-              <div className="h-6 rounded-lg bg-foreground/8" aria-hidden="true" />
-              <Bar w="35%" />
-              <div className="h-6 rounded-lg bg-foreground/8" aria-hidden="true" />
+            <div className="relative h-32 overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/10 via-surface to-accent/10">
+              <span className="absolute left-6 top-8 h-3 w-3 rounded-full border-2 border-background bg-primary shadow" aria-hidden="true" />
+              <span className="absolute left-20 top-14 h-3 w-3 rounded-full border-2 border-background bg-accent shadow" aria-hidden="true" />
+              <span className="absolute left-12 top-20 h-3 w-3 rounded-full border-2 border-background bg-primary shadow" aria-hidden="true" />
+              <span className="absolute right-6 top-10 h-3 w-3 rounded-full border-2 border-background bg-accent shadow" aria-hidden="true" />
             </div>
-            <div className="mt-1 h-8 rounded-xl bg-primary/70" aria-hidden="true" />
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5">
+              <span className="h-8 w-8 flex-shrink-0 rounded-lg bg-primary/15" aria-hidden="true" />
+              <div className="flex flex-col gap-1.5">
+                <Bar w="70%" tone="strong" />
+                <Chip tone="accent" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5">
+              <span className="h-8 w-8 flex-shrink-0 rounded-lg bg-accent/15" aria-hidden="true" />
+              <div className="flex flex-col gap-1.5">
+                <Bar w="60%" tone="strong" />
+                <Chip />
+              </div>
+            </div>
+          </Phone>
+
+          {/* Screen 3 — coordinate: a day strip, a highlighted slot, a CTA */}
+          <Phone label={t("app.screen3")}>
+            <div className="flex justify-between gap-1">
+              {[false, false, true, false, false].map((active, i) => (
+                <span
+                  key={i}
+                  className={`flex h-9 flex-1 flex-col items-center justify-center gap-1 rounded-lg ${active ? "bg-primary" : "bg-surface"}`}
+                  aria-hidden="true"
+                >
+                  <span className={`h-1 w-3 rounded-full ${active ? "bg-primary-foreground/80" : "bg-foreground/25"}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-primary-foreground" : "bg-foreground/40"}`} />
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2 rounded-xl border-2 border-primary/40 bg-primary/5 p-2.5">
+              <div className="flex items-center justify-between">
+                <Bar w="50%" tone="strong" />
+                <Chip />
+              </div>
+              <Bar w="80%" />
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+              <Bar w="65%" />
+            </div>
+            <div className="mt-1 flex h-8 items-center justify-center rounded-xl bg-primary" aria-hidden="true">
+              <span className="h-1.5 w-12 rounded-full bg-primary-foreground/85" />
+            </div>
           </Phone>
         </div>
 
