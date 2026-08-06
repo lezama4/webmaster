@@ -25,10 +25,14 @@ export default function LoginPage() {
     e.preventDefault(); setError(null); setPending(true);
     try {
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
-      if (!res.ok) { setError(t("errors.invalidCredentials")); return; }
+      if (!res.ok) { setError(t("errors.invalidCredentials")); setPending(false); return; }
       const { role } = (await res.json()) as { role?: string };
+      // Keep the button in its "signing in…" state THROUGH the navigation: the
+      // destination is a slow authed render (cold start + DB + its loading.tsx)
+      // that replaces this page, so `pending` is deliberately NOT reset here —
+      // resetting it made the button look idle while the page was still loading.
       router.push(DESTINATION_BY_ROLE[role ?? ""] ?? "/events"); router.refresh();
-    } catch { setError(t("errors.generic")); } finally { setPending(false); }
+    } catch { setError(t("errors.generic")); setPending(false); }
   }
 
   return (
