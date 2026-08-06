@@ -77,10 +77,22 @@ function SiteHeader({
           scrolls sideways. Wrapping keeps every destination reachable and
           keyboard-navigable at any width; the header simply grows taller. */}
       <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <BrandMark />
-          <span>Todo el tiempo cuenta</span>
-        </Link>
+        {/* Left: brand + "Quiénes somos" — the about entry belongs beside the
+            identity, not in the functional nav (review). */}
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+          <Link href="/" className="flex items-center gap-2 px-1 font-semibold tracking-tight">
+            <BrandMark />
+            <span>Todo el tiempo cuenta</span>
+          </Link>
+          <Link href="/quienes-somos" className="rounded-full px-3 py-2 text-sm text-muted transition-colors hover:text-foreground">
+            {aboutLabel}
+          </Link>
+        </div>
+        {/* Right: PUBLIC actions lead — the vast majority of visitors only
+            browse (events, find a centre) and never register. Access for
+            centres/artists stays reachable but is deliberately NOT the loud
+            primary CTA it used to be; registering is for the small minority
+            who onboard, so it reads as a quiet link, not the headline. */}
         <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
           <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {eventsLabel}
@@ -91,19 +103,14 @@ function SiteHeader({
           >
             {finderLabel}
           </Link>
-          <Link
-            href="/quienes-somos"
-            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
-          >
-            {aboutLabel}
-          </Link>
           <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {helpLabel}
           </Link>
+          <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden="true" />
           <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {loginLabel}
           </Link>
-          <Link href="/register" className="rounded-[13px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary-hover active:translate-y-px">
+          <Link href="/register" className="rounded-full px-3 py-2 font-medium text-foreground transition-colors hover:text-primary">
             {registerLabel}
           </Link>
           <LanguageSelector />

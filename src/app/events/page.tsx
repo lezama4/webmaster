@@ -8,7 +8,8 @@ import {
   publicDeps,
 } from "@infrastructure/composition/container";
 import { getCurrentActorReadOnly } from "@infrastructure/http/sessionCookie";
-import { audienceBadgeClasses, EmptyState, secondaryButton } from "@ui/components/ui";
+import type { Audience } from "@domain/slot/Slot";
+import { audienceBadgeClasses, EmptyState, inputClasses, secondaryButton } from "@ui/components/ui";
 import { StarRating } from "../StarRating";
 import { RateEventControl } from "./RateEventControl";
 import { ShareRow } from "@ui/share/ShareRow";
@@ -39,9 +40,44 @@ function formatDuration(minutes: number, t: Awaited<ReturnType<typeof getTransla
   return rest === 0 ? t("duration.hours", { hours }) : t("duration.hoursAndMinutes", { hours, minutes: rest });
 }
 
-export default async function EventsPage() {
+// Public-safe filters (date + audience) — never centre/location (D10).
+const AUDIENCE_VALUES = ["all_ages", "early_childhood", "children", "teens", "adults"] as const;
+type DatePreset = "all" | "week" | "month";
+
+function parseAudience(value: string | undefined): Audience | undefined {
+  return (AUDIENCE_VALUES as readonly string[]).includes(value ?? "")
+    ? (value as Audience)
+    : undefined;
+}
+
+function parseDatePreset(value: string | undefined): DatePreset {
+  return value === "week" || value === "month" ? value : "all";
+}
+
+function dateRange(preset: DatePreset, now: Date): { from?: Date; to?: Date } {
+  if (preset === "all") return {};
+  const to = new Date(now);
+  to.setDate(to.getDate() + (preset === "week" ? 7 : 30));
+  return { from: now, to };
+}
+
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string; audience?: string }>;
+}) {
+  const sp = await searchParams;
+  const audienceFilter = parseAudience(sp.audience);
+  const datePreset = parseDatePreset(sp.date);
+  const { from, to } = dateRange(datePreset, new Date());
+  const filters = {
+    ...(audienceFilter ? { audience: audienceFilter } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+  };
+
   const [events, t, tAudience, tShare, locale, actor] = await Promise.all([
-    listPublishedEvents(publicDeps()),
+    listPublishedEvents(publicDeps(), filters),
     getTranslations("Events"),
     getTranslations("Audience"),
     getTranslations("Share"),
@@ -58,9 +94,43 @@ export default async function EventsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <header className="flex flex-col gap-3 pb-10">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
-        <p className="max-w-[52ch] text-muted">{t("description")}</p>
+      <header className="flex flex-col gap-5 pb-10">
+        <div className="flex flex-col gap-3">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
+          <p className="max-w-[52ch] text-muted">{t("description")}</p>
+        </div>
+        {/* Public-safe filters. A plain GET form (no client JS): submitting
+            reloads /events?date=…&audience=… and the server filters the query.
+            There is deliberately NO centre/location filter — the public
+            projection carries none (D10 non-correlation). */}
+        <form method="get" className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted">{t("filters.dateLabel")}</span>
+            <select name="date" defaultValue={datePreset} className={inputClasses}>
+              <option value="all">{t("filters.allDates")}</option>
+              <option value="week">{t("filters.week")}</option>
+              <option value="month">{t("filters.month")}</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted">{t("filters.audienceLabel")}</span>
+            <select
+              name="audience"
+              defaultValue={audienceFilter ?? "all"}
+              className={inputClasses}
+            >
+              <option value="all">{t("filters.allAudiences")}</option>
+              {AUDIENCE_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {tAudience(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className={secondaryButton}>
+            {t("filters.apply")}
+          </button>
+        </form>
       </header>
 
       {events.length === 0 ? (

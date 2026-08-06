@@ -35,8 +35,8 @@
       "disclaimer": "MVP fase honetarako adibide-multzoa: demo-datu-baseko zentroak eta adibide-erakundeak biltzen ditu, ez baieztatutako mezenasgo-akordioak."
     },
     "artists": {
-      "eyebrow": "Balorazio onena duten artistak",
-      "title": "Beren lana zentroetaraino eramaten ari diren pertsonak.",
+      "eyebrow": "Kolaboratzaile nabarmenak",
+      "title": "Beren lana zentroetara eramaten ari diren artista baloratuenak.",
       "description": "Demo-datu-baseko adibide-profilak, ekitaldi bat amaitu ondoren jasoko luketen balorazioarekin.",
       "disclaimer": "MVP fase honetarako adibide-profilak eta balorazioak.",
       "items": [
@@ -54,6 +54,16 @@
         { "quote": "Tailerrak korridoreko errutina hautsi zuen. Arratsalde batez, ez genuen analisiei edo ordutegiei buruz hitz egin.", "author": "Fernando Cabrera", "context": "Pazientea, Hospital Esperanza", "rating": 5 },
         { "quote": "Hutsunea martitzen argitaratu genuen eta osteguneko artista baieztatua genuen jada. Koordinatzea horren erraza izan zen.", "author": "Marta Elizondo dra.", "context": "Gela-koordinatzailea, Hospital San Juan", "rating": 5 }
       ]
+    },
+    "app": {
+      "eyebrow": "Mugikorrean",
+      "badge": "Laster",
+      "title": "Eraman poltsikoan.",
+      "description": "Aplikazioa diseinatzen ari gara, ekitaldiak aurkitzea, zure zentroa bilatzea eta jarduerak koordinatzea are errazagoa izan dadin mugikorretik. Hau kontzeptuaren aurrerapena da.",
+      "screen1": "Aurkitu ekitaldiak",
+      "screen2": "Aurkitu zure zentroa",
+      "screen3": "Koordinatu jarduerak",
+      "disclaimer": "Kontzeptu-diseinua. Aplikazioa garatzen ari da: pantailak aurrebista bat dira, ez bertsio funtzional bat."
     },
     "closing": {
       "title": "Prest lehen hutsunea irekitzeko, edo lehen unea proposatzeko?",
@@ -140,7 +150,7 @@
       "description": "Todo el tiempo cuenta irabazi-asmorik gabeko ekimena da. Zentroek, artistek eta familiek ez dute ezer ordaintzen parte hartzeagatik; proiektua haien arteko edozein transakziotik at eusten da."
     }
   },
-  "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten zentroetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira zentro bakoitzarekin.", "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Zentroek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Oraindik ez dago baloraziorik", "average": "{average} batez beste · {count} balorazio", "averageLabel": "Batez besteko balorazioa: 5etik {value} izar", "title": "Baloratu ekitaldi hau", "yourRating": "Zure balorazioa", "starLabel": "5etik {value} izar", "error": "Ezin izan da balorazioa gorde. Saiatu berriro, mesedez." } },
+  "Events": { "title": "Hurrengo ekitaldiak", "description": "Parte hartzen duten zentroetan programatutako zuzeneko emanaldiak. Orduak eta artistak baieztatuta daude; kokapen zehatzak modu pribatuan partekatzen dira zentro bakoitzarekin.", "filters": { "dateLabel": "Data", "audienceLabel": "Publikoa", "allDates": "Edozein data", "week": "Aste honetan", "month": "Hilabete honetan", "allAudiences": "Publiko guztiak", "apply": "Iragazi" }, "empty": { "title": "Oraindik ez dago ekitaldirik programatuta", "description": "Zentroek artisten proposamenak baieztatzen dituztenean, antolatzen dituzten uneak hemen agertuko dira.", "action": "Erregistratu profil bat" }, "withArtist": "honekin:", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Oraindik ez dago baloraziorik", "average": "{average} batez beste · {count} balorazio", "averageLabel": "Batez besteko balorazioa: 5etik {value} izar", "title": "Baloratu ekitaldi hau", "yourRating": "Zure balorazioa", "starLabel": "5etik {value} izar", "error": "Ezin izan da balorazioa gorde. Saiatu berriro, mesedez." } },
   "Login": { "title": "Ongi etorri berriro", "description": "Hasi saioa ekitaldiak koordinatzeko edo berrikusteko.", "email": "Helbide elektronikoa", "password": "Pasahitza", "submit": "Hasi saioa", "submitting": "Saioa hasten…", "noAccount": "Ez duzu konturik?", "register": "Erregistratu zentro edo artista bat", "errors": { "invalidCredentials": "Helbide elektronikoa edo pasahitza ez da zuzena.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." } },
   "Register": { "title": "Eman izena", "description": "Zentroek eta artistek hemen egiten dute bat. Profil bakoitza berrikusten da jardun aurretik.", "email": "Helbide elektronikoa", "password": "Pasahitza", "passwordHint": "Gutxienez 8 karaktere.", "submit": "Sortu profila", "submitting": "Bidaltzen…", "alreadyRegistered": "Dagoeneko erregistratuta?", "login": "Hasi saioa", "role": { "label": "Hau erregistratzen ari naiz:", "centre": "Zaintza-zentroa", "artist": "Artista" }, "name": { "centre": "Zentroaren izena", "artist": "Artista edo eszena-izena" }, "location": { "city": "Herria", "postalCode": "Posta kodea", "addressLine": "Helbidea", "hint": "Aukerakoa. Familiei zentroa mapan aurkitzen laguntzen die." }, "centreType": { "label": "Zentro mota", "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" }, "errors": { "duplicateEmail": "Dagoeneko badago helbide elektroniko hori duen kontu bat.", "failure": "Ezin izan da erregistroa osatu. Egiaztatu datuak eta saiatu berriro.", "generic": "Zerbait gaizki joan da. Saiatu berriro, mesedez." }, "success": { "title": "Eskaera jaso da", "description": "Zure profila koordinatzaile baten berrikuspenaren zain dago. Onartu ondoren hasi ahal izango duzu saioa.", "action": "Joan saio-hasierara" } },
   "AdminProfiles": { "title": "Profilak baliozkotzeko ilara", "description": "Berrikusi onarpenaren zain dauden zentroak eta artistak. Uko baten ondoren berriro erregistratzen diren profilak ere hemen agertzen dira; ilara bera da.", "requested": "Eskatua: {date}", "types": { "centre": "Zaintza-zentroa", "artist": "Artista" }, "centreType": { "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" }, "empty": { "title": "Ez dago berrikusteko ezer", "description": "Zentroen eta artisten erregistro berriak hemen agertuko dira iritsi bezain laster." }, "active": { "title": "Zentro eta artista aktiboak", "description": "Dagoeneko onartutako profilak. Desaktibatu bat plataformaren baldintzak betetzeari uzten badio.", "empty": { "title": "Ez dago profil aktiborik", "description": "Onartzen diren profilak hemen agertuko dira." } }, "review": { "legacy": "Ez dago oinarririk erregistratuta (auditoretza baino lehenagokoa)" } },

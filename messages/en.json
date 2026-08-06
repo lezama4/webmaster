@@ -40,8 +40,8 @@
       "disclaimer": "Illustrative set for this MVP phase: it includes centres from the demo database and example organisations, not confirmed patronage agreements."
     },
     "artists": {
-      "eyebrow": "Top-rated artists",
-      "title": "People already bringing their craft into care centres.",
+      "eyebrow": "Featured collaborators",
+      "title": "The best-rated artists already bringing their craft into care centres.",
       "description": "Example profiles from the demo database, with the rating they'd receive after a completed event.",
       "disclaimer": "Illustrative profiles and ratings for this MVP phase.",
       "items": [
@@ -59,6 +59,16 @@
         { "quote": "The workshop broke the routine of the corridor. For one afternoon, we didn't talk about test results or schedules.", "author": "Fernando Cabrera", "context": "Patient, Hospital Esperanza", "rating": 5 },
         { "quote": "We published the slot on a Tuesday and had a confirmed artist by Thursday. Coordinating was that simple.", "author": "Dr. Marta Elizondo", "context": "Ward coordinator, Hospital San Juan", "rating": 5 }
       ]
+    },
+    "app": {
+      "eyebrow": "On mobile",
+      "badge": "Coming soon",
+      "title": "Take it in your pocket.",
+      "description": "We're designing the app so discovering events, finding your centre and coordinating activities is even easier on mobile. This is a preview of the concept.",
+      "screen1": "Discover events",
+      "screen2": "Find your centre",
+      "screen3": "Coordinate activities",
+      "disclaimer": "Concept design. The app is in development: these screens are a preview, not a working version."
     },
     "closing": {
       "title": "Ready to open the first slot, or propose the first moment?",
@@ -151,7 +161,7 @@
     }
   },
   "Events": {
-    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.",
+    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "apply": "Filter" },
     "empty": { "title": "No events scheduled yet", "description": "As centres confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
     "withArtist": "with", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
     "rating": {

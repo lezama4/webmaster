@@ -1,7 +1,10 @@
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
-import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
+import type {
+  PublicEventFilters,
+  PublicEventProjectionQuery,
+} from "@application/ports/PublicEventProjectionQuery";
 import type { PrismaClientOrTx } from "./client";
-import { toDomainAudience } from "./mappers";
+import { audienceToPrisma, toDomainAudience } from "./mappers";
 
 /**
  * The ONLY adapter permitted to join Event -> Slot -> Proposal -> (Artist)
@@ -23,9 +26,29 @@ export class PrismaPublicEventProjectionQuery
 {
   constructor(private readonly client: PrismaClientOrTx) {}
 
-  async listPublished(): Promise<readonly PublicEventProjection[]> {
+  async listPublished(
+    filters?: PublicEventFilters,
+  ): Promise<readonly PublicEventProjection[]> {
+    // Filters apply to the related Slot (audience + scheduledAt live there).
+    // Both are already in the public projection, so this exposes nothing new
+    // and never touches centre/location (D10): there is no centre to filter on.
+    const scheduledAt =
+      filters?.from || filters?.to
+        ? {
+            ...(filters.from ? { gte: filters.from } : {}),
+            ...(filters.to ? { lte: filters.to } : {}),
+          }
+        : undefined;
+    const slotFilter = {
+      ...(filters?.audience ? { audience: audienceToPrisma(filters.audience) } : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
+    };
+
     const rows = await this.client.event.findMany({
-      where: { status: "PUBLISHED" },
+      where: {
+        status: "PUBLISHED",
+        ...(Object.keys(slotFilter).length > 0 ? { slot: slotFilter } : {}),
+      },
       select: {
         id: true,
         title: true,
