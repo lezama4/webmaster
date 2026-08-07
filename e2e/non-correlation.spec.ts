@@ -172,8 +172,10 @@ test.describe("/events names the hosting centre but never the ward/room, postal 
   test("the rendered /events page shows the hosting centre but never its postal code or a ward/room location", async ({ page }) => {
     await page.goto("/events");
 
-    // The hosting centre is now visible to a family browsing events.
-    await expect(page.getByText("Hospital San Juan").first()).toBeVisible();
+    // The hosting centre is now visible to a family browsing events. Scope to
+    // the card `<p>` — the centre name is ALSO a hidden `<option>` in the
+    // filter dropdown, which `getByText` would otherwise resolve to.
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" }).first()).toBeVisible();
 
     for (const hospital of SEED_ACTIVE_HOSPITALS) {
       await expect(page.getByText(hospital.postalCode)).toHaveCount(0);
@@ -190,8 +192,11 @@ test.describe("/events names the hosting centre but never the ward/room, postal 
     // events; San Juan's must disappear once it is selected.
     await page.goto("/events?centre=" + encodeURIComponent("Residencia Urumea"));
 
-    await expect(page.getByText("Residencia Urumea").first()).toBeVisible();
-    await expect(page.getByText("Hospital San Juan")).toHaveCount(0);
+    // Assert on the card `<p>`, not the dropdown `<option>` (which lists every
+    // centre regardless of the active filter): a Urumea card is shown, and no
+    // San Juan card survives the filter.
+    await expect(page.locator("p").filter({ hasText: "Residencia Urumea" }).first()).toBeVisible();
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" })).toHaveCount(0);
 
     // The exact place is still never exposed, even when filtering by centre.
     for (const location of SEED_LOCATIONS) {
