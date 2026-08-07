@@ -118,39 +118,19 @@ export default async function EventsPage({
             the query. Every axis filters on a value already shown on the card
             (date, audience, and — since the D10 revision — the hosting centre's
             public name); the ward/room location, postal code and address are
-            never filterable because they are never in the projection. The
-            centre filter appears only when more than one centre hosts events. */}
-        <form method="get" className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">{t("filters.dateLabel")}</span>
-            <select name="date" defaultValue={datePreset} className={inputClasses}>
-              <option value="all">{t("filters.allDates")}</option>
-              <option value="week">{t("filters.week")}</option>
-              <option value="month">{t("filters.month")}</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">{t("filters.audienceLabel")}</span>
-            <select
-              name="audience"
-              defaultValue={audienceFilter ?? "all"}
-              className={inputClasses}
-            >
-              <option value="all">{t("filters.allAudiences")}</option>
-              {AUDIENCE_VALUES.map((value) => (
-                <option key={value} value={value}>
-                  {tAudience(value)}
-                </option>
-              ))}
-            </select>
-          </label>
+            never filterable because they are never in the projection. Centre
+            is the PRIMARY filter (its own row, above the other two) and appears
+            only when more than one centre hosts events. */}
+        <form method="get" className="flex flex-col gap-3">
+          {/* Centre is the PRIMARY filter — its own row, above date + audience.
+              Only rendered when more than one centre hosts events. */}
           {centreOptions.length > 1 ? (
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">{t("filters.centreLabel")}</span>
+              <span className="font-medium">{t("filters.centreLabel")}</span>
               <select
                 name="centre"
                 defaultValue={centreFilter ?? "all"}
-                className={inputClasses}
+                className={`${inputClasses} sm:min-w-[18rem]`}
               >
                 <option value="all">{t("filters.allCentres")}</option>
                 {centreOptions.map((name) => (
@@ -161,9 +141,34 @@ export default async function EventsPage({
               </select>
             </label>
           ) : null}
-          <button type="submit" className={secondaryButton}>
-            {t("filters.apply")}
-          </button>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">{t("filters.dateLabel")}</span>
+              <select name="date" defaultValue={datePreset} className={inputClasses}>
+                <option value="all">{t("filters.allDates")}</option>
+                <option value="week">{t("filters.week")}</option>
+                <option value="month">{t("filters.month")}</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">{t("filters.audienceLabel")}</span>
+              <select
+                name="audience"
+                defaultValue={audienceFilter ?? "all"}
+                className={inputClasses}
+              >
+                <option value="all">{t("filters.allAudiences")}</option>
+                {AUDIENCE_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {tAudience(value)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className={secondaryButton}>
+              {t("filters.apply")}
+            </button>
+          </div>
         </form>
       </header>
 
