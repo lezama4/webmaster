@@ -42,6 +42,7 @@ function toPublicEventProjection(record: PublicEventProjection): PublicEventProj
     durationMinutes: record.durationMinutes,
     artistName: record.artistName,
     audience: record.audience,
+    capacity: record.capacity,
     centreName: record.centreName,
     centreCity: record.centreCity,
     averageStars: record.averageStars,

@@ -211,6 +211,7 @@ model Slot {
   location          String
   status            SlotStatus @default(OPEN)
   audience          Audience @default(ALL_AGES)
+  capacity          Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

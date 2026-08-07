@@ -148,6 +148,7 @@ export default async function EventsPage({
               <span className={audienceBadgeClasses}>{tAudience(event.audience)}</span>
               <p className="text-sm"><span className="text-muted">{t("withArtist")} </span><span className="font-medium">{event.artistName}</span></p>
               <p className="text-sm"><span className="text-muted">{t("atCentre")} </span><span className="font-medium">{event.centreName}</span>{event.centreCity ? <span className="text-muted"> · {event.centreCity}</span> : null}</p>
+              {event.capacity != null ? <p className="text-sm"><span className="text-muted">{t("capacity")} </span><span className="font-medium">{t("capacityValue", { count: event.capacity })}</span></p> : null}
 
               <div className="mt-auto flex items-center gap-2 text-sm">
                 {event.averageStars === null ? (

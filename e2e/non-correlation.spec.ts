@@ -39,7 +39,7 @@ const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "n
 // A family cannot find events for their relative's centre without them. The
 // privacy line moved to the INDIVIDUAL and the exact place: the ward/room
 // (`Slot.location`), the postal code and the street address stay forbidden.
-const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "centreCity", "centreName", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
+const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "capacity", "centreCity", "centreName", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
 
 test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-event direction)", () => {
   test("GET /api/hospitals carries only the D9 allow-list keys and no seeded event title", async () => {

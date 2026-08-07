@@ -25,6 +25,16 @@ export const DESCRIPTION_MAX_LENGTH = 2000;
 export const LOCATION_MIN_LENGTH = 1;
 export const LOCATION_MAX_LENGTH = 200;
 
+/**
+ * Optional maximum attendee capacity ("aforo máximo") a centre may set on a
+ * Slot so a family sees how many people the activity fits (shown on the public
+ * Events page). Optional by design: legacy Slots and the current seed predate
+ * it, so it is nullable end to end. When present it must be a sane positive
+ * integer — a single seat up to a large-venue bound.
+ */
+export const CAPACITY_MIN = 1;
+export const CAPACITY_MAX = 100_000;
+
 const SLOT_STATUSES: readonly SlotStatus[] = ["open", "filled", "closed"];
 const AUDIENCES: readonly Audience[] = [
   "all_ages",
@@ -63,6 +73,8 @@ export type Slot = {
   readonly location: string;
   readonly status: SlotStatus;
   readonly audience: Audience;
+  /** Optional max attendee capacity ("aforo máximo"); `null` when unset. */
+  readonly capacity: number | null;
 } & { readonly [SLOT_BRAND]: "Slot" };
 
 export interface CreateSlotInput {
@@ -74,6 +86,8 @@ export interface CreateSlotInput {
   readonly durationMinutes: number;
   readonly location: string;
   readonly audience: Audience;
+  /** Optional "aforo máximo"; omit or `null` when the centre does not set one. */
+  readonly capacity?: number | null;
 }
 
 export interface RehydrateSlotInput {
@@ -86,6 +100,7 @@ export interface RehydrateSlotInput {
   readonly location: string;
   readonly status: SlotStatus;
   readonly audience: Audience;
+  readonly capacity?: number | null;
 }
 
 interface SlotFields {
@@ -97,6 +112,7 @@ interface SlotFields {
   readonly location: string;
   readonly status: SlotStatus;
   readonly audience: Audience;
+  readonly capacity: number | null;
 }
 
 /**
@@ -115,6 +131,7 @@ function buildSlot(fields: SlotFields, scheduledAtMs: number): Slot {
     location: fields.location,
     status: fields.status,
     audience: fields.audience,
+    capacity: fields.capacity,
     get scheduledAt(): Date {
       return new Date(scheduledAtMs);
     },
@@ -158,6 +175,28 @@ function assertValidAudience(audience: Audience): void {
 }
 
 /**
+ * Optional "aforo máximo": `null`/omitted is valid (the field is optional end
+ * to end). When present it MUST be a positive integer within a sane bound, so
+ * a corrupt or hostile value (0, negative, fractional, NaN, or absurdly large)
+ * fails fast rather than reaching persistence or the public projection.
+ */
+function normaliseCapacity(capacity: number | null | undefined): number | null {
+  if (capacity === null || capacity === undefined) {
+    return null;
+  }
+  if (
+    !Number.isInteger(capacity) ||
+    capacity < CAPACITY_MIN ||
+    capacity > CAPACITY_MAX
+  ) {
+    throw new DomainValidationError(
+      `Slot capacity must be an integer between ${CAPACITY_MIN} and ${CAPACITY_MAX} (got ${capacity})`,
+    );
+  }
+  return capacity;
+}
+
+/**
  * Creates an 'open' Slot, enforcing the N2 invariants: a finite, strictly-
  * future `scheduledAt` (via the injected Clock — never `Date.now()`, and
  * never `new Date(NaN)`, M3), positive integer duration, and bounded
@@ -191,6 +230,7 @@ export function createSlot(input: CreateSlotInput, clock: Clock): Slot {
     LOCATION_MAX_LENGTH,
   );
   assertValidAudience(input.audience);
+  const capacity = normaliseCapacity(input.capacity);
 
   return buildSlot(
     {
@@ -202,6 +242,7 @@ export function createSlot(input: CreateSlotInput, clock: Clock): Slot {
       location: input.location.trim(),
       status: "open",
       audience: input.audience,
+      capacity,
     },
     scheduledAtMs,
   );
@@ -231,6 +272,7 @@ export function rehydrateSlot(input: RehydrateSlotInput): Slot {
     LOCATION_MAX_LENGTH,
   );
   assertValidAudience(input.audience);
+  const capacity = normaliseCapacity(input.capacity);
 
   return buildSlot(
     {
@@ -242,6 +284,7 @@ export function rehydrateSlot(input: RehydrateSlotInput): Slot {
       location: input.location,
       status: input.status,
       audience: input.audience,
+      capacity,
     },
     scheduledAtMs,
   );
@@ -268,6 +311,7 @@ export function fillSlot(slot: Slot): Slot {
       location: slot.location,
       status: "filled",
       audience: slot.audience,
+      capacity: slot.capacity,
     },
     slot.scheduledAt.getTime(),
   );
@@ -286,6 +330,7 @@ export function closeSlot(slot: Slot): Slot {
       location: slot.location,
       status: "closed",
       audience: slot.audience,
+      capacity: slot.capacity,
     },
     slot.scheduledAt.getTime(),
   );

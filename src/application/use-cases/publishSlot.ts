@@ -12,6 +12,8 @@ export interface PublishSlotInput {
   readonly durationMinutes: number;
   readonly location: string;
   readonly audience: Audience;
+  /** Optional "aforo máximo"; `null` when the centre leaves it blank. */
+  readonly capacity?: number | null;
 }
 
 export interface PublishSlotDeps {
@@ -56,6 +58,7 @@ export async function publishSlot(
         durationMinutes: input.durationMinutes,
         location: input.location,
         audience: input.audience,
+        capacity: input.capacity ?? null,
       },
       deps.clock,
     );

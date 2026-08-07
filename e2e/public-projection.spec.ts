@@ -35,6 +35,8 @@ const ALLOWED_KEYS = [
   "artistName",
   "audience",
   "averageStars",
+  // Optional "aforo máximo" (Slot.capacity), null when the centre sets none.
+  "capacity",
   // D10 revision (events-show-centre): the hosting centre's PUBLIC name + city.
   // Still absent: Slot `location` (ward/room), the centre's postal/address, any
   // Profile/Slot/Proposal/Account id — all asserted below.

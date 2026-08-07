@@ -69,6 +69,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
       durationMinutes: slot.durationMinutes,
       artistName: "Clara the Artist",
       audience: "all_ages",
+      // Optional "aforo máximo": this fixture's Slot sets none, so it is null.
+      capacity: null,
       // D10 revision (events-show-centre): the hosting centre's PUBLIC name +
       // city. This fixture sets no city, so `centreCity` is null.
       centreName: "San Juan Hospital",
@@ -84,6 +86,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
         "artistName",
         "audience",
         "averageStars",
+        "capacity",
         "centreCity",
         "centreName",
         "description",
