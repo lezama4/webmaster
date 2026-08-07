@@ -18,15 +18,13 @@ import {
 // ids must never appear. Asserted against the seeded dataset both at the JSON
 // boundary (`GET /api/events`) and on the rendered public page (`/events`).
 //
-// Phase 2 addition: Hospitals now also carry a SEPARATE, PUBLIC location
-// (city/postal code/address/coordinates on `Profile`) for a later map/filter
-// feature. That is a DIFFERENT surface from Slot's PRIVATE `location` (ward/
-// room) — ADR D6 is specifically about the latter never appearing here. The
-// assertion below confirms introducing hospital public location did not
-// widen this projection: `PublicEventProjectionQuery` still selects only
-// Slot + accepted-Proposal-artist fields, never anything from `Profile`
-// beyond the artist's display name — so even PUBLIC hospital address data
-// must not leak through this endpoint.
+// D10 revision (events-show-centre): the projection now ALSO carries the
+// hosting centre's PUBLIC name + city (from `Profile`), so a family can find
+// events at their relative's centre. What must STILL never appear: the Slot's
+// PRIVATE `location` (ward/room), and the centre's postal code / street
+// address / coordinates. The assertions below prove the query exposes only
+// name + city from the centre `Profile` — never its address-level fields — and
+// never the Slot ward/room location.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // Phase 3/Block 2: the projection now also carries the Event's OWN `id`
@@ -37,6 +35,11 @@ const ALLOWED_KEYS = [
   "artistName",
   "audience",
   "averageStars",
+  // D10 revision (events-show-centre): the hosting centre's PUBLIC name + city.
+  // Still absent: Slot `location` (ward/room), the centre's postal/address, any
+  // Profile/Slot/Proposal/Account id — all asserted below.
+  "centreCity",
+  "centreName",
   "description",
   "durationMinutes",
   "id",

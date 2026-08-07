@@ -58,6 +58,12 @@ export class PrismaPublicEventProjectionQuery
             scheduledAt: true,
             durationMinutes: true,
             audience: true,
+            // D10 revision: the hosting centre's PUBLIC name + city only.
+            // `location` (ward/room), postalCode and addressLine are NOT
+            // selected — they never leave Postgres for the public surface.
+            hospitalProfile: {
+              select: { name: true, city: true },
+            },
           },
         },
         proposal: {
@@ -89,6 +95,8 @@ export class PrismaPublicEventProjectionQuery
         durationMinutes: row.slot.durationMinutes,
         artistName: row.proposal.artistProfile.name,
         audience: toDomainAudience(row.slot.audience),
+        centreName: row.slot.hospitalProfile.name,
+        centreCity: row.slot.hospitalProfile.city,
         averageStars,
         ratingCount,
       };
