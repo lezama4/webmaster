@@ -161,7 +161,7 @@
     }
   },
   "Events": {
-    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "apply": "Filter" },
+    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "centreLabel": "Centre", "allCentres": "All centres", "apply": "Filter" },
     "empty": { "title": "No events scheduled yet", "description": "As centres confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
     "withArtist": "with", "atCentre": "At", "capacity": "Max capacity:", "capacityValue": "{count, plural, one {# person} other {# people}}", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
     "rating": {

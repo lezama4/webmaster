@@ -591,13 +591,20 @@ async function main(): Promise<void> {
     location: string;
     audience: Audience;
     capacity?: number;
+    // Optional hosting centre (defaults to San Juan). Reassigning a few demo
+    // events to other ACTIVE centres makes the /events centre filter
+    // demonstrable — every centre used here already exists in the public
+    // directory, so this adds no new profile, only spreads the events across
+    // real hosts.
+    host?: { id: string };
     artist: keyof typeof extraArtistIds;
     message: string;
   }) {
+    const host = e.host ?? sanJuan;
     const slot = createSlot(
       {
         id: `seed-slot-${e.key}`,
-        hospitalProfileId: sanJuan.id,
+        hospitalProfileId: host.id,
         title: e.title,
         description: e.description,
         scheduledAt: scheduledAt(e.days),
@@ -620,7 +627,7 @@ async function main(): Promise<void> {
       proposalId: proposal.id,
       eventId: `seed-event-${e.key}`,
       clock,
-      actingHospitalProfileId: sanJuan.id,
+      actingHospitalProfileId: host.id,
     });
     return {
       slot: accepted.slot,
@@ -651,6 +658,7 @@ async function main(): Promise<void> {
       location: "Pediatría, sala de juegos",
       audience: "early_childhood",
       capacity: 20,
+      host: delMar,
       artist: "mateo",
       message: "Sesión participativa con cuentos cortos e ilustrados.",
     }),
@@ -675,6 +683,7 @@ async function main(): Promise<void> {
       location: "Salón principal",
       audience: "all_ages",
       capacity: 50,
+      host: urumea,
       artist: "mateo",
       message: "Canciones populares para cantar en grupo, con guitarra.",
     }),
@@ -699,6 +708,7 @@ async function main(): Promise<void> {
       location: "Pediatría, sala de familias",
       audience: "children",
       capacity: 35,
+      host: delMar,
       artist: "mateo",
       message: "Magia de cerca, participativa y con mucho humor.",
     }),
@@ -711,6 +721,7 @@ async function main(): Promise<void> {
       location: "Salón de actos",
       audience: "all_ages",
       capacity: 60,
+      host: urumea,
       artist: "clara",
       message: "Programa de piano sereno para un ambiente tranquilo.",
     }),

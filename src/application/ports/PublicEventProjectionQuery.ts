@@ -2,11 +2,16 @@ import type { Audience } from "@domain/slot/Slot";
 import type { PublicEventProjection } from "../dto/PublicEventProjection";
 
 /**
- * Optional, PUBLIC-SAFE filters for the events listing. Both axes are already
- * part of the public projection (`audience`, `scheduledAt`), so filtering by
- * them exposes nothing new and does NOT touch the D10 non-correlation
- * invariant — there is deliberately NO centre/location filter, because the
- * public projection carries no centre identity to filter on.
+ * Optional, PUBLIC-SAFE filters for the events listing. Every axis filters on
+ * a value ALREADY in the public projection (`audience`, `scheduledAt`, and —
+ * since the D10 events-show-centre revision — the hosting centre's public
+ * `name`), so filtering exposes nothing the listing does not already show.
+ *
+ * The `centre` filter matches the centre's PUBLIC name (never an id or the
+ * ward/room `location`). It navigates the event→centre link that D10 was
+ * deliberately relaxed to make public; the hospital→event direction (the
+ * public directory revealing a centre's events) is untouched — this filter
+ * lives only on the events surface.
  */
 export interface PublicEventFilters {
   /** Restrict to a single hospital-set age band. */
@@ -15,6 +20,8 @@ export interface PublicEventFilters {
   readonly from?: Date;
   /** Inclusive upper bound on the event's scheduled time. */
   readonly to?: Date;
+  /** Restrict to events hosted by the centre with this exact PUBLIC name. */
+  readonly centre?: string;
 }
 
 /**

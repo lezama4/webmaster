@@ -82,8 +82,13 @@ coordinates** — **plus every internal id and all patient-adjacent data.** The
 allow-list is still rebuilt field by field (D6) and the e2e suites assert both
 that the centre name now appears and that the postal code, street address and
 ward/room `location` never do (`e2e/public-projection.spec.ts`,
-`e2e/non-correlation.spec.ts`). The **hospital→event** direction is untouched:
-the public centre directory still reveals none of a centre's events. This note
+`e2e/non-correlation.spec.ts`). The events listing also offers a **centre
+filter** (`/events?centre=<public name>`): it narrows the list by the centre's
+already-public `name` only — server-side, over data the card already shows — so
+it exposes nothing new, never accepts an id or the ward/room `location`, and
+lives solely on the events surface. The **hospital→event** direction is
+untouched: the public centre directory still reveals none of a centre's events.
+This note
 supersedes the "no public read path adds a centre-identifying field to an
 event" wording in the `widen-beyond-hospitals` note above for the
 event→centre direction only.
