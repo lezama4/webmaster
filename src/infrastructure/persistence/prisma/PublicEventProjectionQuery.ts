@@ -29,9 +29,12 @@ export class PrismaPublicEventProjectionQuery
   async listPublished(
     filters?: PublicEventFilters,
   ): Promise<readonly PublicEventProjection[]> {
-    // Filters apply to the related Slot (audience + scheduledAt live there).
-    // Both are already in the public projection, so this exposes nothing new
-    // and never touches centre/location (D10): there is no centre to filter on.
+    // Filters apply to the related Slot (audience + scheduledAt live there;
+    // the hosting centre is Slot.hospitalProfile). Every axis filters on a
+    // value already in the public projection — since the D10 revision that
+    // includes the centre's public `name` — so filtering exposes nothing the
+    // listing does not already show, and never touches the ward/room
+    // `location`, postal code or address.
     const scheduledAt =
       filters?.from || filters?.to
         ? {
@@ -42,6 +45,7 @@ export class PrismaPublicEventProjectionQuery
     const slotFilter = {
       ...(filters?.audience ? { audience: audienceToPrisma(filters.audience) } : {}),
       ...(scheduledAt ? { scheduledAt } : {}),
+      ...(filters?.centre ? { hospitalProfile: { name: filters.centre } } : {}),
     };
 
     const rows = await this.client.event.findMany({

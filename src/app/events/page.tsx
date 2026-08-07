@@ -64,26 +64,40 @@ function dateRange(preset: DatePreset, now: Date): { from?: Date; to?: Date } {
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; audience?: string }>;
+  searchParams: Promise<{ date?: string; audience?: string; centre?: string }>;
 }) {
   const sp = await searchParams;
   const audienceFilter = parseAudience(sp.audience);
   const datePreset = parseDatePreset(sp.date);
   const { from, to } = dateRange(datePreset, new Date());
-  const filters = {
-    ...(audienceFilter ? { audience: audienceFilter } : {}),
-    ...(from ? { from } : {}),
-    ...(to ? { to } : {}),
-  };
 
-  const [events, t, tAudience, tShare, locale, actor] = await Promise.all([
-    listPublishedEvents(publicDeps(), filters),
+  // One unfiltered read supplies the centre dropdown's options (the distinct
+  // public centre names that host a published event). The centre filter matches
+  // that public name only — the event→centre link the D10 revision made public.
+  const [allEvents, t, tAudience, tShare, locale, actor] = await Promise.all([
+    listPublishedEvents(publicDeps()),
     getTranslations("Events"),
     getTranslations("Audience"),
     getTranslations("Share"),
     getLocale(),
     getCurrentActorReadOnly(),
   ]);
+  const centreOptions = [...new Set(allEvents.map((event) => event.centreName))].sort(
+    (a, b) => a.localeCompare(b, locale),
+  );
+  const centreFilter =
+    sp.centre && centreOptions.includes(sp.centre) ? sp.centre : undefined;
+  const filters = {
+    ...(audienceFilter ? { audience: audienceFilter } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+    ...(centreFilter ? { centre: centreFilter } : {}),
+  };
+  // Reuse the unfiltered read when no filter is active; otherwise query again.
+  const events =
+    Object.keys(filters).length > 0
+      ? await listPublishedEvents(publicDeps(), filters)
+      : allEvents;
   // Pre-fills each event's interactive star control with the CALLER'S OWN
   // rating only (never another rater's) — anonymous visitors see the
   // read-only average instead, no fetch needed.
@@ -100,9 +114,12 @@ export default async function EventsPage({
           <p className="max-w-[52ch] text-muted">{t("description")}</p>
         </div>
         {/* Public-safe filters. A plain GET form (no client JS): submitting
-            reloads /events?date=…&audience=… and the server filters the query.
-            There is deliberately NO centre/location filter — the public
-            projection carries none (D10 non-correlation). */}
+            reloads /events?date=…&audience=…&centre=… and the server filters
+            the query. Every axis filters on a value already shown on the card
+            (date, audience, and — since the D10 revision — the hosting centre's
+            public name); the ward/room location, postal code and address are
+            never filterable because they are never in the projection. The
+            centre filter appears only when more than one centre hosts events. */}
         <form method="get" className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted">{t("filters.dateLabel")}</span>
@@ -127,6 +144,23 @@ export default async function EventsPage({
               ))}
             </select>
           </label>
+          {centreOptions.length > 1 ? (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">{t("filters.centreLabel")}</span>
+              <select
+                name="centre"
+                defaultValue={centreFilter ?? "all"}
+                className={inputClasses}
+              >
+                <option value="all">{t("filters.allCentres")}</option>
+                {centreOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <button type="submit" className={secondaryButton}>
             {t("filters.apply")}
           </button>

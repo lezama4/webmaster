@@ -149,10 +149,13 @@ test.describe("/events names the hosting centre but never the ward/room, postal 
     }
 
     // The hosting centre's name IS now public (D10 revision) — a family needs
-    // it to find events at their relative's centre. Every seeded event is
-    // hosted by San Juan, so its name must appear.
+    // it to find events at their relative's centre. The seed spreads events
+    // across several ACTIVE centres (so the centre filter is demonstrable), so
+    // more than one centre name must appear on the public surface.
     const sanJuan = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital San Juan")!;
-    expect(raw, "the hosting centre's public name is now exposed").toContain(sanJuan.name);
+    const delMar = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital Universitario del Mar")!;
+    expect(raw, "San Juan hosts several events, so its public name appears").toContain(sanJuan.name);
+    expect(raw, "a second hosting centre's public name also appears").toContain(delMar.name);
 
     // STILL forbidden: the postal code and street address (the projection
     // exposes name + city only), and the Slot ward/room `location`.
@@ -169,12 +172,33 @@ test.describe("/events names the hosting centre but never the ward/room, postal 
   test("the rendered /events page shows the hosting centre but never its postal code or a ward/room location", async ({ page }) => {
     await page.goto("/events");
 
-    // The hosting centre is now visible to a family browsing events.
-    await expect(page.getByText("Hospital San Juan").first()).toBeVisible();
+    // The hosting centre is now visible to a family browsing events. Scope to
+    // the card `<p>` — the centre name is ALSO a hidden `<option>` in the
+    // filter dropdown, which `getByText` would otherwise resolve to.
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" }).first()).toBeVisible();
 
     for (const hospital of SEED_ACTIVE_HOSPITALS) {
       await expect(page.getByText(hospital.postalCode)).toHaveCount(0);
     }
+    for (const location of SEED_LOCATIONS) {
+      await expect(page.getByText(location)).toHaveCount(0);
+    }
+  });
+
+  test("the centre filter narrows the list to events at the chosen centre (events-show-centre)", async ({ page }) => {
+    // Filtering by a PUBLIC centre name is server-side over already-public data
+    // (the event→centre link the D10 revision made public) — it exposes nothing
+    // the unfiltered list did not already show. Residencia Urumea hosts seeded
+    // events; San Juan's must disappear once it is selected.
+    await page.goto("/events?centre=" + encodeURIComponent("Residencia Urumea"));
+
+    // Assert on the card `<p>`, not the dropdown `<option>` (which lists every
+    // centre regardless of the active filter): a Urumea card is shown, and no
+    // San Juan card survives the filter.
+    await expect(page.locator("p").filter({ hasText: "Residencia Urumea" }).first()).toBeVisible();
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" })).toHaveCount(0);
+
+    // The exact place is still never exposed, even when filtering by centre.
     for (const location of SEED_LOCATIONS) {
       await expect(page.getByText(location)).toHaveCount(0);
     }
