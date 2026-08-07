@@ -1,17 +1,18 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Reveal } from "./Reveal";
 
 /**
- * Home "App — Coming soon" section. HONEST by construction: the phones are
- * pure-CSS CONCEPT mockups (no real screenshots, no working UI), and the
- * section carries an explicit "Próximamente" badge plus a concept disclaimer.
- * The platform's claim elsewhere is "it works today" (the web); this section
- * is clearly future/vision, never presented as a shipped feature.
+ * Home "App — Coming soon" section.
  *
- * The screens are drawn richer than plain skeletons (app bar, cards, star
- * rows, a map with pins, a bottom tab bar) so they read as a real product —
- * but the CONTENT is decorative shapes, not translated copy, so it stays
- * locale-neutral.
+ * The FIRST phone is a faithful snapshot of the site's own home page as it
+ * renders on mobile TODAY — the real hero image, badge and title — because
+ * that page is shipped and works on mobile. The other two phones are pure-CSS
+ * CONCEPT mockups of not-yet-built native app screens (an events feed, a map
+ * with pins, a bottom tab bar), drawn from decorative shapes, not real
+ * screenshots. The section keeps its explicit "Próximamente" badge and concept
+ * disclaimer, which apply to those FUTURE app screens; the home snapshot is
+ * clearly the real, current site.
  */
 
 const STAR = "★";
@@ -78,30 +79,39 @@ function TabBar() {
   );
 }
 
-/** Device shell: bezel, notch, status bar, screen content. */
-function Phone({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * Device shell: bezel, notch, screen content. `bleed` renders the child
+ * full-screen (no app header / tab bar / padding) so the home phone can show a
+ * real edge-to-edge page snapshot; the default adds the app chrome the concept
+ * app screens use.
+ */
+function Phone({ label, children, bleed = false }: { label: string; children: React.ReactNode; bleed?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative aspect-[9/19] w-[196px] overflow-hidden rounded-[2.1rem] border-[7px] border-foreground/85 bg-background shadow-xl sm:w-[208px]">
         <span className="absolute left-1/2 top-2 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-foreground/25" aria-hidden="true" />
-        <div className="flex h-full flex-col px-3 pb-3 pt-6">
-          {/* status bar */}
-          <div className="flex items-center justify-between px-0.5 pb-2">
-            <span className="text-[9px] font-semibold text-foreground/50">9:41</span>
-            <span className="flex items-center gap-0.5" aria-hidden="true">
-              <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
-              <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
-              <span className="h-1.5 w-3 rounded-[3px] bg-foreground/30" />
-            </span>
+        {bleed ? (
+          <div className="absolute inset-0">{children}</div>
+        ) : (
+          <div className="flex h-full flex-col px-3 pb-3 pt-6">
+            {/* status bar */}
+            <div className="flex items-center justify-between px-0.5 pb-2">
+              <span className="text-[9px] font-semibold text-foreground/50">9:41</span>
+              <span className="flex items-center gap-0.5" aria-hidden="true">
+                <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                <span className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                <span className="h-1.5 w-3 rounded-[3px] bg-foreground/30" />
+              </span>
+            </div>
+            {/* app header */}
+            <div className="flex items-center gap-2 pb-3">
+              <span className="h-4 w-4 rounded-md bg-primary" aria-hidden="true" />
+              <Bar w="42%" tone="strong" />
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-2.5">{children}</div>
+            <TabBar />
           </div>
-          {/* app header */}
-          <div className="flex items-center gap-2 pb-3">
-            <span className="h-4 w-4 rounded-md bg-primary" aria-hidden="true" />
-            <Bar w="42%" tone="strong" />
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-2.5">{children}</div>
-          <TabBar />
-        </div>
+        )}
       </div>
       <span className="text-sm font-medium">{label}</span>
     </div>
@@ -128,37 +138,37 @@ export async function AppPreview() {
         </div>
 
         <div className="flex flex-wrap items-start justify-center gap-10 sm:gap-12">
-          {/* Screen 0 — home: a landing hero (badge, headline, hero image,
-              rating, CTAs) so the first phone reads like the site's home page */}
-          <Phone label={t("app.screenHome")}>
-            <span className="inline-flex w-fit items-center rounded-full bg-accent/15 px-2 py-1" aria-hidden="true">
-              <span className="h-1 w-16 rounded-full bg-accent/60" />
-            </span>
-            <div className="flex flex-col gap-2">
-              <span className="block h-2.5 w-[92%] rounded-full bg-foreground/80" aria-hidden="true" />
-              <span className="block h-2.5 w-[64%] rounded-full bg-foreground/80" aria-hidden="true" />
-            </div>
-            <div className="relative h-24 overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/25 via-surface to-accent/20" aria-hidden="true">
-              <span className="absolute bottom-3 left-4 h-8 w-8 rounded-full bg-foreground/20" />
-              <span className="absolute bottom-0 left-3 h-10 w-10 rounded-t-[1.5rem] bg-foreground/12" />
-              <span className="absolute right-4 top-4 h-2 w-12 rounded-full bg-foreground/15" />
-              <span className="absolute right-4 top-8 h-2 w-8 rounded-full bg-foreground/10" />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="flex -space-x-1" aria-hidden="true">
-                <span className="h-4 w-4 rounded-full border border-surface bg-primary/40" />
-                <span className="h-4 w-4 rounded-full border border-surface bg-accent/40" />
-                <span className="h-4 w-4 rounded-full border border-surface bg-foreground/25" />
+          {/* Screen 0 — home: a REAL snapshot of the site's home on mobile,
+              edge to edge — the actual hero image, badge and title. */}
+          <Phone label={t("app.screenHome")} bleed>
+            <Image
+              src="/images/hero-cello-community-v2.png"
+              alt=""
+              fill
+              sizes="208px"
+              className="object-cover object-[72%_50%]"
+              aria-hidden="true"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-scrim/95 via-scrim/40 to-scrim/25" aria-hidden="true" />
+            {/* status bar over the image */}
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2.5">
+              <span className="text-[9px] font-semibold text-on-scrim/90">9:41</span>
+              <span className="flex items-center gap-0.5" aria-hidden="true">
+                <span className="h-1.5 w-1.5 rounded-full bg-on-scrim/60" />
+                <span className="h-1.5 w-1.5 rounded-full bg-on-scrim/60" />
+                <span className="h-1.5 w-3 rounded-[3px] bg-on-scrim/60" />
               </span>
-              <Stars filled={5} />
             </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <div className="flex h-8 items-center justify-center rounded-xl bg-primary" aria-hidden="true">
-                <span className="h-1.5 w-20 rounded-full bg-primary-foreground/85" />
-              </div>
-              <div className="flex h-8 items-center justify-center rounded-xl border border-border" aria-hidden="true">
-                <span className="h-1.5 w-14 rounded-full bg-foreground/40" />
-              </div>
+            {/* hero copy at the bottom, exactly as the real home */}
+            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-3.5">
+              <span className="w-fit rounded-full border border-on-scrim/25 bg-on-scrim/10 px-2 py-0.5 text-[7px] font-medium leading-tight text-on-scrim backdrop-blur-sm">
+                {t("badge")}
+              </span>
+              <p className="font-heading text-[14px] font-normal leading-[1.1] tracking-tight text-on-scrim">
+                {t("title.firstLine")}
+                <br />
+                {t("title.secondLine")}
+              </p>
             </div>
           </Phone>
 
