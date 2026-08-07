@@ -60,9 +60,9 @@
       "badge": "Laster",
       "title": "Eraman poltsikoan.",
       "description": "Aplikazioa diseinatzen ari gara, ekitaldiak aurkitzea, zure zentroa bilatzea eta jarduerak koordinatzea are errazagoa izan dadin mugikorretik. Hau kontzeptuaren aurrerapena da.",
+      "screenHome": "Hasiera",
       "screen1": "Aurkitu ekitaldiak",
       "screen2": "Aurkitu zure zentroa",
-      "screen3": "Koordinatu jarduerak",
       "disclaimer": "Kontzeptu-diseinua. Aplikazioa garatzen ari da: pantailak aurrebista bat dira, ez bertsio funtzional bat."
     },
     "closing": {

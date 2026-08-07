@@ -128,6 +128,40 @@ export async function AppPreview() {
         </div>
 
         <div className="flex flex-wrap items-start justify-center gap-10 sm:gap-12">
+          {/* Screen 0 — home: a landing hero (badge, headline, hero image,
+              rating, CTAs) so the first phone reads like the site's home page */}
+          <Phone label={t("app.screenHome")}>
+            <span className="inline-flex w-fit items-center rounded-full bg-accent/15 px-2 py-1" aria-hidden="true">
+              <span className="h-1 w-16 rounded-full bg-accent/60" />
+            </span>
+            <div className="flex flex-col gap-2">
+              <span className="block h-2.5 w-[92%] rounded-full bg-foreground/80" aria-hidden="true" />
+              <span className="block h-2.5 w-[64%] rounded-full bg-foreground/80" aria-hidden="true" />
+            </div>
+            <div className="relative h-24 overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/25 via-surface to-accent/20" aria-hidden="true">
+              <span className="absolute bottom-3 left-4 h-8 w-8 rounded-full bg-foreground/20" />
+              <span className="absolute bottom-0 left-3 h-10 w-10 rounded-t-[1.5rem] bg-foreground/12" />
+              <span className="absolute right-4 top-4 h-2 w-12 rounded-full bg-foreground/15" />
+              <span className="absolute right-4 top-8 h-2 w-8 rounded-full bg-foreground/10" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex -space-x-1" aria-hidden="true">
+                <span className="h-4 w-4 rounded-full border border-surface bg-primary/40" />
+                <span className="h-4 w-4 rounded-full border border-surface bg-accent/40" />
+                <span className="h-4 w-4 rounded-full border border-surface bg-foreground/25" />
+              </span>
+              <Stars filled={5} />
+            </div>
+            <div className="mt-auto flex flex-col gap-2">
+              <div className="flex h-8 items-center justify-center rounded-xl bg-primary" aria-hidden="true">
+                <span className="h-1.5 w-20 rounded-full bg-primary-foreground/85" />
+              </div>
+              <div className="flex h-8 items-center justify-center rounded-xl border border-border" aria-hidden="true">
+                <span className="h-1.5 w-14 rounded-full bg-foreground/40" />
+              </div>
+            </div>
+          </Phone>
+
           {/* Screen 1 — discover events: a feed of event cards with ratings */}
           <Phone label={t("app.screen1")}>
             <EventCard filled={5} />
@@ -156,36 +190,6 @@ export async function AppPreview() {
                 <Bar w="60%" tone="strong" />
                 <Chip />
               </div>
-            </div>
-          </Phone>
-
-          {/* Screen 3 — coordinate: a day strip, a highlighted slot, a CTA */}
-          <Phone label={t("app.screen3")}>
-            <div className="flex justify-between gap-1">
-              {[false, false, true, false, false].map((active, i) => (
-                <span
-                  key={i}
-                  className={`flex h-9 flex-1 flex-col items-center justify-center gap-1 rounded-lg ${active ? "bg-primary" : "bg-surface"}`}
-                  aria-hidden="true"
-                >
-                  <span className={`h-1 w-3 rounded-full ${active ? "bg-primary-foreground/80" : "bg-foreground/25"}`} />
-                  <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-primary-foreground" : "bg-foreground/40"}`} />
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-col gap-2 rounded-xl border-2 border-primary/40 bg-primary/5 p-2.5">
-              <div className="flex items-center justify-between">
-                <Bar w="50%" tone="strong" />
-                <Chip />
-              </div>
-              <Bar w="80%" />
-            </div>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-              <Bar w="65%" />
-            </div>
-            <div className="mt-1 flex h-8 items-center justify-center rounded-xl bg-primary" aria-hidden="true">
-              <span className="h-1.5 w-12 rounded-full bg-primary-foreground/85" />
             </div>
           </Phone>
         </div>
