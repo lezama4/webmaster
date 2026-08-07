@@ -242,6 +242,7 @@ export interface SlotRow {
   readonly location: string;
   readonly status: PrismaSlotStatus;
   readonly audience: PrismaAudience;
+  readonly capacity: number | null;
 }
 
 export interface ProposalRow {
@@ -328,6 +329,7 @@ export function toDomainSlot(row: SlotRow): Slot {
     location: row.location,
     status: SLOT_STATUS_TO_DOMAIN[row.status],
     audience: toDomainAudience(row.audience),
+    capacity: row.capacity,
   });
 }
 

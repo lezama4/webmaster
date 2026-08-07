@@ -231,6 +231,41 @@ describe("Slot state machine", () => {
     });
   });
 
+  describe("createSlot capacity (optional 'aforo máximo')", () => {
+    it("defaults to null when omitted", () => {
+      const slot = createSlot(slotInput(), fixedClock);
+
+      expect(slot.capacity).toBeNull();
+    });
+
+    it("accepts an explicit null", () => {
+      const slot = createSlot(slotInput({ capacity: null }), fixedClock);
+
+      expect(slot.capacity).toBeNull();
+    });
+
+    it("accepts a positive integer within bounds", () => {
+      const slot = createSlot(slotInput({ capacity: 30 }), fixedClock);
+
+      expect(slot.capacity).toBe(30);
+    });
+
+    it("accepts the minimum of 1", () => {
+      const slot = createSlot(slotInput({ capacity: 1 }), fixedClock);
+
+      expect(slot.capacity).toBe(1);
+    });
+
+    it.each([0, -5, 12.5, Number.NaN, 100_001])(
+      "rejects an out-of-range or non-integer capacity (%s)",
+      (capacity) => {
+        expect(() =>
+          createSlot(slotInput({ capacity }), fixedClock),
+        ).toThrow(DomainValidationError);
+      },
+    );
+  });
+
   describe("createSlot date safety (M3)", () => {
     it("rejects a non-finite scheduledAt (new Date(NaN))", () => {
       expect(() =>

@@ -13,6 +13,20 @@ interface PublishSlotRequestBody {
   readonly durationMinutes?: unknown;
   readonly location?: unknown;
   readonly audience?: unknown;
+  readonly capacity?: unknown;
+}
+
+/**
+ * The optional "aforo máximo" arrives as a string (or missing). An empty
+ * string means "not set" → `null`; anything else is coerced to a number and
+ * validated by the domain (`createSlot` throws on 0, negative, fractional or
+ * out-of-range), so this handler never trusts the raw value beyond that gate.
+ */
+function parseCapacity(raw: unknown): number | null {
+  if (raw === undefined || raw === null || raw === "") {
+    return null;
+  }
+  return Number(raw);
 }
 
 function json(status: number, body: unknown): Response {
@@ -51,6 +65,7 @@ export async function POST(request: Request): Promise<Response> {
         // union and throws DomainValidationError on an invalid value — this
         // handler never trusts the client-claimed value beyond that gate.
         audience: String(body.audience ?? "all_ages") as Audience,
+        capacity: parseCapacity(body.capacity),
       },
       publishSlotDeps(),
     );

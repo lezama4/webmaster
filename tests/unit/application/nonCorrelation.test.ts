@@ -87,6 +87,9 @@ const EVENT_ALLOW_LISTED_FIELDS = [
   "artistName",
   "audience",
   "averageStars",
+  // Optional "aforo máximo" (Slot.capacity): a logistics figure about the
+  // activity, not about any individual or the centre — no correlation path.
+  "capacity",
   // D10 revision (events-show-centre): the hosting centre's PUBLIC name + city,
   // so a family can find events at their relative's centre. Admitted after
   // checking against the revised D10: the centre is a public institution
@@ -156,6 +159,7 @@ function anEvent(
     durationMinutes: 60,
     artistName: "Clara",
     audience: "all_ages",
+    capacity: null,
     centreName: "Hospital San Juan",
     centreCity: "Bilbao",
     id: "event-1",

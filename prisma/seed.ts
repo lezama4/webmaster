@@ -590,6 +590,7 @@ async function main(): Promise<void> {
     durationMinutes: number;
     location: string;
     audience: Audience;
+    capacity?: number;
     artist: keyof typeof extraArtistIds;
     message: string;
   }) {
@@ -603,6 +604,7 @@ async function main(): Promise<void> {
         durationMinutes: e.durationMinutes,
         location: e.location,
         audience: e.audience,
+        capacity: e.capacity ?? null,
       },
       clock,
     );
@@ -636,6 +638,7 @@ async function main(): Promise<void> {
       durationMinutes: 45,
       location: "Planta 3, sala de estar",
       audience: "all_ages",
+      capacity: 40,
       artist: "clara",
       message: "Repertorio de guitarra clásica adaptable al espacio.",
     }),
@@ -647,6 +650,7 @@ async function main(): Promise<void> {
       durationMinutes: 40,
       location: "Pediatría, sala de juegos",
       audience: "early_childhood",
+      capacity: 20,
       artist: "mateo",
       message: "Sesión participativa con cuentos cortos e ilustrados.",
     }),
@@ -658,6 +662,7 @@ async function main(): Promise<void> {
       durationMinutes: 60,
       location: "Aula polivalente",
       audience: "teens",
+      capacity: 25,
       artist: "clara",
       message: "Dinámicas de teatro sencillas, sin necesidad de experiencia.",
     }),
@@ -669,6 +674,7 @@ async function main(): Promise<void> {
       durationMinutes: 50,
       location: "Salón principal",
       audience: "all_ages",
+      capacity: 50,
       artist: "mateo",
       message: "Canciones populares para cantar en grupo, con guitarra.",
     }),
@@ -680,6 +686,7 @@ async function main(): Promise<void> {
       durationMinutes: 60,
       location: "Planta 1, aula cultural",
       audience: "adults",
+      capacity: 15,
       artist: "clara",
       message: "Taller guiado de óleo para principiantes.",
     }),
@@ -691,6 +698,7 @@ async function main(): Promise<void> {
       durationMinutes: 45,
       location: "Pediatría, sala de familias",
       audience: "children",
+      capacity: 35,
       artist: "mateo",
       message: "Magia de cerca, participativa y con mucho humor.",
     }),
@@ -702,6 +710,7 @@ async function main(): Promise<void> {
       durationMinutes: 50,
       location: "Salón de actos",
       audience: "all_ages",
+      capacity: 60,
       artist: "clara",
       message: "Programa de piano sereno para un ambiente tranquilo.",
     }),

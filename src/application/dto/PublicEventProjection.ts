@@ -32,6 +32,12 @@ export interface PublicEventProjection {
   /** The Slot's hospital-set age band (Phase 1 — audience). */
   readonly audience: Audience;
   /**
+   * The Slot's optional max attendee capacity ("aforo máximo"), or `null` when
+   * the centre did not set one. A logistics figure about the activity, not
+   * about any individual — safe to show publicly on the Events page.
+   */
+  readonly capacity: number | null;
+  /**
    * The hosting centre's public name (Profile.name) — a public institution,
    * shown so a family can find events at their relative's centre (D10
    * revision). NEVER the internal ward/room (`Slot.location` stays private).

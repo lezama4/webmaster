@@ -27,6 +27,7 @@ export class PrismaSlotRepository implements SlotRepository {
       location: slot.location,
       status: slotStatusToPrisma(slot.status),
       audience: audienceToPrisma(slot.audience),
+      capacity: slot.capacity,
     };
     await this.client.slot.upsert({
       where: { id: slot.id },
