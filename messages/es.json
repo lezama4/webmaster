@@ -60,9 +60,9 @@
       "badge": "Próximamente",
       "title": "Llévalo en el bolsillo.",
       "description": "Estamos diseñando la app para que descubrir eventos, encontrar tu centro y coordinar actividades sea aún más fácil desde el móvil. Esto es un adelanto del concepto.",
+      "screenHome": "Inicio",
       "screen1": "Descubre eventos",
       "screen2": "Encuentra tu centro",
-      "screen3": "Coordina actividades",
       "disclaimer": "Diseño conceptual. La app está en desarrollo: las pantallas son una vista previa, no una versión funcional."
     },
     "closing": {
