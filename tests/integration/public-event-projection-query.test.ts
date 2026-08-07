@@ -69,6 +69,10 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
       durationMinutes: slot.durationMinutes,
       artistName: "Clara the Artist",
       audience: "all_ages",
+      // D10 revision (events-show-centre): the hosting centre's PUBLIC name +
+      // city. This fixture sets no city, so `centreCity` is null.
+      centreName: "San Juan Hospital",
+      centreCity: null,
       averageStars: null,
       ratingCount: 0,
     });
@@ -80,6 +84,8 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
         "artistName",
         "audience",
         "averageStars",
+        "centreCity",
+        "centreName",
         "description",
         "durationMinutes",
         "id",
