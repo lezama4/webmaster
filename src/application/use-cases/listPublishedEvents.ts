@@ -42,6 +42,8 @@ function toPublicEventProjection(record: PublicEventProjection): PublicEventProj
     durationMinutes: record.durationMinutes,
     artistName: record.artistName,
     audience: record.audience,
+    centreName: record.centreName,
+    centreCity: record.centreCity,
     averageStars: record.averageStars,
     ratingCount: record.ratingCount,
   };
