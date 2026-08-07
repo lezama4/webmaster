@@ -6,7 +6,7 @@ import { createProposal } from "../src/domain/proposal/Proposal";
 import { createRating } from "../src/domain/rating/Rating";
 import { acceptProposal } from "../src/domain/slot/acceptProposal";
 import { closeSlot } from "../src/domain/slot/closeSlot";
-import { createSlot } from "../src/domain/slot/Slot";
+import { createSlot, type Audience } from "../src/domain/slot/Slot";
 import { Argon2PasswordHasher } from "../src/infrastructure/auth/passwordHasher";
 import { PrismaAccountRepository } from "../src/infrastructure/persistence/prisma/AccountRepository";
 import { PrismaEventRepository } from "../src/infrastructure/persistence/prisma/EventRepository";
@@ -574,6 +574,159 @@ async function main(): Promise<void> {
   });
   const s5CompletedEvent = completeEvent(s5Accepted.event);
 
+  // Extra PUBLISHED events (demo volume) — a fuller /events listing so the
+  // date + audience filters are demonstrable and the page does not look empty.
+  // Each is the full chain (slot -> accepted proposal -> published event) via
+  // the same domain factories, so every one projects to the exact D6 allow-
+  // list. Varied `scheduledAt` (this week / this month / later) and `audience`
+  // give both filters something to narrow. All owned by San Juan; the centre
+  // is never exposed on /events (D10), so the owner is irrelevant to the view.
+  const extraArtistIds = { clara: clara.id, mateo: mateo.id } as const;
+  function publishedEvent(e: {
+    key: string;
+    title: string;
+    description: string;
+    days: number;
+    durationMinutes: number;
+    location: string;
+    audience: Audience;
+    capacity?: number;
+    // Optional hosting centre (defaults to San Juan). Reassigning a few demo
+    // events to other ACTIVE centres makes the /events centre filter
+    // demonstrable — every centre used here already exists in the public
+    // directory, so this adds no new profile, only spreads the events across
+    // real hosts.
+    host?: { id: string };
+    artist: keyof typeof extraArtistIds;
+    message: string;
+  }) {
+    const host = e.host ?? sanJuan;
+    const slot = createSlot(
+      {
+        id: `seed-slot-${e.key}`,
+        hospitalProfileId: host.id,
+        title: e.title,
+        description: e.description,
+        scheduledAt: scheduledAt(e.days),
+        durationMinutes: e.durationMinutes,
+        location: e.location,
+        audience: e.audience,
+        capacity: e.capacity ?? null,
+      },
+      clock,
+    );
+    const proposal = createProposal({
+      id: `seed-proposal-${e.key}`,
+      slotId: slot.id,
+      artistProfileId: extraArtistIds[e.artist],
+      message: e.message,
+    });
+    const accepted = acceptProposal({
+      slot,
+      proposals: [proposal],
+      proposalId: proposal.id,
+      eventId: `seed-event-${e.key}`,
+      clock,
+      actingHospitalProfileId: host.id,
+    });
+    return {
+      slot: accepted.slot,
+      proposal: accepted.acceptedProposal,
+      event: accepted.event,
+    };
+  }
+
+  const extraEvents = [
+    publishedEvent({
+      key: "e1-guitarra",
+      title: "Guitarra española al atardecer",
+      description: "Recital acústico tranquilo para pacientes y acompañantes.",
+      days: 3,
+      durationMinutes: 45,
+      location: "Planta 3, sala de estar",
+      audience: "all_ages",
+      capacity: 40,
+      artist: "clara",
+      message: "Repertorio de guitarra clásica adaptable al espacio.",
+    }),
+    publishedEvent({
+      key: "e2-cuentos",
+      title: "Cuentacuentos para los más peques",
+      description: "Narración con ilustraciones en directo para primera infancia.",
+      days: 5,
+      durationMinutes: 40,
+      location: "Pediatría, sala de juegos",
+      audience: "early_childhood",
+      capacity: 20,
+      host: delMar,
+      artist: "mateo",
+      message: "Sesión participativa con cuentos cortos e ilustrados.",
+    }),
+    publishedEvent({
+      key: "e3-teatro",
+      title: "Taller de teatro para jóvenes",
+      description: "Juegos de improvisación y expresión para adolescentes.",
+      days: 9,
+      durationMinutes: 60,
+      location: "Aula polivalente",
+      audience: "teens",
+      capacity: 25,
+      artist: "clara",
+      message: "Dinámicas de teatro sencillas, sin necesidad de experiencia.",
+    }),
+    publishedEvent({
+      key: "e4-coro",
+      title: "Coro de canciones populares",
+      description: "Cantar juntos temas conocidos de varias generaciones.",
+      days: 12,
+      durationMinutes: 50,
+      location: "Salón principal",
+      audience: "all_ages",
+      capacity: 50,
+      host: urumea,
+      artist: "mateo",
+      message: "Canciones populares para cantar en grupo, con guitarra.",
+    }),
+    publishedEvent({
+      key: "e5-pintura",
+      title: "Pintura al óleo para adultos",
+      description: "Taller pausado de pintura con materiales incluidos.",
+      days: 18,
+      durationMinutes: 60,
+      location: "Planta 1, aula cultural",
+      audience: "adults",
+      capacity: 15,
+      artist: "clara",
+      message: "Taller guiado de óleo para principiantes.",
+    }),
+    publishedEvent({
+      key: "e6-magia",
+      title: "Magia y risas en familia",
+      description: "Espectáculo cercano de magia para niñas y niños.",
+      days: 25,
+      durationMinutes: 45,
+      location: "Pediatría, sala de familias",
+      audience: "children",
+      capacity: 35,
+      host: delMar,
+      artist: "mateo",
+      message: "Magia de cerca, participativa y con mucho humor.",
+    }),
+    publishedEvent({
+      key: "e7-piano",
+      title: "Recital de piano",
+      description: "Pequeño concierto de piano para toda la planta.",
+      days: 40,
+      durationMinutes: 50,
+      location: "Salón de actos",
+      audience: "all_ages",
+      capacity: 60,
+      host: urumea,
+      artist: "clara",
+      message: "Programa de piano sereno para un ambiente tranquilo.",
+    }),
+  ];
+
   // Real event ratings (Phase 3, Block 2, demo data) — only against S2's
   // PUBLISHED event, per spec (`rateEvent` denies rating a non-published
   // Event with ConflictError; S5 is `completed`, deliberately left unrated
@@ -649,7 +802,14 @@ async function main(): Promise<void> {
       await profileRepository.save(profile);
     }
 
-    for (const slot of [s1, s2Accepted.slot, s3, s4Closed.slot, s5Accepted.slot]) {
+    for (const slot of [
+      s1,
+      s2Accepted.slot,
+      s3,
+      s4Closed.slot,
+      s5Accepted.slot,
+      ...extraEvents.map((e) => e.slot),
+    ]) {
       await slotRepository.save(slot);
     }
 
@@ -659,12 +819,16 @@ async function main(): Promise<void> {
       s2Accepted.acceptedProposal,
       ...s4Closed.rejectedProposals,
       s5Accepted.acceptedProposal,
+      ...extraEvents.map((e) => e.proposal),
     ]) {
       await proposalRepository.save(proposal);
     }
 
     await eventRepository.save(s2Accepted.event);
     await eventRepository.save(s5CompletedEvent);
+    for (const e of extraEvents) {
+      await eventRepository.save(e.event);
+    }
 
     for (const rating of [s2AnaRating, s2ClaraRating, s2LuciaRating]) {
       await ratingRepository.upsert(rating);

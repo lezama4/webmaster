@@ -2,10 +2,18 @@ import type { Audience } from "@domain/slot/Slot";
 
 /**
  * The public, unauthenticated Event projection — an explicit ALLOW-LIST
- * (ADR D6). These fields are the ONLY data the public endpoint may
- * expose. Forbidden, always: Slot `location` (ward/room), the accepted
- * Proposal's `message`, any email, and any internal database identifier
- * OTHER than the Event's own id (see `id` below, Phase 3/Block 2).
+ * (ADR D6, revised D10). These fields are the ONLY data the public endpoint
+ * may expose.
+ *
+ * D10 revision: an event now names its HOSTING CENTRE (`centreName`, and
+ * `centreCity` when set). Those two fields are already public — the centre
+ * appears in the public directory — and a family cannot find events for their
+ * relative's centre without them. The privacy line therefore moved: it is
+ * about the INDIVIDUAL and the exact place, not the institution. Forbidden,
+ * always: the Slot `location` (ward/room — the sensitive "where within"), the
+ * centre's postal code / street address, the accepted Proposal's `message`,
+ * any email, and any internal database identifier OTHER than the Event's own
+ * id (see `id` below, Phase 3/Block 2).
  */
 export interface PublicEventProjection {
   /**
@@ -23,6 +31,23 @@ export interface PublicEventProjection {
   readonly artistName: string;
   /** The Slot's hospital-set age band (Phase 1 — audience). */
   readonly audience: Audience;
+  /**
+   * The Slot's optional max attendee capacity ("aforo máximo"), or `null` when
+   * the centre did not set one. A logistics figure about the activity, not
+   * about any individual — safe to show publicly on the Events page.
+   */
+  readonly capacity: number | null;
+  /**
+   * The hosting centre's public name (Profile.name) — a public institution,
+   * shown so a family can find events at their relative's centre (D10
+   * revision). NEVER the internal ward/room (`Slot.location` stays private).
+   */
+  readonly centreName: string;
+  /**
+   * The hosting centre's public city (Profile.city), or `null` when the centre
+   * has not set one. The postal code and street address are NOT exposed.
+   */
+  readonly centreCity: string | null;
   /**
    * The Event's average star rating (Phase 3, Block 2), rounded to 1
    * decimal, or `null` when no one has rated it yet — never `0`, so

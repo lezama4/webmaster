@@ -8,6 +8,11 @@ const ALLOW_LISTED_FIELDS = [
   "artistName",
   "audience",
   "averageStars",
+  // Optional "aforo máximo" (Slot.capacity), null when unset.
+  "capacity",
+  // D10 revision (events-show-centre): the hosting centre's PUBLIC name + city.
+  "centreCity",
+  "centreName",
   "description",
   "durationMinutes",
   "id",
@@ -27,6 +32,9 @@ function aProjection(
     durationMinutes: 60,
     artistName: "Clara",
     audience: "all_ages",
+    capacity: null,
+    centreName: "Hospital San Juan",
+    centreCity: "Bilbao",
     averageStars: null,
     ratingCount: 0,
     ...overrides,

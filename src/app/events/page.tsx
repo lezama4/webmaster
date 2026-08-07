@@ -8,7 +8,8 @@ import {
   publicDeps,
 } from "@infrastructure/composition/container";
 import { getCurrentActorReadOnly } from "@infrastructure/http/sessionCookie";
-import { audienceBadgeClasses, EmptyState, secondaryButton } from "@ui/components/ui";
+import type { Audience } from "@domain/slot/Slot";
+import { audienceBadgeClasses, EmptyState, inputClasses, secondaryButton } from "@ui/components/ui";
 import { StarRating } from "../StarRating";
 import { RateEventControl } from "./RateEventControl";
 import { ShareRow } from "@ui/share/ShareRow";
@@ -39,8 +40,41 @@ function formatDuration(minutes: number, t: Awaited<ReturnType<typeof getTransla
   return rest === 0 ? t("duration.hours", { hours }) : t("duration.hoursAndMinutes", { hours, minutes: rest });
 }
 
-export default async function EventsPage() {
-  const [events, t, tAudience, tShare, locale, actor] = await Promise.all([
+// Public-safe filters (date + audience) — never centre/location (D10).
+const AUDIENCE_VALUES = ["all_ages", "early_childhood", "children", "teens", "adults"] as const;
+type DatePreset = "all" | "week" | "month";
+
+function parseAudience(value: string | undefined): Audience | undefined {
+  return (AUDIENCE_VALUES as readonly string[]).includes(value ?? "")
+    ? (value as Audience)
+    : undefined;
+}
+
+function parseDatePreset(value: string | undefined): DatePreset {
+  return value === "week" || value === "month" ? value : "all";
+}
+
+function dateRange(preset: DatePreset, now: Date): { from?: Date; to?: Date } {
+  if (preset === "all") return {};
+  const to = new Date(now);
+  to.setDate(to.getDate() + (preset === "week" ? 7 : 30));
+  return { from: now, to };
+}
+
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string; audience?: string; centre?: string }>;
+}) {
+  const sp = await searchParams;
+  const audienceFilter = parseAudience(sp.audience);
+  const datePreset = parseDatePreset(sp.date);
+  const { from, to } = dateRange(datePreset, new Date());
+
+  // One unfiltered read supplies the centre dropdown's options (the distinct
+  // public centre names that host a published event). The centre filter matches
+  // that public name only — the event→centre link the D10 revision made public.
+  const [allEvents, t, tAudience, tShare, locale, actor] = await Promise.all([
     listPublishedEvents(publicDeps()),
     getTranslations("Events"),
     getTranslations("Audience"),
@@ -48,6 +82,22 @@ export default async function EventsPage() {
     getLocale(),
     getCurrentActorReadOnly(),
   ]);
+  const centreOptions = [...new Set(allEvents.map((event) => event.centreName))].sort(
+    (a, b) => a.localeCompare(b, locale),
+  );
+  const centreFilter =
+    sp.centre && centreOptions.includes(sp.centre) ? sp.centre : undefined;
+  const filters = {
+    ...(audienceFilter ? { audience: audienceFilter } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+    ...(centreFilter ? { centre: centreFilter } : {}),
+  };
+  // Reuse the unfiltered read when no filter is active; otherwise query again.
+  const events =
+    Object.keys(filters).length > 0
+      ? await listPublishedEvents(publicDeps(), filters)
+      : allEvents;
   // Pre-fills each event's interactive star control with the CALLER'S OWN
   // rating only (never another rater's) — anonymous visitors see the
   // read-only average instead, no fetch needed.
@@ -58,9 +108,63 @@ export default async function EventsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <header className="flex flex-col gap-3 pb-10">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
-        <p className="max-w-[52ch] text-muted">{t("description")}</p>
+      <header className="flex flex-col gap-5 pb-10">
+        <div className="flex flex-col gap-3">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight md:text-4xl">{t("title")}</h1>
+          <p className="max-w-[52ch] text-muted">{t("description")}</p>
+        </div>
+        {/* Public-safe filters. A plain GET form (no client JS): submitting
+            reloads /events?date=…&audience=…&centre=… and the server filters
+            the query. Every axis filters on a value already shown on the card
+            (date, audience, and — since the D10 revision — the hosting centre's
+            public name); the ward/room location, postal code and address are
+            never filterable because they are never in the projection. The
+            centre filter appears only when more than one centre hosts events. */}
+        <form method="get" className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted">{t("filters.dateLabel")}</span>
+            <select name="date" defaultValue={datePreset} className={inputClasses}>
+              <option value="all">{t("filters.allDates")}</option>
+              <option value="week">{t("filters.week")}</option>
+              <option value="month">{t("filters.month")}</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted">{t("filters.audienceLabel")}</span>
+            <select
+              name="audience"
+              defaultValue={audienceFilter ?? "all"}
+              className={inputClasses}
+            >
+              <option value="all">{t("filters.allAudiences")}</option>
+              {AUDIENCE_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {tAudience(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {centreOptions.length > 1 ? (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">{t("filters.centreLabel")}</span>
+              <select
+                name="centre"
+                defaultValue={centreFilter ?? "all"}
+                className={inputClasses}
+              >
+                <option value="all">{t("filters.allCentres")}</option>
+                {centreOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <button type="submit" className={secondaryButton}>
+            {t("filters.apply")}
+          </button>
+        </form>
       </header>
 
       {events.length === 0 ? (
@@ -77,6 +181,8 @@ export default async function EventsPage() {
               <p className="text-muted">{event.description}</p>
               <span className={audienceBadgeClasses}>{tAudience(event.audience)}</span>
               <p className="text-sm"><span className="text-muted">{t("withArtist")} </span><span className="font-medium">{event.artistName}</span></p>
+              <p className="text-sm"><span className="text-muted">{t("atCentre")} </span><span className="font-medium">{event.centreName}</span>{event.centreCity ? <span className="text-muted"> · {event.centreCity}</span> : null}</p>
+              {event.capacity != null ? <p className="text-sm"><span className="text-muted">{t("capacity")} </span><span className="font-medium">{t("capacityValue", { count: event.capacity })}</span></p> : null}
 
               <div className="mt-auto flex items-center gap-2 text-sm">
                 {event.averageStars === null ? (

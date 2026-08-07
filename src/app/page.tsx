@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { primaryButton, secondaryButton } from "@ui/components/ui";
+import { AppPreview } from "./_home/AppPreview";
 import { Reveal } from "./_home/Reveal";
 import { StarRating } from "./StarRating";
 
@@ -217,6 +218,10 @@ export default async function Home() {
           </div>
         </section>
       </Reveal>
+
+      {/* 5.5 App preview — clearly-labelled "Próximamente" concept, never a
+          shipped feature (honesty: the web "works today", the app is future). */}
+      <AppPreview />
 
       {/* 6. Closing CTA. */}
       <Reveal className="border-t border-border bg-surface-2">

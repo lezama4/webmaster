@@ -1,7 +1,10 @@
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
-import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
+import type {
+  PublicEventFilters,
+  PublicEventProjectionQuery,
+} from "@application/ports/PublicEventProjectionQuery";
 import type { PrismaClientOrTx } from "./client";
-import { toDomainAudience } from "./mappers";
+import { audienceToPrisma, toDomainAudience } from "./mappers";
 
 /**
  * The ONLY adapter permitted to join Event -> Slot -> Proposal -> (Artist)
@@ -23,9 +26,33 @@ export class PrismaPublicEventProjectionQuery
 {
   constructor(private readonly client: PrismaClientOrTx) {}
 
-  async listPublished(): Promise<readonly PublicEventProjection[]> {
+  async listPublished(
+    filters?: PublicEventFilters,
+  ): Promise<readonly PublicEventProjection[]> {
+    // Filters apply to the related Slot (audience + scheduledAt live there;
+    // the hosting centre is Slot.hospitalProfile). Every axis filters on a
+    // value already in the public projection — since the D10 revision that
+    // includes the centre's public `name` — so filtering exposes nothing the
+    // listing does not already show, and never touches the ward/room
+    // `location`, postal code or address.
+    const scheduledAt =
+      filters?.from || filters?.to
+        ? {
+            ...(filters.from ? { gte: filters.from } : {}),
+            ...(filters.to ? { lte: filters.to } : {}),
+          }
+        : undefined;
+    const slotFilter = {
+      ...(filters?.audience ? { audience: audienceToPrisma(filters.audience) } : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
+      ...(filters?.centre ? { hospitalProfile: { name: filters.centre } } : {}),
+    };
+
     const rows = await this.client.event.findMany({
-      where: { status: "PUBLISHED" },
+      where: {
+        status: "PUBLISHED",
+        ...(Object.keys(slotFilter).length > 0 ? { slot: slotFilter } : {}),
+      },
       select: {
         id: true,
         title: true,
@@ -35,6 +62,13 @@ export class PrismaPublicEventProjectionQuery
             scheduledAt: true,
             durationMinutes: true,
             audience: true,
+            capacity: true,
+            // D10 revision: the hosting centre's PUBLIC name + city only.
+            // `location` (ward/room), postalCode and addressLine are NOT
+            // selected — they never leave Postgres for the public surface.
+            hospitalProfile: {
+              select: { name: true, city: true },
+            },
           },
         },
         proposal: {
@@ -66,6 +100,9 @@ export class PrismaPublicEventProjectionQuery
         durationMinutes: row.slot.durationMinutes,
         artistName: row.proposal.artistProfile.name,
         audience: toDomainAudience(row.slot.audience),
+        capacity: row.slot.capacity,
+        centreName: row.slot.hospitalProfile.name,
+        centreCity: row.slot.hospitalProfile.city,
         averageStars,
         ratingCount,
       };

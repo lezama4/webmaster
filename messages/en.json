@@ -40,8 +40,8 @@
       "disclaimer": "Illustrative set for this MVP phase: it includes centres from the demo database and example organisations, not confirmed patronage agreements."
     },
     "artists": {
-      "eyebrow": "Top-rated artists",
-      "title": "People already bringing their craft into care centres.",
+      "eyebrow": "Featured collaborators",
+      "title": "The best-rated artists already bringing their craft into care centres.",
       "description": "Example profiles from the demo database, with the rating they'd receive after a completed event.",
       "disclaimer": "Illustrative profiles and ratings for this MVP phase.",
       "items": [
@@ -59,6 +59,16 @@
         { "quote": "The workshop broke the routine of the corridor. For one afternoon, we didn't talk about test results or schedules.", "author": "Fernando Cabrera", "context": "Patient, Hospital Esperanza", "rating": 5 },
         { "quote": "We published the slot on a Tuesday and had a confirmed artist by Thursday. Coordinating was that simple.", "author": "Dr. Marta Elizondo", "context": "Ward coordinator, Hospital San Juan", "rating": 5 }
       ]
+    },
+    "app": {
+      "eyebrow": "On mobile",
+      "badge": "Coming soon",
+      "title": "Take it in your pocket.",
+      "description": "We're designing the app so discovering events, finding your centre and coordinating activities is even easier on mobile. This is a preview of the concept.",
+      "screen1": "Discover events",
+      "screen2": "Find your centre",
+      "screen3": "Coordinate activities",
+      "disclaimer": "Concept design. The app is in development: these screens are a preview, not a working version."
     },
     "closing": {
       "title": "Ready to open the first slot, or propose the first moment?",
@@ -151,9 +161,9 @@
     }
   },
   "Events": {
-    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.",
+    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "centreLabel": "Centre", "allCentres": "All centres", "apply": "Filter" },
     "empty": { "title": "No events scheduled yet", "description": "As centres confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
-    "withArtist": "with", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
+    "withArtist": "with", "atCentre": "At", "capacity": "Max capacity:", "capacityValue": "{count, plural, one {# person} other {# people}}", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
     "rating": {
       "noRatings": "No ratings yet",
       "average": "{average} average · {count} ratings",
@@ -190,8 +200,8 @@
     "slotStatus": { "open": "Open", "filled": "Filled", "closed": "Closed" }, "proposalStatus": { "submitted": "Pending review", "accepted": "Accepted", "rejected": "Rejected" }
   },
   "PublishSlot": {
-    "title": "Publish a slot", "description": "Open a moment in the centre's agenda for artists to propose an activity.", "submit": "Publish slot", "publishing": "Publishing…", "publicHint": "The title and description appear on the public events page. Don't include the ward, the room, or any personal details — for the exact place use the location field below, which only artists see.", "locationHint": "Visible to registered artists browsing this slot — never shown on the public events page.",
-    "fields": { "title": "Title", "description": "Description", "dateTime": "Date and time", "duration": "Duration (minutes)", "location": "Location", "audience": "Target audience" },
+    "title": "Publish a slot", "description": "Open a moment in the centre's agenda for artists to propose an activity.", "submit": "Publish slot", "publishing": "Publishing…", "publicHint": "The title and description appear on the public events page. Don't include the ward, the room, or any personal details — for the exact place use the location field below, which only artists see.", "locationHint": "Visible to registered artists browsing this slot — never shown on the public events page.", "capacityHint": "How many people the activity fits. Shown on the public events page. Optional.",
+    "fields": { "title": "Title", "description": "Description", "dateTime": "Date and time", "duration": "Duration (minutes)", "location": "Location", "audience": "Target audience", "capacity": "Max capacity (optional)" },
     "errors": { "failure": "The slot could not be published. Check the details and try again.", "generic": "Something went wrong. Please try again." }
   },
   "Audience": { "all_ages": "All ages", "early_childhood": "Ages 0–5", "children": "Ages 6–12", "teens": "Ages 13–17", "adults": "Adults (18+)" },

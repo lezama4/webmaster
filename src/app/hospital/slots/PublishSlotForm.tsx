@@ -14,7 +14,7 @@ const AUDIENCE_OPTIONS = [
   "adults",
 ] as const;
 
-const EMPTY_FORM = { title: "", description: "", scheduledAt: "", durationMinutes: "60", location: "", audience: "all_ages" as string };
+const EMPTY_FORM = { title: "", description: "", scheduledAt: "", durationMinutes: "60", location: "", audience: "all_ages" as string, capacity: "" };
 
 export function PublishSlotForm() {
   const t = useTranslations("PublishSlot");
@@ -42,7 +42,7 @@ export function PublishSlotForm() {
       <Field label={t("fields.description")} htmlFor="description"><textarea id="description" name="description" required rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClasses} /></Field>
       <div className="grid gap-4 sm:grid-cols-2"><Field label={t("fields.dateTime")} htmlFor="scheduledAt"><input id="scheduledAt" name="scheduledAt" type="datetime-local" required value={form.scheduledAt} onChange={(e) => update("scheduledAt", e.target.value)} className={inputClasses} /></Field><Field label={t("fields.duration")} htmlFor="durationMinutes"><input id="durationMinutes" name="durationMinutes" type="number" min={1} required value={form.durationMinutes} onChange={(e) => update("durationMinutes", e.target.value)} className={inputClasses} /></Field></div>
       <Field label={t("fields.location")} htmlFor="location" hint={t("locationHint")} error={error ?? undefined}><input id="location" name="location" type="text" required value={form.location} onChange={(e) => update("location", e.target.value)} className={inputClasses} /></Field>
-      <Field label={t("fields.audience")} htmlFor="audience"><select id="audience" name="audience" required value={form.audience} onChange={(e) => update("audience", e.target.value)} className={inputClasses}>{AUDIENCE_OPTIONS.map((option) => (<option key={option} value={option}>{tAudience(option)}</option>))}</select></Field>
+      <div className="grid gap-4 sm:grid-cols-2"><Field label={t("fields.audience")} htmlFor="audience"><select id="audience" name="audience" required value={form.audience} onChange={(e) => update("audience", e.target.value)} className={inputClasses}>{AUDIENCE_OPTIONS.map((option) => (<option key={option} value={option}>{tAudience(option)}</option>))}</select></Field><Field label={t("fields.capacity")} htmlFor="capacity" hint={t("capacityHint")}><input id="capacity" name="capacity" type="number" min={1} inputMode="numeric" value={form.capacity} onChange={(e) => update("capacity", e.target.value)} className={inputClasses} /></Field></div>
       <button type="submit" disabled={pending} className={`${primaryButton} mt-2 self-start`}>{pending ? t("publishing") : t("submit")}</button>
     </form>
   );

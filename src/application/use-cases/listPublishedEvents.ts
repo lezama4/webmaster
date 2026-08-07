@@ -1,5 +1,8 @@
 import type { PublicEventProjection } from "@application/dto/PublicEventProjection";
-import type { PublicEventProjectionQuery } from "@application/ports/PublicEventProjectionQuery";
+import type {
+  PublicEventFilters,
+  PublicEventProjectionQuery,
+} from "@application/ports/PublicEventProjectionQuery";
 
 export interface ListPublishedEventsDeps {
   readonly publicEventProjectionQuery: PublicEventProjectionQuery;
@@ -24,8 +27,9 @@ export interface ListPublishedEventsDeps {
  */
 export async function listPublishedEvents(
   deps: ListPublishedEventsDeps,
+  filters?: PublicEventFilters,
 ): Promise<readonly PublicEventProjection[]> {
-  const records = await deps.publicEventProjectionQuery.listPublished();
+  const records = await deps.publicEventProjectionQuery.listPublished(filters);
   return records.map(toPublicEventProjection);
 }
 
@@ -38,6 +42,9 @@ function toPublicEventProjection(record: PublicEventProjection): PublicEventProj
     durationMinutes: record.durationMinutes,
     artistName: record.artistName,
     audience: record.audience,
+    capacity: record.capacity,
+    centreName: record.centreName,
+    centreCity: record.centreCity,
     averageStars: record.averageStars,
     ratingCount: record.ratingCount,
   };

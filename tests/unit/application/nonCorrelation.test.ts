@@ -87,6 +87,16 @@ const EVENT_ALLOW_LISTED_FIELDS = [
   "artistName",
   "audience",
   "averageStars",
+  // Optional "aforo máximo" (Slot.capacity): a logistics figure about the
+  // activity, not about any individual or the centre — no correlation path.
+  "capacity",
+  // D10 revision (events-show-centre): the hosting centre's PUBLIC name + city,
+  // so a family can find events at their relative's centre. Admitted after
+  // checking against the revised D10: the centre is a public institution
+  // already in the directory; what stays out is the ward/room, the postal
+  // code / street address / coordinates, and every id — see the forbidden list.
+  "centreCity",
+  "centreName",
   "description",
   "durationMinutes",
   "id",
@@ -106,10 +116,11 @@ const EVENT_DERIVED_FIELDS = [
 ];
 
 /**
- * Hospital/centre-identifying fields that must NEVER reach the event
- * surface. `centreType` (ADR D19) joins this list on the FORBIDDEN side for
- * events — it is a directory-side allow-listed field, never an event one;
- * admitting it on the directory does not loosen what an Event may carry.
+ * Address-level, id and derived fields that must STILL never reach the event
+ * surface after the D10 revision. The centre's public NAME and CITY are now
+ * ALLOWED (carried as `centreName`/`centreCity`); everything more precise or
+ * joinable is not: the raw hospital keys, the postal code, the street address,
+ * the coordinates, the `centreType`, and the Slot ward/room `location`.
  */
 const HOSPITAL_IDENTIFYING_FIELDS = [
   "hospitalId",
@@ -117,9 +128,11 @@ const HOSPITAL_IDENTIFYING_FIELDS = [
   "hospitalProfileId",
   "city",
   "postalCode",
+  "addressLine",
   "latitude",
   "longitude",
   "centreType",
+  "location",
 ];
 
 function aHospital(
@@ -146,6 +159,9 @@ function anEvent(
     durationMinutes: 60,
     artistName: "Clara",
     audience: "all_ages",
+    capacity: null,
+    centreName: "Hospital San Juan",
+    centreCity: "Bilbao",
     id: "event-1",
     averageStars: null,
     ratingCount: 0,
@@ -169,7 +185,7 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     }
   });
 
-  it("PublicEventProjection carries no hospital-identifying field", async () => {
+  it("PublicEventProjection carries the centre name and city, but no address-level, id or ward-room field", async () => {
     const deps = {
       publicEventProjectionQuery: new FakePublicEventProjectionQuery([anEvent()]),
     };
@@ -234,7 +250,7 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     }
   });
 
-  it("events at different hospitals are not distinguishable by hospital — no field lets a visitor tell them apart by hospital", async () => {
+  it("every event exposes the same allow-listed shape — centre name+city, never an address-level, id or ward-room field", async () => {
     const deps = {
       publicEventProjectionQuery: new FakePublicEventProjectionQuery([
         anEvent({ title: "Event at Hospital A" }),

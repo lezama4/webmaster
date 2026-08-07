@@ -1,9 +1,9 @@
 import { expect, request, test } from "@playwright/test";
 
 import {
-  SEED_ACTIVE_CENTRE_TYPES,
   SEED_ACTIVE_HOSPITALS,
   SEED_COMPLETED_EVENT_TITLE,
+  SEED_LOCATIONS,
   SEED_PUBLISHED_EVENT_TITLE,
 } from "./support/helpers";
 
@@ -13,10 +13,16 @@ import {
 // (`nonCorrelation.test.ts`) and the ESLint import zones close the routes a
 // developer can reach from inside one file; THIS suite is what actually
 // fails if a future contributor's change is observable to a real visitor —
-// e.g. adding an "N upcoming events" badge to a hospital card, or a "which
-// hospital?" hint to an event card. If you are here because this suite
-// failed after adding a field, you are changing ADR D10 — read it before
-// editing this file or the assertions below.
+// e.g. adding an "N upcoming events" badge to a hospital card.
+//
+// D10 REVISION (events-show-centre): the EVENT→HOSPITAL direction was
+// deliberately relaxed — an event now names its hosting centre (public name +
+// city) so families can find events at their relative's centre. What stays
+// forbidden on events is the ward/room (`Slot.location`), postal code and
+// street address. The HOSPITAL→EVENT direction below is UNCHANGED: the public
+// directory still never reveals a centre's events. If you are here because a
+// HOSPITAL-direction test failed after adding a field, you are changing D10 —
+// read it first.
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list.
@@ -28,7 +34,12 @@ const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "n
 // rater identity excluded. None of them lets a visitor infer where an event
 // happens. The same reasoning is recorded in tests/unit/application/
 // nonCorrelation.test.ts, which owns the unit-level half of this invariant.
-const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
+// D10 revision (events-show-centre): an event now names its HOSTING CENTRE —
+// `centreName` (public institution) and `centreCity` (public directory field).
+// A family cannot find events for their relative's centre without them. The
+// privacy line moved to the INDIVIDUAL and the exact place: the ward/room
+// (`Slot.location`), the postal code and the street address stay forbidden.
+const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "capacity", "centreCity", "centreName", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
 
 test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-event direction)", () => {
   test("GET /api/hospitals carries only the D9 allow-list keys and no seeded event title", async () => {
@@ -124,95 +135,73 @@ test.describe("/encuentra-tu-momento's Open Graph metadata and share affordance 
   });
 });
 
-test.describe("/events exposes NO hospital data (D10, event-to-hospital direction)", () => {
-  test("GET /api/events carries only the D6 allow-list keys and no seeded hospital name/city/postal code", async () => {
+test.describe("/events names the hosting centre but never the ward/room, postal code or address (D10 revision)", () => {
+  test("GET /api/events carries only the revised allow-list keys, names the centre, and never leaks the ward/room, postal code or address", async () => {
     const ctx = await request.newContext({ baseURL });
     const res = await ctx.get("/api/events");
     const raw = await res.text();
     const body = JSON.parse(raw) as { events: Array<Record<string, unknown>> };
 
-    // Re-asserted here for the same reason as above: a "hosted at {city}"
-    // hint on an event would add a NAMED key to PublicEventProjection.
+    // The exact-key-set check still fails on ANY addition beyond the revised
+    // allow-list — including a `centreType`, `location`, address or postal key.
     for (const event of body.events) {
       expect(Object.keys(event).sort()).toEqual(ALLOWED_EVENT_KEYS);
     }
 
+    // The hosting centre's name IS now public (D10 revision) — a family needs
+    // it to find events at their relative's centre. The seed spreads events
+    // across several ACTIVE centres (so the centre filter is demonstrable), so
+    // more than one centre name must appear on the public surface.
+    const sanJuan = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital San Juan")!;
+    const delMar = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital Universitario del Mar")!;
+    expect(raw, "San Juan hosts several events, so its public name appears").toContain(sanJuan.name);
+    expect(raw, "a second hosting centre's public name also appears").toContain(delMar.name);
+
+    // STILL forbidden: the postal code and street address (the projection
+    // exposes name + city only), and the Slot ward/room `location`.
     for (const hospital of SEED_ACTIVE_HOSPITALS) {
-      expect(raw, `must not leak hospital name "${hospital.name}"`).not.toContain(hospital.name);
-      expect(raw, `must not leak city "${hospital.city}"`).not.toContain(hospital.city);
       expect(raw, `must not leak postal code "${hospital.postalCode}"`).not.toContain(hospital.postalCode);
     }
+    for (const location of SEED_LOCATIONS) {
+      expect(raw, "must not leak a Slot ward/room location").not.toContain(location);
+    }
 
     await ctx.dispose();
   });
 
-  test("the rendered /events page never shows a seeded hospital name, city, or postal code", async ({ page }) => {
+  test("the rendered /events page shows the hosting centre but never its postal code or a ward/room location", async ({ page }) => {
     await page.goto("/events");
 
+    // The hosting centre is now visible to a family browsing events. Scope to
+    // the card `<p>` — the centre name is ALSO a hidden `<option>` in the
+    // filter dropdown, which `getByText` would otherwise resolve to.
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" }).first()).toBeVisible();
+
     for (const hospital of SEED_ACTIVE_HOSPITALS) {
-      await expect(page.getByText(hospital.name)).toHaveCount(0);
-      await expect(page.getByText(hospital.city, { exact: false })).toHaveCount(0);
       await expect(page.getByText(hospital.postalCode)).toHaveCount(0);
     }
-  });
-});
-
-test.describe("/events — centreType adds no new correlation path (D10, widen-beyond-hospitals D19 extension)", () => {
-  test("GET /api/events never carries a centreType/type key or value, including for the seed's lone rare-type city", async () => {
-    const ctx = await request.newContext({ baseURL });
-    const res = await ctx.get("/api/events");
-    const raw = await res.text();
-    const body = JSON.parse(raw) as { events: Array<Record<string, unknown>> };
-
-    // Re-asserted per-key here for the same reason as the allow-list check
-    // above: an addition of `centreType` or `type` would be a NAMED key,
-    // whatever shape it took.
-    for (const event of body.events) {
-      expect(event).not.toHaveProperty("centreType");
-      expect(event).not.toHaveProperty("type");
+    for (const location of SEED_LOCATIONS) {
+      await expect(page.getByText(location)).toHaveCount(0);
     }
-
-    // León is the seed's ONLY city with an ACTIVE centre — "Unidad de
-    // Cuidados Paliativos del Bernesga", a palliative_unit, and no other
-    // centre. This is the seed's concrete instance of the "lone rare type"
-    // case (public-event-browsing spec): if any Event field revealed this
-    // centre's city, name, or centreType, a visitor could deduce that any
-    // Event naming León was hosted at the region's sole palliative unit.
-    expect(raw, "must not leak the lone rare-type centre's city").not.toContain("León");
-    expect(raw, "must not leak the lone rare-type centre's name").not.toContain("Bernesga");
-
-    // No `centreType` value of any kind appears anywhere in the Events
-    // response — the widened six-value vocabulary has no new join key to
-    // leak through, matching zero seeded Slot/Event title or description.
-    for (const centreType of SEED_ACTIVE_CENTRE_TYPES) {
-      expect(raw, `must not leak a centreType value ("${centreType}")`).not.toContain(centreType);
-    }
-
-    await ctx.dispose();
   });
 
-  test("events from centres of two different centreType values remain indistinguishable by centre", async () => {
-    // Hospital San Juan (centreType hospital) and Residencia Urumea
-    // (centreType nursing_home) are two ACTIVE centres of different kinds.
-    // Neither their names nor cities nor centreType values appear on the
-    // Events surface — re-asserted specifically across a type BOUNDARY,
-    // not just within one type, closing the "different kinds are
-    // indistinguishable" half of the widened non-correlation invariant.
-    const ctx = await request.newContext({ baseURL });
-    const res = await ctx.get("/api/events");
-    const raw = await res.text();
+  test("the centre filter narrows the list to events at the chosen centre (events-show-centre)", async ({ page }) => {
+    // Filtering by a PUBLIC centre name is server-side over already-public data
+    // (the event→centre link the D10 revision made public) — it exposes nothing
+    // the unfiltered list did not already show. Residencia Urumea hosts seeded
+    // events; San Juan's must disappear once it is selected.
+    await page.goto("/events?centre=" + encodeURIComponent("Residencia Urumea"));
 
-    const sanJuan = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Hospital San Juan")!;
-    const urumea = SEED_ACTIVE_HOSPITALS.find((h) => h.name === "Residencia Urumea")!;
-    expect(sanJuan.centreType).not.toBe(urumea.centreType);
+    // Assert on the card `<p>`, not the dropdown `<option>` (which lists every
+    // centre regardless of the active filter): a Urumea card is shown, and no
+    // San Juan card survives the filter.
+    await expect(page.locator("p").filter({ hasText: "Residencia Urumea" }).first()).toBeVisible();
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" })).toHaveCount(0);
 
-    for (const centre of [sanJuan, urumea]) {
-      expect(raw, `must not leak "${centre.name}"`).not.toContain(centre.name);
-      expect(raw, `must not leak "${centre.city}"`).not.toContain(centre.city);
-      expect(raw, `must not leak centreType "${centre.centreType}"`).not.toContain(centre.centreType);
+    // The exact place is still never exposed, even when filtering by centre.
+    for (const location of SEED_LOCATIONS) {
+      await expect(page.getByText(location)).toHaveCount(0);
     }
-
-    await ctx.dispose();
   });
 });
 

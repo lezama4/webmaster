@@ -33,6 +33,18 @@
 >     nonce-based CSP, Dependabot and a CI dependency-audit job — closing the
 >     "no headers / no CSP / no dependency scanning" gap called out in §2 and
 >     §5. Verified against a production build; CI (incl. e2e under CSP) green.
+>   - **`feat/events-show-centre` (D10 revision)** deliberately relaxes the
+>     event→centre direction of the D10 non-correlation invariant: a public
+>     event now names its **hosting centre (public name + city only)** so a
+>     family can find events at their relative's centre. The ward/room
+>     `Slot.location`, the centre's postal code / street address / coordinates,
+>     every internal id and all patient data **stay forbidden** on the public
+>     surface. Threat model §1/§4 updated (`events-show-centre` scope note);
+>     `PublicEventProjection` + the Prisma `select` carry `centreName`/
+>     `centreCity`; e2e (`public-projection`, `non-correlation`) rewritten to
+>     assert the centre name now appears and the postal/address/ward-room never
+>     do. 693 unit tests + tsc green locally; e2e validated in CI. The
+>     hospital→event direction is unchanged.
 >   - Once these two merge, **no structural finding in this report remains
 >     OPEN**; what stays are author-only delivery items (public repo, memoria,
 >     deck, video, Basque review) and the tracked `sharp` transitive advisories.

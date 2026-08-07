@@ -69,6 +69,12 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
       durationMinutes: slot.durationMinutes,
       artistName: "Clara the Artist",
       audience: "all_ages",
+      // Optional "aforo máximo": this fixture's Slot sets none, so it is null.
+      capacity: null,
+      // D10 revision (events-show-centre): the hosting centre's PUBLIC name +
+      // city. This fixture sets no city, so `centreCity` is null.
+      centreName: "San Juan Hospital",
+      centreCity: null,
       averageStars: null,
       ratingCount: 0,
     });
@@ -80,6 +86,9 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
         "artistName",
         "audience",
         "averageStars",
+        "capacity",
+        "centreCity",
+        "centreName",
         "description",
         "durationMinutes",
         "id",
@@ -112,5 +121,54 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
     const query = new PrismaPublicEventProjectionQuery(client);
     const results = await query.listPublished();
     expect(results).toHaveLength(0);
+  });
+
+  it("centre filter (events-show-centre): returns only events hosted by the named centre", async () => {
+    const { profile: artist } = await createArtistProfile(client, {
+      name: "Clara the Artist",
+    });
+
+    async function publishEventAt(hospitalName: string, key: string) {
+      const { profile: hospital } = await createHospitalProfile(client, {
+        name: hospitalName,
+      });
+      const slot = await createOpenSlot(client, hospital.id, {
+        title: `Slot ${key}`,
+      });
+      const proposal = acceptProposal(
+        await createSubmittedProposal(client, slot.id, artist.id),
+      );
+      await new PrismaProposalRepository(client).save(proposal);
+      await new PrismaEventRepository(client).save(
+        publishEvent(
+          createEvent({
+            id: `event-${key}`,
+            slotId: slot.id,
+            proposalId: proposal.id,
+            title: `Event ${key}`,
+          }),
+        ),
+      );
+    }
+
+    await publishEventAt("Hospital San Juan", "sanjuan");
+    await publishEventAt("Residencia Urumea", "urumea");
+
+    const query = new PrismaPublicEventProjectionQuery(client);
+
+    const all = await query.listPublished();
+    expect(all.map((e) => e.centreName).sort()).toEqual([
+      "Hospital San Juan",
+      "Residencia Urumea",
+    ]);
+
+    const filtered = await query.listPublished({ centre: "Residencia Urumea" });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]!.centreName).toBe("Residencia Urumea");
+
+    // A name that hosts no event returns nothing (the filter matches the exact
+    // public centre name, never the ward/room location or a partial).
+    const none = await query.listPublished({ centre: "Hospital Nonexistent" });
+    expect(none).toHaveLength(0);
   });
 });
