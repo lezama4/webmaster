@@ -95,11 +95,12 @@ function SiteHeader({
             who onboard, so it reads as a quiet link, not the headline. */}
         <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
           {/* "Find your centre" leads the nav and is the one emphasised entry:
-              it is the first thing a family needs to do, so it reads as the
-              primary action a visitor lands on. Everything else stays quiet. */}
+              it is the first thing a family needs to do. The emphasis is the
+              quiet one previously carried by "Register" — weight and full
+              contrast, no pill — and "Register" now reads like "Log in". */}
           <Link
             href="/encuentra-tu-momento"
-            className="rounded-full bg-primary/10 px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/15"
+            className="rounded-full px-3 py-2 font-medium text-foreground transition-colors hover:text-primary"
           >
             {finderLabel}
           </Link>
@@ -113,7 +114,7 @@ function SiteHeader({
           <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {loginLabel}
           </Link>
-          <Link href="/register" className="rounded-full px-3 py-2 font-medium text-foreground transition-colors hover:text-primary">
+          <Link href="/register" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {registerLabel}
           </Link>
           <LanguageSelector />

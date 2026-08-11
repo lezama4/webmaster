@@ -18,8 +18,25 @@ import { Reveal } from "./Reveal";
  * page changes visually; the capture is a snapshot, not a live render.
  */
 
-/** Device shell: bezel, notch, and a full-bleed screen holding one capture. */
-function Phone({ label, src }: { label: string; src: string }) {
+/**
+ * Device shell: bezel, notch, and a full-bleed screen holding one capture.
+ *
+ * The capture is scaled to the screen's WIDTH and anchored to the top, so the
+ * frame only ever crops its BOTTOM. `object-cover` was wrong here: a capture
+ * wider than the 9/19 frame (the centres page is 1078x2088) got cropped left
+ * and right instead, slicing the page's own text off at both edges.
+ */
+function Phone({
+  label,
+  src,
+  width,
+  height,
+}: {
+  label: string;
+  src: string;
+  width: number;
+  height: number;
+}) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative aspect-[9/19] w-[196px] overflow-hidden rounded-[2.1rem] border-[7px] border-foreground/85 bg-background shadow-xl sm:w-[208px]">
@@ -30,9 +47,10 @@ function Phone({ label, src }: { label: string; src: string }) {
         <Image
           src={src}
           alt=""
-          fill
+          width={width}
+          height={height}
           sizes="208px"
-          className="object-cover object-top"
+          className="absolute inset-x-0 top-0 h-auto w-full"
           aria-hidden="true"
         />
       </div>
@@ -61,9 +79,9 @@ export async function AppPreview() {
         </div>
 
         <div className="flex flex-wrap items-start justify-center gap-10 sm:gap-12">
-          <Phone label={t("app.screenHome")} src="/images/home-mobile-snapshot.jpg" />
-          <Phone label={t("app.screen1")} src="/images/events-mobile-snapshot.jpg" />
-          <Phone label={t("app.screen2")} src="/images/centres-mobile-snapshot.jpg" />
+          <Phone label={t("app.screenHome")} src="/images/home-mobile-snapshot.jpg" width={1080} height={2628} />
+          <Phone label={t("app.screen1")} src="/images/events-mobile-snapshot.jpg" width={1077} height={2788} />
+          <Phone label={t("app.screen2")} src="/images/centres-mobile-snapshot.jpg" width={1078} height={2088} />
         </div>
 
         <p className="text-center text-xs text-muted">{t("app.disclaimer")}</p>
