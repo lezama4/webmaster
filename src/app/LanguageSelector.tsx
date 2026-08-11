@@ -56,8 +56,8 @@ function FlagEN() {
 
 const languages: { code: Locale; label: string; Flag: () => React.ReactElement }[] = [
   { code: "es", label: "ES", Flag: FlagES },
-  { code: "eu", label: "EU", Flag: FlagEU },
   { code: "en", label: "EN", Flag: FlagEN },
+  { code: "eu", label: "EU", Flag: FlagEU },
 ];
 
 export function LanguageSelector() {
