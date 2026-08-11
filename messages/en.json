@@ -64,11 +64,11 @@
       "eyebrow": "On mobile",
       "badge": "Coming soon",
       "title": "Take it in your pocket.",
-      "description": "We're designing the app so discovering events, finding your centre and coordinating activities is even easier on mobile. This is a preview of the concept.",
+      "description": "The site already works on your phone: find your centre, browse events and use the whole platform from mobile. These are real screenshots. The native app will come later.",
       "screenHome": "Home",
       "screen1": "Discover events",
       "screen2": "Find your centre",
-      "disclaimer": "Concept design. The app is in development: these screens are a preview, not a working version."
+      "disclaimer": "Real screenshots of the site on mobile. The native app is in development."
     },
     "closing": {
       "title": "Ready to open the first slot, or propose the first moment?",
