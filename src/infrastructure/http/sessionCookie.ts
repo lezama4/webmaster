@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import type { Actor } from "@application/Actor";
+import type { AccountRole } from "@domain/account/Account";
+import type { CentreType, ProfileStatus } from "@domain/profile/Profile";
 import {
   accountRepository,
   profileRepository,
@@ -133,5 +135,57 @@ export async function getCurrentActorReadOnly(): Promise<Actor | null> {
     role: account.role,
     profileId: profile?.id,
     profileStatus: profile?.status,
+  };
+}
+
+/**
+ * Who the visitor is, for DISPLAY in the site header — never for authorization.
+ * Deliberately a separate type from `Actor`: `Actor` is the security-relevant
+ * caller identity that use cases gate on, and padding it with presentation
+ * fields would blur what it is for.
+ *
+ * Everything here is the visitor's OWN account and profile, shown back to
+ * them, so it discloses nothing about anyone else. `status` is included
+ * because a `pending` centre can log in but cannot yet act, and deserves to be
+ * told why rather than discovering it by clicking something inert.
+ *
+ * This resolves the session a second time on pages that also call
+ * `getCurrentActorReadOnly`, since the layout and the page render
+ * independently. Both are reads plus the same idempotent `touch`, so the cost
+ * is a few queries on a directory-sized dataset — cheaper than coupling the
+ * two resolvers through a shared cache.
+ */
+export interface SessionIdentity {
+  readonly role: AccountRole;
+  /** The profile's own display name; `null` for an account without a profile. */
+  readonly name: string | null;
+  /** Only ever set for a centre — the coarse public category. */
+  readonly centreType: CentreType | null;
+  readonly status: ProfileStatus | null;
+}
+
+export async function getCurrentSessionIdentity(): Promise<SessionIdentity | null> {
+  const token = await getSessionToken();
+  if (!token) return null;
+
+  const sessions = sessionPort();
+  const session = await sessions.resolveValid(token);
+  if (!session) return null;
+
+  // A page view counts as activity, exactly as in `getCurrentActorReadOnly`:
+  // the header renders on every page, including the public ones a logged-in
+  // visitor browses, so touching here keeps the idle window honest.
+  await sessions.touch(token);
+
+  const account = await accountRepository().findById(session.accountId);
+  if (!account) return null;
+
+  const profile = await profileRepository().findByAccountId(account.id);
+
+  return {
+    role: account.role,
+    name: profile?.name ?? null,
+    centreType: profile?.centreType ?? null,
+    status: profile?.status ?? null,
   };
 }
