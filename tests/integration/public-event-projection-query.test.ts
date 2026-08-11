@@ -99,6 +99,54 @@ describe.skipIf(!dbAvailable)("PrismaPublicEventProjectionQuery (4.8)", () => {
     );
   });
 
+  it("excludes events that already happened, for every caller (no filters supplied)", async () => {
+    const { profile: hospital } = await createHospitalProfile(client, {
+      name: "Hospital Del Tiempo",
+    });
+    const { profile: artist } = await createArtistProfile(client);
+
+    async function publishAt(key: string, daysFromNow: number) {
+      const slot = await createOpenSlot(client, hospital.id, { title: `Slot ${key}` });
+      // `createSlot` refuses a past `scheduledAt` by design, so the slot is
+      // built in the future and then moved — the point here is the QUERY's
+      // floor, not the domain's creation rule.
+      await client.slot.update({
+        where: { id: slot.id },
+        data: { scheduledAt: new Date(Date.now() + daysFromNow * 86_400_000) },
+      });
+      const proposal = acceptProposal(
+        await createSubmittedProposal(client, slot.id, artist.id),
+      );
+      await new PrismaProposalRepository(client).save(proposal);
+      await new PrismaEventRepository(client).save(
+        publishEvent(
+          createEvent({
+            id: `event-${key}`,
+            slotId: slot.id,
+            proposalId: proposal.id,
+            title: `Event ${key}`,
+          }),
+        ),
+      );
+    }
+
+    await publishAt("past", -2);
+    await publishAt("future", 5);
+
+    const query = new PrismaPublicEventProjectionQuery(client);
+
+    // No filters at all — this is what `GET /api/events` does.
+    const all = await query.listPublished();
+    expect(all.map((e) => e.title)).toEqual(["Event future"]);
+
+    // A caller-supplied `from` may narrow the window, never widen it back
+    // into the past.
+    const widened = await query.listPublished({
+      from: new Date(Date.now() - 30 * 86_400_000),
+    });
+    expect(widened.map((e) => e.title)).toEqual(["Event future"]);
+  });
+
   it("excludes Events that are not published", async () => {
     const { profile: hospital } = await createHospitalProfile(client);
     const { profile: artist } = await createArtistProfile(client);
