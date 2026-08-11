@@ -59,6 +59,15 @@ const HOSPITAL_ALLOW_LISTED_FIELDS = [
   "longitude",
   "name",
   "postalCode",
+  // D10 SECOND REVISION (centre-event-counts): the count of published,
+  // still-upcoming events, admitted by hand after the same check as every
+  // other entry. It is an AGGREGATE — no title, no date, no Slot reference —
+  // and it discloses nothing new: since events name their hosting centre and
+  // /events offers a centre filter, a visitor could already obtain this exact
+  // number from /events?centre=<name>. What stays out is per-event detail
+  // (`nextEventAt`, activity titles), which WOULD tell a visitor when to find
+  // someone at that centre.
+  "upcomingEventCount",
 ].sort();
 
 /**
@@ -105,13 +114,18 @@ const EVENT_ALLOW_LISTED_FIELDS = [
   "title",
 ].sort();
 
-/** Slot/Proposal/Event-derived fields that must NEVER reach the hospital surface. */
+/**
+ * Per-event DETAIL that must never reach the hospital surface. The admitted
+ * aggregate `upcomingEventCount` is deliberately NOT on this list any more
+ * (D10 second revision) — everything here is either a date, a title, a raw
+ * relation, or a differently-named count an adapter might invent, and all of
+ * them must still be stripped by the field-by-field rebuild.
+ */
 const EVENT_DERIVED_FIELDS = [
   "eventCount",
   "nextActivity",
   "nextEventAt",
   "hasUpcomingEvents",
-  "upcomingEventCount",
   "slots",
 ];
 
@@ -145,6 +159,7 @@ function aHospital(
     latitude: 43.26,
     longitude: -2.94,
     centreType: "hospital",
+    upcomingEventCount: 0,
     ...overrides,
   };
 }
@@ -170,7 +185,7 @@ function anEvent(
 }
 
 describe("D10 non-correlation invariant — cross-surface, both directions", () => {
-  it("PublicHospitalProjection carries no Slot/Proposal/Event-derived field", async () => {
+  it("PublicHospitalProjection carries the upcoming-event COUNT and no other event-derived field — no date, title or relation", async () => {
     const deps = {
       publicHospitalDirectoryQuery: new FakePublicHospitalDirectoryQuery([aHospital()]),
     };
@@ -200,13 +215,16 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     }
   });
 
-  it("HOSTILE ADAPTER: a port that attaches an eventCount/nextActivity field to a hospital is stripped", async () => {
+  it("HOSTILE ADAPTER: the admitted count passes through, but an invented eventCount/nextActivity/hasUpcomingEvents is stripped", async () => {
     const hostileItem = {
       ...aHospital(),
+      // Legitimate since the D10 second revision — must survive the rebuild.
+      upcomingEventCount: 3,
+      // Not on the allow-list: a differently-named count, a schedule hint and
+      // a raw boolean. All three must be stripped, whatever they are called.
       eventCount: 3,
       nextActivity: "Tuesday 17:00",
       hasUpcomingEvents: true,
-      upcomingEventCount: 3,
     } as unknown as PublicHospitalProjection;
     const deps = {
       publicHospitalDirectoryQuery: new FakePublicHospitalDirectoryQuery([hostileItem]),
@@ -268,9 +286,13 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     }
   });
 
-  it("a hospital with published events looks identical in shape to one without (no event-derived field appears based on activity)", async () => {
-    const busy = aHospital({ name: "Hospital With Events" });
-    const quiet = aHospital({ name: "Hospital Without Events" });
+  it("a busy hospital differs from a quiet one ONLY by the count's value — activity never adds or removes a field", async () => {
+    // Post D10 second revision the count itself is public, so the two rows
+    // legitimately differ in VALUE. What must still hold is that activity
+    // never changes the SHAPE: a busy centre must not sprout a `nextEventAt`
+    // or an activity title that a quiet one lacks.
+    const busy = aHospital({ name: "Hospital With Events", upcomingEventCount: 4 });
+    const quiet = aHospital({ name: "Hospital Without Events", upcomingEventCount: 0 });
     const deps = {
       publicHospitalDirectoryQuery: new FakePublicHospitalDirectoryQuery([busy, quiet]),
     };
@@ -281,6 +303,11 @@ describe("D10 non-correlation invariant — cross-surface, both directions", () 
     const [first, second] = result;
     expect(Object.keys(first).sort()).toEqual(Object.keys(second).sort());
     expect(Object.keys(first).sort()).toEqual(HOSPITAL_ALLOW_LISTED_FIELDS);
+    // The aggregate is carried through faithfully, including a bare zero —
+    // "no events" must stay distinguishable from "unknown", so the UI can
+    // decide not to link a card that would land on an empty filtered list.
+    expect(first.upcomingEventCount).toBe(4);
+    expect(second.upcomingEventCount).toBe(0);
   });
 });
 

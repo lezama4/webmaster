@@ -104,7 +104,12 @@
     "resultCount": { "all": "{count} zentro aurkituta", "partial": "{count} zentro aurkituta · {mappable} mapan" },
     "map": { "ariaLabel": "Parte hartzen duten zentroen mapa adierazgarria", "caption": "Mapa adierazgarria, ez eskalan: puntu bakoitzaren kokapena hurbildua da." },
     "empty": { "title": "Ez dugu bilaketa horrekin bat datorren zentrorik aurkitu", "description": "Saiatu beste izen, herri edo posta kode batekin." },
-    "noLocation": "Kokapena ez da adierazi"
+    "noLocation": "Kokapena ez da adierazi",
+    "events": {
+      "count": "{count, plural, one {# ekitaldi eskuragarri} other {# ekitaldi eskuragarri}}",
+      "none": "Ez dago ekitaldirik programatuta",
+      "linkLabel": "Ikusi {name} zentroko ekitaldiak"
+    }
   },
   "About": {
     "nav": "Gutaz",

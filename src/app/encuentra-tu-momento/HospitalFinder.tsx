@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
@@ -190,11 +191,30 @@ export function HospitalFinder({
                     else cardRefs.current.delete(key);
                   }}
                   aria-current={selectedKey === key ? "true" : undefined}
-                  className={`flex flex-col gap-1 rounded-[20px] border p-5 shadow-sm transition-colors motion-reduce:transition-none ${
+                  className={`relative flex flex-col gap-1 rounded-[20px] border p-5 shadow-sm transition-colors motion-reduce:transition-none ${
                     selectedKey === key ? "border-primary bg-surface" : "border-border bg-surface"
                   }`}
                 >
-                  <h2 className="text-lg font-semibold tracking-tight">{hospital.name}</h2>
+                  {/* A centre with upcoming events links to its own filtered
+                      events list. The link wraps the heading and stretches over
+                      the whole card via `after:inset-0`, so the card is
+                      clickable while remaining ONE properly-labelled link for
+                      keyboard and screen-reader users. A centre with zero
+                      events is deliberately NOT a link: it would land on an
+                      empty filtered list. */}
+                  <h2 className="text-lg font-semibold tracking-tight">
+                    {hospital.upcomingEventCount > 0 ? (
+                      <Link
+                        href={`/events?centre=${encodeURIComponent(hospital.name)}`}
+                        aria-label={t("events.linkLabel", { name: hospital.name })}
+                        className="transition-colors after:absolute after:inset-0 after:rounded-[20px] hover:text-primary"
+                      >
+                        {hospital.name}
+                      </Link>
+                    ) : (
+                      hospital.name
+                    )}
+                  </h2>
                   {/* centreType tag (ADR D19/D20): the coarse public
                       category, visibly displayed per result, not merely
                       present in the underlying data. Reads the shared
@@ -205,6 +225,16 @@ export function HospitalFinder({
                   </span>
                   <p className="text-sm text-muted">
                     {[hospital.city, hospital.postalCode].filter(Boolean).join(" · ") || t("noLocation")}
+                  </p>
+                  <p className="pt-1 text-sm">
+                    {hospital.upcomingEventCount > 0 ? (
+                      <span className="font-medium text-primary">
+                        {t("events.count", { count: hospital.upcomingEventCount })}
+                        <span aria-hidden="true"> →</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted">{t("events.none")}</span>
+                    )}
                   </p>
                 </li>
               );

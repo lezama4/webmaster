@@ -43,5 +43,6 @@ function toPublicHospitalProjection(
     latitude: record.latitude,
     longitude: record.longitude,
     centreType: record.centreType,
+    upcomingEventCount: record.upcomingEventCount,
   };
 }

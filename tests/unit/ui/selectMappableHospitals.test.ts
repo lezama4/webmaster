@@ -20,6 +20,7 @@ function hospital(overrides: Partial<PublicHospitalProjection>): PublicHospitalP
     latitude: 43.26,
     longitude: -2.94,
     centreType: "hospital",
+    upcomingEventCount: 0,
     ...overrides,
   };
 }

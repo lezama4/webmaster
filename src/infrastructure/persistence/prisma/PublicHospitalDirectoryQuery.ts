@@ -14,9 +14,14 @@ import { toDomainCentreType } from "./mappers";
  * extra property through this boundary at runtime (defense-in-depth beyond
  * the TypeScript type, mirroring the Events adapter's pr2a-B1 pattern).
  *
- * Non-correlation (ADR D10): this adapter MUST NOT join Slot/Proposal/Event
- * — it reads only `Profile` columns. See
- * `tests/unit/application/nonCorrelation.test.ts`.
+ * D10 second revision (`centre-event-counts`): this adapter now reads ONE
+ * Slot/Event-derived value — `_count.slots`, the number of published,
+ * still-upcoming events the centre hosts. It is an aggregate: no title, no
+ * date, no Slot `location`, no Proposal, no id ever crosses this boundary,
+ * and the count is computed IN Postgres so no event row is materialised in
+ * the app at all. The same number was already obtainable from
+ * `/events?centre=<name>`, so this exposes nothing new — see the DTO's doc
+ * comment and `tests/unit/application/nonCorrelation.test.ts`.
  */
 export class PrismaPublicHospitalDirectoryQuery
   implements PublicHospitalDirectoryQuery
@@ -24,6 +29,9 @@ export class PrismaPublicHospitalDirectoryQuery
   constructor(private readonly client: PrismaClientOrTx) {}
 
   async listActive(): Promise<readonly PublicHospitalProjection[]> {
+    // "Upcoming" is evaluated against a single timestamp taken once, so every
+    // row in one response is counted against the same instant.
+    const now = new Date();
     const rows = await this.client.profile.findMany({
       // Security predicate (D9) — the SOLE reason a PENDING/REJECTED/
       // DEACTIVATED profile, or an Artist profile, cannot reach the public
@@ -36,6 +44,19 @@ export class PrismaPublicHospitalDirectoryQuery
         latitude: true,
         longitude: true,
         centreType: true,
+        // Slot<->Event is 1:1, so counting this centre's future slots that
+        // carry a PUBLISHED event counts exactly its upcoming public events.
+        // Aggregated by Postgres — the event rows themselves never load.
+        _count: {
+          select: {
+            slots: {
+              where: {
+                scheduledAt: { gte: now },
+                event: { is: { status: "PUBLISHED" } },
+              },
+            },
+          },
+        },
       },
       // Ordering derived ONLY from allow-listed fields (D9) — never
       // `createdAt`/`id`, which would weakly encode registration/seed
@@ -62,6 +83,7 @@ export class PrismaPublicHospitalDirectoryQuery
         latitude: row.latitude,
         longitude: row.longitude,
         centreType: toDomainCentreType(row.centreType),
+        upcomingEventCount: row._count.slots,
       };
     });
   }

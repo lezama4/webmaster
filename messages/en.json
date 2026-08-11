@@ -114,7 +114,12 @@
     "resultCount": { "all": "{count} centres found", "partial": "{count} centres found · {mappable} shown on the map" },
     "map": { "ariaLabel": "Indicative map of participating centres", "caption": "Indicative map, not to scale — each point's position is approximate." },
     "empty": { "title": "No centres match that search", "description": "Try a different name, city, or postal code." },
-    "noLocation": "Location not provided"
+    "noLocation": "Location not provided",
+    "events": {
+      "count": "{count, plural, one {# event available} other {# events available}}",
+      "none": "No events scheduled",
+      "linkLabel": "See the events at {name}"
+    }
   },
   "About": {
     "nav": "About us",

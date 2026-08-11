@@ -33,6 +33,24 @@
 >     nonce-based CSP, Dependabot and a CI dependency-audit job — closing the
 >     "no headers / no CSP / no dependency scanning" gap called out in §2 and
 >     §5. Verified against a production build; CI (incl. e2e under CSP) green.
+>   - **`centre-event-counts` (D10 SECOND revision)** completes the previous
+>     one: each centre card in the public directory shows an **aggregate count**
+>     of its published, still-upcoming events and links to `/events?centre=…`,
+>     its own filtered list. This retires D10's remaining direction — after
+>     `events-show-centre` it protected nothing, since the same number was
+>     already obtainable in two clicks from the events centre filter, so the
+>     two public surfaces were merely inconsistent with each other. The privacy
+>     line is restated on both surfaces: **the institution and its activity
+>     level are public; the individual and the exact place are not** — ward/room
+>     `location`, street address, event titles and dates on the directory
+>     (`nextEventAt` stays a named forbidden key), proposals, emails and every
+>     id remain forbidden. Recorded residual: the directory lists all active
+>     centres, so a **zero** count now reveals a centre has no activity.
+>     Threat model updated (assets table, `centre-event-counts` scope note,
+>     T-22 facet (b) re-assessment); guards rewritten in
+>     `nonCorrelation.test.ts`, `listPublicHospitals.test.ts`,
+>     `e2e/non-correlation.spec.ts`, `e2e/hospital-directory.spec.ts` and the
+>     Postgres integration suite. No schema change, no migration.
 >   - **`feat/events-show-centre` (D10 revision)** deliberately relaxes the
 >     event→centre direction of the D10 non-correlation invariant: a public
 >     event now names its **hosting centre (public name + city only)** so a
