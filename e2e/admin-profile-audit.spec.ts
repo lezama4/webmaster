@@ -23,7 +23,12 @@ import { SEED_USERS, loginAsNewSession, registerViaUi, uniqueSuffix } from "./su
 // status).
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
+// `upcomingEventCount` joined the list in the D10 second revision
+// (centre-event-counts) — an aggregate of the centre's published, upcoming
+// events. The audit fields this suite guards (reviewBasis, adminAccountId,
+// reviewedAt…) stay forbidden, and the exact-key-set check below still fails
+// on ANY other addition.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode", "upcomingEventCount"];
 const FORBIDDEN_AUDIT_SUBSTRINGS = ["reviewBasis", "adminAccountId", "reviewedBy", "reviewedAt", "decision"];
 
 /**

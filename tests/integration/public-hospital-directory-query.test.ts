@@ -122,12 +122,15 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
   }
 
   it("upcomingEventCount counts ONLY published, still-upcoming events of that centre (D10 second revision)", async () => {
+    // Names deliberately share no substring with the fixture event title
+    // below, so the "no event detail leaks" assertion cannot pass or fail by
+    // accident on the centre's own name.
     const { profileId: centreId } = await seedHospital({
-      name: "Hospital Con Eventos",
+      name: "Hospital Alfa",
       status: "active",
     });
     const { profileId: otherCentreId } = await seedHospital({
-      name: "Hospital Sin Eventos",
+      name: "Hospital Beta",
       status: "active",
     });
     const artistId = await seedArtist("Clara la Artista");
@@ -145,7 +148,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
         data: {
           id: nextId("slot"),
           hospitalProfileId: input.centreId,
-          title: "Actividad",
+          title: "TituloDeSlotPrivado",
           description: "Descripción",
           scheduledAt,
           durationMinutes: 45,
@@ -168,7 +171,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
           id: nextId("event"),
           slotId: slot.id,
           proposalId: proposal.id,
-          title: "Evento",
+          title: "TituloDeEventoPrivado",
           status: input.status,
         },
       });
@@ -185,13 +188,14 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     const results = await new PrismaPublicHospitalDirectoryQuery(client).listActive();
     const byName = new Map(results.map((r) => [r.name, r]));
 
-    expect(byName.get("Hospital Con Eventos")!.upcomingEventCount).toBe(2);
-    expect(byName.get("Hospital Sin Eventos")!.upcomingEventCount).toBe(1);
+    expect(byName.get("Hospital Alfa")!.upcomingEventCount).toBe(2);
+    expect(byName.get("Hospital Beta")!.upcomingEventCount).toBe(1);
 
     // The aggregate is the ONLY event-derived value that crosses: no title,
     // no date, no Slot ward/room location may appear in the raw projection.
     const raw = JSON.stringify(results);
-    expect(raw).not.toContain("Evento");
+    expect(raw).not.toContain("TituloDeEventoPrivado");
+    expect(raw).not.toContain("TituloDeSlotPrivado");
     expect(raw).not.toContain("Planta 2");
     expect(raw).not.toContain("Propuesta");
   });
