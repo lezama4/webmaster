@@ -14,6 +14,14 @@ The public, unauthenticated Events projection MUST NOT gain any hospital-identif
 
 #### Scenario: Events at different hospitals are not distinguishable by hospital
 
+> **SUPERSEDED by the `events-show-centre` revision of ADR D10.** A public event
+> now deliberately names its hosting centre (public name + city) so a family can
+> find events at their relative's centre; the ward/room `Slot.location`, the
+> postal code, the street address and every id remain forbidden. Kept as the
+> record of the original specification — the current contract is in
+> `docs/security-threat-model.md` and in the live guards
+> (`tests/unit/application/nonCorrelation.test.ts`, `e2e/non-correlation.spec.ts`).
+
 - GIVEN two published Events originating from Slots at two different active Hospitals
 - WHEN an anonymous visitor fetches both through the public Events list
 - THEN no field in either response lets the visitor determine which hospital hosted which Event, nor infer they differ by hospital at all
