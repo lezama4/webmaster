@@ -94,14 +94,17 @@ function SiteHeader({
             primary CTA it used to be; registering is for the small minority
             who onboard, so it reads as a quiet link, not the headline. */}
         <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
-          <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
-            {eventsLabel}
-          </Link>
+          {/* "Find your centre" leads the nav and is the one emphasised entry:
+              it is the first thing a family needs to do, so it reads as the
+              primary action a visitor lands on. Everything else stays quiet. */}
           <Link
             href="/encuentra-tu-momento"
-            className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground"
+            className="rounded-full bg-primary/10 px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/15"
           >
             {finderLabel}
+          </Link>
+          <Link href="/events" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
+            {eventsLabel}
           </Link>
           <Link href="/ayuda" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
             {helpLabel}
