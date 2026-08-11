@@ -24,9 +24,9 @@ nota que crees en él.
 ### 0:35 · De dónde nace
 **[EN PANTALLA: Slide 2 — "el tiempo pesa"]**
 
-> "Empezó con una idea muy simple. Pensé en alguien ingresado en un hospital, o
-> en una residencia, o en una familia acompañando durante horas. Todos comparten
-> algo: un tiempo que se hace eterno, que pesa. Y pensé: ese tiempo no tiene por
+> "Empezó con una idea muy simple. Con un familiar mio ingresado en un hospital 
+y el paso de las horas. Todos compartimos algo: un tiempo que se hace eterno, que pesa.
+Y pensé: ese tiempo no tiene por
 > qué ser tiempo perdido. Podría ser tiempo con vida — una actividad, música, un
 > taller. No quería hacer un proyecto de juguete para aprobar. Quería construir
 > algo que pudiera servir de verdad a gente real."
@@ -35,7 +35,7 @@ nota que crees en él.
 **[EN PANTALLA: Slide 5 — "Todo el tiempo cuenta" (la solución)]**
 
 > "De ahí sale Todo el tiempo cuenta. Es una plataforma que conecta a los centros
-> de cuidado — hospitales, residencias, centros de día — con artistas dispuestos
+> de cuidado — hospitales, residencias, centros de día — con artistas o fundaciones dispuestos
 > a aportar, para llevar actividades culturales a quienes más las necesitan. En
 > una frase: convertir el tiempo de espera en tiempo de vida."
 
@@ -59,8 +59,10 @@ nota que crees en él.
 > producto, no de código: prioriza el criterio humano.
 >
 > La segunda: la privacidad y la dignidad como lo primero. Es un entorno de
-> salud, así que desde el minuto uno diseñé todo para que nunca se expusiera nada
-> delicado: ni datos clínicos, ni dónde está alguien, ni su vida privada.
+> salud, así que la línea la tuve clara desde el principio: la web dice en qué
+> centro es el evento —un familiar lo necesita para poder ir—, pero nunca lo
+> delicado de una persona: ni sus datos clínicos, ni la sala exacta, ni su vida
+> privada.
 >
 > Y la tercera, quizá la que más me costó: la disciplina de alcance. Preferí
 > hacer una cosa entera, bien hecha y funcionando, antes que cinco cosas a
