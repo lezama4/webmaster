@@ -125,6 +125,25 @@ A hospital with a missing or null `latitude` or `longitude` MUST still appear in
 
 ### Requirement: Hospital Directory Contains No Event Data
 
+> **SUPERSEDED — this requirement no longer describes the shipped system.**
+> ADR D10 was deliberately revised twice after this change was written:
+> `events-show-centre` (a public event names its hosting centre) and then
+> `centre-event-counts` (a centre card shows an aggregate count of its
+> published, still-upcoming events and links to its filtered events list).
+> The second revision retired this requirement on purpose: once events named
+> their centre and the events listing offered a centre filter, the same number
+> was already obtainable in two clicks, so withholding it protected nothing and
+> only made the two public surfaces contradict each other.
+>
+> The text below is kept as the record of what was specified at the time — it
+> is NOT the current contract. The current position, the restated privacy line
+> (institution and activity level public; individual and exact place private)
+> and the residual risks are in
+> [`docs/security-threat-model.md`](../../../../../docs/security-threat-model.md),
+> scope note "`centre-event-counts`". The living guards are
+> `tests/unit/application/nonCorrelation.test.ts`,
+> `e2e/non-correlation.spec.ts` and `e2e/hospital-directory.spec.ts`.
+
 The public hospital directory response MUST NOT contain any Slot-, Proposal-, or Event-derived field for any hospital — no event count, no "next activity", no "has upcoming events" boolean, no shared identifier that would let it be joined to the public Events surface. This is the hospital-to-event half of the non-correlation invariant (ADR D10); the event-to-hospital half is specified in `public-event-browsing`.
 
 #### Scenario: Hospital with published events looks identical in shape to one without
