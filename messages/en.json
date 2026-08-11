@@ -1,6 +1,6 @@
 {
   "Layout": {
-    "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register" },
+    "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register", "logout": "Log out", "loggingOut": "Logging out…" }, "account": { "centre": "Centre", "artist": "Artist", "admin": "Administration", "patient": "My account", "noName": "My account", "pending": "Pending review", "inactive": "No permissions" },
     "footer": { "description": "A non-profit initiative bringing live performances to the people in care centres, during long stays or days away from home. Free for centres, artists, and families.", "help": "Help" }
   },
   "LanguageSelector": { "label": "Language selector" },

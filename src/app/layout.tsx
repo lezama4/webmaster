@@ -4,8 +4,10 @@ import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ShareRow } from "@ui/share/ShareRow";
+import { getCurrentSessionIdentity } from "@infrastructure/http/sessionCookie";
 import "./globals.css";
 import { LanguageSelector } from "./LanguageSelector";
+import { LogoutButton } from "./LogoutButton";
 import { absoluteUrl, buildPageMetadata, metadataBase, SITE_NAME } from "./metadata";
 
 const geistSans = Geist({
@@ -57,6 +59,28 @@ function BrandMark() {
   );
 }
 
+/**
+ * What the header shows about the signed-in visitor. Prepared by the layout
+ * (a Server Component) so this stays presentational: `name` and `typeLabel`
+ * are already translated, `href` points at that role's own area, and
+ * `statusLabel` is set ONLY when the profile cannot yet act.
+ */
+type HeaderIdentity = {
+  readonly name: string;
+  readonly typeLabel: string;
+  readonly href: string | null;
+  readonly statusLabel: string | null;
+};
+
+function UserMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}
+
 function SiteHeader({
   eventsLabel,
   finderLabel,
@@ -64,7 +88,20 @@ function SiteHeader({
   helpLabel,
   loginLabel,
   registerLabel,
-}: Record<"eventsLabel" | "finderLabel" | "aboutLabel" | "helpLabel" | "loginLabel" | "registerLabel", string>) {
+  logoutLabel,
+  loggingOutLabel,
+  identity,
+}: Record<
+  | "eventsLabel"
+  | "finderLabel"
+  | "aboutLabel"
+  | "helpLabel"
+  | "loginLabel"
+  | "registerLabel"
+  | "logoutLabel"
+  | "loggingOutLabel",
+  string
+> & { identity: HeaderIdentity | null }) {
   // Pinned only once the nav fits on one line. Wrapped across two or three
   // rows the header stands about 120px tall, and permanently reserving that
   // much of a phone screen costs more than a pinned header is worth — so on
@@ -111,12 +148,52 @@ function SiteHeader({
             {helpLabel}
           </Link>
           <span className="mx-1 hidden h-5 w-px bg-border sm:inline-block" aria-hidden="true" />
-          <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
-            {loginLabel}
-          </Link>
-          <Link href="/register" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
-            {registerLabel}
-          </Link>
+          {/* Signed in: say WHO, in what kind of profile, and offer the way
+              out. Before this the header showed "Log in" to an already
+              signed-in visitor and offered no way to sign out at all. The
+              name links to that role's own area, which is where someone who
+              just identified themselves is usually trying to go. */}
+          {identity ? (
+            <>
+              {identity.href ? (
+                <Link
+                  href={identity.href}
+                  className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:text-primary"
+                >
+                  <UserMark />
+                  <span className="font-medium text-foreground">{identity.name}</span>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <span className="text-muted">{identity.typeLabel}</span>
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2 px-3 py-2">
+                  <UserMark />
+                  <span className="font-medium text-foreground">{identity.name}</span>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <span className="text-muted">{identity.typeLabel}</span>
+                </span>
+              )}
+              {identity.statusLabel ? (
+                <span className="rounded-full bg-accent/15 px-2 py-1 text-xs font-medium text-accent">
+                  {identity.statusLabel}
+                </span>
+              ) : null}
+              <LogoutButton
+                label={logoutLabel}
+                pendingLabel={loggingOutLabel}
+                className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground disabled:opacity-60"
+              />
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
+                {loginLabel}
+              </Link>
+              <Link href="/register" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-foreground">
+                {registerLabel}
+              </Link>
+            </>
+          )}
           <LanguageSelector />
         </nav>
       </div>
@@ -157,15 +234,54 @@ function SiteFooter({
   );
 }
 
+/** Where each role's own workspace lives; `patient` accounts have none. */
+const AREA_BY_ROLE: Record<string, string | null> = {
+  centre: "/hospital/slots",
+  artist: "/artist/slots",
+  admin: "/admin/profiles",
+  patient: null,
+};
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [t, tFinder, tAbout, tShare, locale, messages] = await Promise.all([
+  const [t, tFinder, tAbout, tShare, tCentreType, locale, messages, session] = await Promise.all([
     getTranslations("Layout"),
     getTranslations("Finder"),
     getTranslations("About"),
     getTranslations("Share"),
+    getTranslations("CentreType"),
     getLocale(),
     getMessages(),
+    getCurrentSessionIdentity(),
   ]);
+
+  // A centre is identified by its OWN kind (Hospital, Residencia, Centro de
+  // día…), not by the generic "centre" role — that is the distinction the
+  // header exists to make visible.
+  function roleLabel(): string {
+    if (!session) return "";
+    if (session.role === "centre") {
+      return session.centreType ? tCentreType(session.centreType) : t("account.centre");
+    }
+    if (session.role === "artist") return t("account.artist");
+    if (session.role === "admin") return t("account.admin");
+    return t("account.patient");
+  }
+
+  const identity = session
+    ? {
+        name: session.name ?? t("account.noName"),
+        typeLabel: roleLabel(),
+        href: AREA_BY_ROLE[session.role] ?? null,
+        // Shown only when the profile cannot act yet, so the visitor learns it
+        // from the header instead of from a button that does nothing.
+        statusLabel:
+          session.status && session.status !== "active"
+            ? session.status === "pending"
+              ? t("account.pending")
+              : t("account.inactive")
+            : null,
+      }
+    : null;
 
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
@@ -178,6 +294,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             helpLabel={t("nav.help")}
             loginLabel={t("nav.login")}
             registerLabel={t("nav.register")}
+            logoutLabel={t("nav.logout")}
+            loggingOutLabel={t("nav.loggingOut")}
+            identity={identity}
           />
           <main className="flex-1">{children}</main>
           <SiteFooter
