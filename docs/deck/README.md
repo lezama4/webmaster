@@ -9,8 +9,13 @@ Two decks, two audiences. Do not mix them up.
 
 Per the master's brief, the **technical explanation lives in the repository**
 (the defence deck plus the docs), and the **Slides and video are the
-non-technical pitch**. The video narration that matches the pitch deck is
-[`../pitch-video-script.md`](../pitch-video-script.md).
+non-technical pitch**. Two video narrations (pick the audience), both mapped to
+the pitch deck slides:
+
+- [`../pitch-video-script.md`](../pitch-video-script.md) — an **offer to a care
+  centre**: warm, addressed to a hospital/centre team, ~8–10 min.
+- [`../video-script-tutor.md`](../video-script-tutor.md) — a **project
+  presentation to the tutor** (Brais Moure): first-person, non-technical, ~6–8 min.
 
 ## Regenerate
 
