@@ -35,23 +35,30 @@ export class PrismaPublicEventProjectionQuery
     // includes the centre's public `name` — so filtering exposes nothing the
     // listing does not already show, and never touches the ward/room
     // `location`, postal code or address.
-    const scheduledAt =
-      filters?.from || filters?.to
-        ? {
-            ...(filters.from ? { gte: filters.from } : {}),
-            ...(filters.to ? { lte: filters.to } : {}),
-          }
-        : undefined;
+    // The public listing is "upcoming events": an event that already happened
+    // is never shown. This floor lives HERE, not in the page, so no caller can
+    // forget it — `GET /api/events` passes no filters at all and would
+    // otherwise have served past events while the page hid them. A
+    // caller-supplied `from` may only narrow the window further; it can never
+    // widen it back into the past.
+    const now = new Date();
+    const from = filters?.from && filters.from > now ? filters.from : now;
+    const scheduledAt = {
+      gte: from,
+      ...(filters?.to ? { lte: filters.to } : {}),
+    };
     const slotFilter = {
       ...(filters?.audience ? { audience: audienceToPrisma(filters.audience) } : {}),
-      ...(scheduledAt ? { scheduledAt } : {}),
+      scheduledAt,
       ...(filters?.centre ? { hospitalProfile: { name: filters.centre } } : {}),
     };
 
     const rows = await this.client.event.findMany({
       where: {
         status: "PUBLISHED",
-        ...(Object.keys(slotFilter).length > 0 ? { slot: slotFilter } : {}),
+        // Always present: `slotFilter` now always carries at least the
+        // upcoming-only floor above.
+        slot: slotFilter,
       },
       select: {
         id: true,

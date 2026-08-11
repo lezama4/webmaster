@@ -54,6 +54,12 @@ function parseDatePreset(value: string | undefined): DatePreset {
   return value === "week" || value === "month" ? value : "all";
 }
 
+/**
+ * "All dates" means all UPCOMING dates: past events are excluded by the query
+ * adapter itself for every caller (see `PrismaPublicEventProjectionQuery`), so
+ * this returns no bound and the floor still applies. The presets only narrow
+ * the window further.
+ */
 function dateRange(preset: DatePreset, now: Date): { from?: Date; to?: Date } {
   if (preset === "all") return {};
   const to = new Date(now);
