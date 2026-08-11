@@ -294,6 +294,74 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(JSON.stringify(projection)).not.toContain('"type"');
   });
 
+  it("lists centres WITH upcoming events first, keeping the city/name order inside each group", async () => {
+    // Cities chosen so the neutral D9 order (city asc) would put the empty
+    // centres FIRST — the assertion below only holds if the events-first
+    // grouping actually overrides it, and the stable sort still preserves
+    // city/name ordering within each group.
+    const { profileId: madridId } = await seedHospital({
+      name: "Hospital Madrid",
+      status: "active",
+      city: "Madrid",
+    });
+    const { profileId: zaragozaId } = await seedHospital({
+      name: "Hospital Zaragoza",
+      status: "active",
+      city: "Zaragoza",
+    });
+    await seedHospital({ name: "Hospital Alicante", status: "active", city: "Alicante" });
+    await seedHospital({ name: "Hospital Burgos", status: "active", city: "Burgos" });
+    const artistId = await seedArtist("Artista Ordenacion");
+
+    async function publishUpcoming(centreId: string, key: string) {
+      const slot = await client.slot.create({
+        data: {
+          id: nextId("slot"),
+          hospitalProfileId: centreId,
+          title: "Actividad",
+          description: "Descripción",
+          scheduledAt: new Date(Date.now() + 7 * 86_400_000),
+          durationMinutes: 45,
+          location: "Sala",
+          status: "FILLED",
+          audience: "ALL_AGES",
+        },
+      });
+      const proposal = await client.proposal.create({
+        data: {
+          id: nextId("proposal"),
+          slotId: slot.id,
+          artistProfileId: artistId,
+          message: "Propuesta",
+          status: "ACCEPTED",
+        },
+      });
+      await client.event.create({
+        data: {
+          id: nextId(`event-${key}`),
+          slotId: slot.id,
+          proposalId: proposal.id,
+          title: "Evento",
+          status: "PUBLISHED",
+        },
+      });
+    }
+
+    await publishUpcoming(zaragozaId, "zgz");
+    await publishUpcoming(madridId, "mad");
+
+    const results = await new PrismaPublicHospitalDirectoryQuery(client).listActive();
+
+    expect(results.map((r) => r.name)).toEqual([
+      // With events — Madrid before Zaragoza (city asc within the group).
+      "Hospital Madrid",
+      "Hospital Zaragoza",
+      // Without — Alicante before Burgos, same neutral order.
+      "Hospital Alicante",
+      "Hospital Burgos",
+    ]);
+  });
+
   it("orders active hospitals by city asc (nulls last), then name asc — real Postgres runtime check (resolves Phase 0.1)", async () => {
     await seedHospital({ name: "Hospital Zaragoza", status: "active", city: "Zaragoza" });
     await seedHospital({ name: "Hospital Alicante", status: "active", city: "Alicante" });
