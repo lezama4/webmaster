@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { useTranslations } from "next-intl";
 
 import type { PublicHospitalProjection } from "@application/dto/PublicHospitalProjection";
@@ -37,6 +37,83 @@ const CENTRE_TYPE_FILTER_OPTIONS = [
   "palliative_unit",
 ] as const;
 type CentreTypeFilter = (typeof CENTRE_TYPE_FILTER_OPTIONS)[number];
+
+/**
+ * The card's "N events available →" line, which becomes a loading message
+ * while the click is in flight. Navigating to `/events` is a server round
+ * trip, so without this the card looks inert for a moment and invites a
+ * second click. `useLinkStatus` reports the pending state of the nearest
+ * ancestor `Link`, so this component MUST stay inside one.
+ */
+function UpcomingEventsLabel({ count }: { count: number }) {
+  const t = useTranslations("Finder");
+  const { pending } = useLinkStatus();
+
+  return (
+    <p className="pt-1 text-sm font-medium text-primary" aria-live="polite">
+      {pending ? (
+        <>
+          <span
+            className="mr-1.5 inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px] motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+          {t("events.loading")}
+        </>
+      ) : (
+        <>
+          {t("events.count", { count })}
+          <span aria-hidden="true"> →</span>
+        </>
+      )}
+    </p>
+  );
+}
+
+/**
+ * One directory card's contents. A centre WITH upcoming events wraps them in a
+ * link to its own filtered events list, stretched over the whole card via
+ * `after:inset-0` — so the card is clickable while staying ONE properly
+ * labelled link for keyboard and screen-reader users. A centre with zero
+ * events is deliberately not a link: it would land on an empty filtered list.
+ */
+function CentreCardBody({ hospital }: { hospital: PublicHospitalProjection }) {
+  const t = useTranslations("Finder");
+  const tCentreType = useTranslations("CentreType");
+
+  const details = (
+    <>
+      <h2 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
+        {hospital.name}
+      </h2>
+      {/* centreType tag (ADR D19/D20): the coarse public category, visibly
+          displayed per result, not merely present in the underlying data. */}
+      <span className={`${audienceBadgeClasses} w-fit`}>{tCentreType(hospital.centreType)}</span>
+      <p className="text-sm text-muted">
+        {[hospital.city, hospital.postalCode].filter(Boolean).join(" · ") || t("noLocation")}
+      </p>
+    </>
+  );
+
+  if (hospital.upcomingEventCount === 0) {
+    return (
+      <>
+        {details}
+        <p className="pt-1 text-sm text-muted">{t("events.none")}</p>
+      </>
+    );
+  }
+
+  return (
+    <Link
+      href={`/events?centre=${encodeURIComponent(hospital.name)}`}
+      aria-label={t("events.linkLabel", { name: hospital.name })}
+      className="group flex flex-col gap-1 after:absolute after:inset-0 after:rounded-[20px]"
+    >
+      {details}
+      <UpcomingEventsLabel count={hospital.upcomingEventCount} />
+    </Link>
+  );
+}
 
 /**
  * Owns search state, filtering, and pin<->card selection for
@@ -195,47 +272,7 @@ export function HospitalFinder({
                     selectedKey === key ? "border-primary bg-surface" : "border-border bg-surface"
                   }`}
                 >
-                  {/* A centre with upcoming events links to its own filtered
-                      events list. The link wraps the heading and stretches over
-                      the whole card via `after:inset-0`, so the card is
-                      clickable while remaining ONE properly-labelled link for
-                      keyboard and screen-reader users. A centre with zero
-                      events is deliberately NOT a link: it would land on an
-                      empty filtered list. */}
-                  <h2 className="text-lg font-semibold tracking-tight">
-                    {hospital.upcomingEventCount > 0 ? (
-                      <Link
-                        href={`/events?centre=${encodeURIComponent(hospital.name)}`}
-                        aria-label={t("events.linkLabel", { name: hospital.name })}
-                        className="transition-colors after:absolute after:inset-0 after:rounded-[20px] hover:text-primary"
-                      >
-                        {hospital.name}
-                      </Link>
-                    ) : (
-                      hospital.name
-                    )}
-                  </h2>
-                  {/* centreType tag (ADR D19/D20): the coarse public
-                      category, visibly displayed per result, not merely
-                      present in the underlying data. Reads the shared
-                      `CentreType.*` labels (see the component-level doc
-                      comment on `CENTRE_TYPE_FILTER_OPTIONS`). */}
-                  <span className={`${audienceBadgeClasses} w-fit`}>
-                    {tCentreType(hospital.centreType)}
-                  </span>
-                  <p className="text-sm text-muted">
-                    {[hospital.city, hospital.postalCode].filter(Boolean).join(" · ") || t("noLocation")}
-                  </p>
-                  <p className="pt-1 text-sm">
-                    {hospital.upcomingEventCount > 0 ? (
-                      <span className="font-medium text-primary">
-                        {t("events.count", { count: hospital.upcomingEventCount })}
-                        <span aria-hidden="true"> →</span>
-                      </span>
-                    ) : (
-                      <span className="text-muted">{t("events.none")}</span>
-                    )}
-                  </p>
+                  <CentreCardBody hospital={hospital} />
                 </li>
               );
             })}

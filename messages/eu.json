@@ -108,6 +108,7 @@
     "events": {
       "count": "{count, plural, one {# ekitaldi eskuragarri} other {# ekitaldi eskuragarri}}",
       "none": "Ez dago ekitaldirik programatuta",
+      "loading": "Bere ekitaldiak kargatzen…",
       "linkLabel": "Ikusi {name} zentroko ekitaldiak"
     }
   },
