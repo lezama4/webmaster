@@ -1,5 +1,5 @@
 {
-  "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a las personas que están en centros de cuidado, durante estancias largas o días lejos de casa. Gratuita para centros, artistas y familias.", "help": "Ayuda" } },
+  "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse", "logout": "Cerrar sesión", "loggingOut": "Cerrando sesión…" }, "account": { "centre": "Centro", "artist": "Artista", "admin": "Administración", "patient": "Mi cuenta", "noName": "Mi cuenta", "pending": "Pendiente de revisión", "inactive": "Sin permisos" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a las personas que están en centros de cuidado, durante estancias largas o días lejos de casa. Gratuita para centros, artistas y familias.", "help": "Ayuda" } },
   "LanguageSelector": { "label": "Selector de idioma" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" },
   "Share": {

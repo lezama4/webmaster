@@ -1,5 +1,5 @@
 {
-  "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena" }, "footer": { "description": "Zaintza-zentroetan dauden pertsonei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena, egonaldi luzeetan edo etxetik kanpoko egunetan. Doakoa zentroentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
+  "Layout": { "nav": { "events": "Ekitaldiak", "help": "Laguntza", "login": "Hasi saioa", "register": "Eman izena", "logout": "Itxi saioa", "loggingOut": "Saioa ixten…" }, "account": { "centre": "Zentroa", "artist": "Artista", "admin": "Administrazioa", "patient": "Nire kontua", "noName": "Nire kontua", "pending": "Berrikuspenaren zain", "inactive": "Baimenik gabe" }, "footer": { "description": "Zaintza-zentroetan dauden pertsonei zuzeneko emanaldiak eskaintzen dizkien irabazi-asmorik gabeko ekimena, egonaldi luzeetan edo etxetik kanpoko egunetan. Doakoa zentroentzat, artistentzat eta familientzat.", "help": "Laguntza" } },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
   "CentreType": { "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" },
   "Share": {
