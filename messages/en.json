@@ -118,6 +118,7 @@
     "events": {
       "count": "{count, plural, one {# event available} other {# events available}}",
       "none": "No events scheduled",
+      "loading": "Loading its events…",
       "linkLabel": "See the events at {name}"
     }
   },

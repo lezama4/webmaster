@@ -88,6 +88,15 @@ UPDATE "profiles" SET "centreType" = 'HOSPITAL' WHERE "type" = 'CENTRE';
 
 **The security predicate barely changes — and that is the point.** `where: { type: "HOSPITAL", status: "ACTIVE" }` → `where: { type: "CENTRE", status: "ACTIVE" }`. It does **NOT** become a six-value `centreType IN (...)` list. Because all six kinds share the one `ProfileType.CENTRE`, admitting "all active centres, no artists, nothing pending/rejected/deactivated" is still a **single renamed literal on the same axis**. `centreType` is a *selected, displayed* attribute, never part of the security predicate. Widening the directory's audience from one kind to six therefore did **not** complicate the line the whole surface's safety depends on — orthogonal axes keep the security predicate as auditable as before ("must never acquire an unrelated condition" is easier to honour, not harder). The adapter adds `centreType: true` to the `select` and one field to the field-by-field rebuild.
 
+> **Historical — the premise below no longer holds.** The claim "the centre is
+> not on the event surface at all" was true when this change was written. ADR
+> D10 was later revised twice on purpose (`events-show-centre`, then
+> `centre-event-counts`), so the centre↔event link is now public in both
+> directions. The conclusion of the paragraph — that `centreType` added no NEW
+> join key at the time — still stands on its own terms; it simply no longer
+> describes today's surfaces. Current position:
+> [`docs/security-threat-model.md`](../../../docs/security-threat-model.md).
+
 **D10 (cross-surface non-correlation) is re-assessed and re-run, not merely edited.** The event surface (`PublicEventProjection`, D6) exposes **no location, no centre identity, no Slot `location`** — the centre is not on the event surface at all. Adding `centreType` to the directory creates **no new join key against events, because there is nothing on the event side to join to**. D10 is not weakened. D19's obligation is therefore twofold:
 - **Extend the exact-key-set allow-list deliberately.** The duplicated expected-key list in `tests/unit/application/listPublicHospitals.test.ts` and the `HOSPITAL_ALLOW_LISTED_FIELDS` set in `tests/unit/application/nonCorrelation.test.ts` gain `centreType` **by hand** (never derived) — so the addition is a visible, reviewed allow-list edit that names ADR D19, not a silent widening. A test asserts `centreType` is present AND that no Slot/Proposal/Event-derived field accompanies it.
 - **Re-run BOTH suites** (`nonCorrelation.test.ts`, `e2e/non-correlation.spec.ts`) unchanged in intent, so any adapter that accidentally joins `centreType` with a Slot/Event-derived field fails.

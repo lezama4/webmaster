@@ -108,6 +108,7 @@
     "events": {
       "count": "{count, plural, one {# evento disponible} other {# eventos disponibles}}",
       "none": "Sin eventos programados",
+      "loading": "Mostrando sus eventos…",
       "linkLabel": "Ver los eventos de {name}"
     }
   },

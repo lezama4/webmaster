@@ -33,7 +33,7 @@ The public directory response MUST continue to expose, per centre, exactly the k
 
 ### Requirement: Audit Data Is Structurally Absent From Both Public Surfaces, Not Merely Filtered Out
 
-`ProfileReview` rows (basis, admin id, timestamps) live on a table separate from `Profile` and are never joined into either public read path. `PublicEventProjection` (ADR D6) carries no centre identity at all, so there is nothing on the event side for audit data to attach to. This structural separation, not a runtime filter, is what makes leakage impossible.
+`ProfileReview` rows (basis, admin id, timestamps) live on a table separate from `Profile` and are never joined into either public read path. `PublicEventProjection` (ADR D6) carries no centre identity at all, so there is nothing on the event side for audit data to attach to. *(Historical premise: events name their hosting centre since the later `events-show-centre` revision. The requirement itself is unaffected — the audit trail lives on a table never joined into either public read path — see `docs/security-threat-model.md` for the current D10 position.)* This structural separation, not a runtime filter, is what makes leakage impossible.
 
 #### Scenario: A ProfileReview row cannot appear in the profiles-backed directory query
 
