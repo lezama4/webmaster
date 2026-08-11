@@ -104,7 +104,12 @@
     "resultCount": { "all": "{count} centros encontrados", "partial": "{count} centros encontrados · {mappable} en el mapa" },
     "map": { "ariaLabel": "Mapa indicativo de centros participantes", "caption": "Mapa indicativo, no a escala: la posición de cada punto es aproximada." },
     "empty": { "title": "No encontramos centros con esa búsqueda", "description": "Prueba con otro nombre, ciudad o código postal." },
-    "noLocation": "Ubicación no indicada"
+    "noLocation": "Ubicación no indicada",
+    "events": {
+      "count": "{count, plural, one {# evento disponible} other {# eventos disponibles}}",
+      "none": "Sin eventos programados",
+      "linkLabel": "Ver los eventos de {name}"
+    }
   },
   "About": {
     "nav": "Quiénes somos",

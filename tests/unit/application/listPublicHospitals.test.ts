@@ -11,6 +11,10 @@ const ALLOW_LISTED_FIELDS = [
   "longitude",
   "name",
   "postalCode",
+  // D10 second revision (centre-event-counts): an aggregate count of the
+  // centre's published, still-upcoming events. Per-event detail (dates,
+  // titles) stays forbidden — see tests/unit/application/nonCorrelation.test.ts.
+  "upcomingEventCount",
 ].sort();
 
 function aHospital(
@@ -23,6 +27,7 @@ function aHospital(
     latitude: 39.4699,
     longitude: -0.3763,
     centreType: "hospital",
+    upcomingEventCount: 0,
     ...overrides,
   };
 }

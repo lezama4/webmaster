@@ -140,6 +140,7 @@ describe("FakePublicHospitalDirectoryQuery contract (D9): listActive returns exa
         latitude: 39.4699,
         longitude: -0.3763,
         centreType: "hospital",
+        upcomingEventCount: 2,
       },
       {
         name: "Hospital Santa Clara",
@@ -148,6 +149,7 @@ describe("FakePublicHospitalDirectoryQuery contract (D9): listActive returns exa
         latitude: 37.3891,
         longitude: -5.9845,
         centreType: "hospital",
+        upcomingEventCount: 0,
       },
     ];
     const query = new FakePublicHospitalDirectoryQuery(items);

@@ -30,7 +30,10 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list; the
 // internal `type` (role) field stays forbidden — see ADR D19 and
 // `PublicHospitalProjection`'s doc comment.
-const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
+// `upcomingEventCount` joined the list in the D10 second revision
+// (centre-event-counts): an aggregate of the centre's published, still-
+// upcoming events. Per-event detail (dates, titles) stays forbidden.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode", "upcomingEventCount"];
 
 test.describe("GET /api/hospitals — allow-list boundary (D9/D14/D19)", () => {
   test("returns exactly the allow-listed keys, every ACTIVE centre, and never leaks addressLine/email/type/Esperanza", async () => {
