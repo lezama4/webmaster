@@ -23,11 +23,21 @@ import type { CentreType } from "@domain/profile/Profile";
  * different fields on different axes (D16/D19), and only one of them is
  * public.
  *
- * Non-correlation invariant (ADR D10): this projection MUST NOT carry any
- * Slot/Proposal/Event-derived field — no counts, no `nextEventAt`, no
- * `hasUpcomingEvents`, no activity titles. If you are here because a test
- * failed after you added a field, you are changing ADR D10. Read it before
- * editing this list — see `tests/unit/application/nonCorrelation.test.ts`.
+ * D10 SECOND REVISION (`centre-event-counts`) — the centre→event direction is
+ * now deliberately open, as the event→centre direction already was:
+ * `upcomingEventCount` is admitted, an AGGREGATE of how many published,
+ * still-upcoming events the centre hosts. This adds no information that was
+ * not already public: since the events surface names its hosting centre and
+ * offers a centre filter, any visitor could already obtain this exact number
+ * from `/events?centre=<name>`. Keeping the directory silent about it made the
+ * two surfaces incoherent without protecting anything.
+ *
+ * What stays forbidden here is unchanged and is where the privacy line sits:
+ * NO event titles, dates, `nextEventAt`, or any per-event detail — only the
+ * count — and never the Slot's ward/room `location`, a Proposal, an email, or
+ * any internal id. If you are here because a test failed after you added a
+ * field, you are changing ADR D10 again. Read it before editing this list —
+ * see `tests/unit/application/nonCorrelation.test.ts`.
  *
  * `Profile.city`, `postalCode`, `latitude`, `longitude` are ALL nullable in
  * the schema — a centre may register without them. The DTO mirrors that
@@ -42,6 +52,14 @@ export interface PublicHospitalProjection {
   readonly latitude: number | null;
   readonly longitude: number | null;
   readonly centreType: CentreType;
+  /**
+   * How many published events the centre still has ahead of it (D10 second
+   * revision). An aggregate only — never a title, a date or any per-event
+   * detail. `0` is a legitimate value and means the centre has registered but
+   * has nothing scheduled; the UI must not link such a card to a filtered
+   * events list, which would land on an empty result.
+   */
+  readonly upcomingEventCount: number;
 }
 
 /**
@@ -69,7 +87,12 @@ type ForbiddenPublicHospitalKey =
   | "slotId"
   | "proposalId"
   | "eventId"
-  | "upcomingEventCount"
+  // `upcomingEventCount` was on this list until the D10 second revision
+  // admitted it as an aggregate (see the interface doc above). `nextEventAt`
+  // stays forbidden: a DATE is per-event detail, not an aggregate, and would
+  // tell a visitor when to find someone at that centre. `hasUpcomingEvents`
+  // stays forbidden as redundant — the count already answers it, and two
+  // fields saying the same thing is two things to keep honest.
   | "nextEventAt"
   | "hasUpcomingEvents"
   | "reviewBasis"

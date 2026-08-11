@@ -13,6 +13,7 @@ function aHospital(
     latitude: 43.263,
     longitude: -2.935,
     centreType: "hospital",
+    upcomingEventCount: 0,
     ...overrides,
   };
 }

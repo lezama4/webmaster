@@ -30,7 +30,10 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list; the
 // internal `type` (role) field stays forbidden — see ADR D19 and
 // `PublicHospitalProjection`'s doc comment.
-const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
+// `upcomingEventCount` joined the list in the D10 second revision
+// (centre-event-counts): an aggregate of the centre's published, still-
+// upcoming events. Per-event detail (dates, titles) stays forbidden.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode", "upcomingEventCount"];
 
 test.describe("GET /api/hospitals — allow-list boundary (D9/D14/D19)", () => {
   test("returns exactly the allow-listed keys, every ACTIVE centre, and never leaks addressLine/email/type/Esperanza", async () => {
@@ -185,23 +188,29 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     await expect(pins).toHaveCount(1);
   });
 
-  test("Tab reaches the first pin (a native button); Enter activates it, marking the pin pressed and its card current", async ({
+  test("Tab reaches the card link then the pin (a native button); Enter activates the pin, marking it pressed and its card current", async ({
     page,
   }) => {
     await page.goto("/encuentra-tu-momento");
 
-    // Focus the search input directly (a natural, stable starting point
-    // independent of how many links a future header redesign adds), then
-    // Tab TWICE: the centreType `<select>` (widen-beyond-hospitals PR5) is
-    // now the next focusable element after the search input, so it takes
-    // the first Tab stop; `<li>` cards carry no tabindex, so the SECOND Tab
-    // reaches the first map pin (D11: tab order == list order, i.e. the D9
-    // city-asc sort — "A Coruña"/"Hospital do Orzán" sorts first among the
-    // 10-hospital roster; Bilbao/"Hospital San Juan" was only first back
-    // when the seed had 4 ACTIVE hospitals).
+    // Collapse the list to ONE centre first, so the tab order is deterministic
+    // no matter how many centres the seed carries or how many of them host
+    // events. Before the D10 second revision this test tabbed straight from
+    // the filter to the first pin, because `<li>` cards held nothing
+    // focusable. Cards for centres WITH events are now links to their own
+    // filtered events list, so such a card takes a tab stop of its own. That
+    // is the intended order, not a regression: the list stays first in the
+    // DOM (D11) precisely so a keyboard user reaches the primary
+    // representation before the map. San Juan hosts seeded events, so its
+    // card is a link; a centre with zero events renders no link at all.
+    await page.locator("#hospital-search").fill("Hospital San Juan");
+    await expect(page.getByTestId("hospital-pin")).toHaveCount(1);
+
     await page.locator("#hospital-search").focus();
     await page.keyboard.press("Tab");
     await expect(page.locator("#centre-type-filter")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: /Hospital San Juan/i })).toBeFocused();
     await page.keyboard.press("Tab");
 
     const firstPin = page.getByTestId("hospital-pin").first();
@@ -210,7 +219,7 @@ test.describe("/encuentra-tu-momento — map/list accessibility (D11)", () => {
     await page.keyboard.press("Enter");
 
     await expect(firstPin).toHaveAttribute("aria-pressed", "true");
-    const firstCard = page.locator("li").filter({ hasText: "Hospital do Orzán" });
+    const firstCard = page.locator("li").filter({ hasText: "Hospital San Juan" });
     await expect(firstCard).toHaveAttribute("aria-current", "true");
   });
 

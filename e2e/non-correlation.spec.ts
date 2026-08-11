@@ -13,7 +13,11 @@ import {
 // (`nonCorrelation.test.ts`) and the ESLint import zones close the routes a
 // developer can reach from inside one file; THIS suite is what actually
 // fails if a future contributor's change is observable to a real visitor —
-// e.g. adding an "N upcoming events" badge to a hospital card.
+// e.g. adding an event TITLE or DATE to a hospital card.
+//
+// (An "N upcoming events" badge used to be this comment's example of a
+// violation. It is now a shipped, deliberate feature — see the D10 SECOND
+// REVISION note below.)
 //
 // D10 REVISION (events-show-centre): the EVENT→HOSPITAL direction was
 // deliberately relaxed — an event now names its hosting centre (public name +
@@ -26,7 +30,14 @@ import {
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list.
-const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode"];
+// D10 SECOND REVISION (centre-event-counts): `upcomingEventCount` is admitted
+// — an AGGREGATE of the centre's published, still-upcoming events. It leaks
+// nothing new: events already name their hosting centre and /events offers a
+// centre filter, so this exact number was already obtainable from
+// /events?centre=<name>. Per-event DETAIL (titles, dates, `nextEventAt`) stays
+// forbidden, and the exact-key-set check below still fails on ANY other
+// addition, whatever it is called.
+const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "name", "postalCode", "upcomingEventCount"];
 // `id`, `averageStars` and `ratingCount` were admitted by Block 2 (event
 // ratings). Each was checked against D10, not merely D6: `id` is the Event's
 // own id and never the Slot's — the Slot is what belongs to a hospital — and
@@ -41,20 +52,28 @@ const ALLOWED_HOSPITAL_KEYS = ["centreType", "city", "latitude", "longitude", "n
 // (`Slot.location`), the postal code and the street address stay forbidden.
 const ALLOWED_EVENT_KEYS = ["artistName", "audience", "averageStars", "capacity", "centreCity", "centreName", "description", "durationMinutes", "id", "ratingCount", "scheduledAt", "title"];
 
-test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-event direction)", () => {
-  test("GET /api/hospitals carries only the D9 allow-list keys and no seeded event title", async () => {
+test.describe("/encuentra-tu-momento exposes an event COUNT but no event DETAIL (D10 second revision, hospital-to-event direction)", () => {
+  test("GET /api/hospitals carries only the allow-list keys and never a seeded event title", async () => {
     const ctx = await request.newContext({ baseURL });
     const res = await ctx.get("/api/hospitals");
     const raw = await res.text();
     const body = JSON.parse(raw) as { hospitals: Array<Record<string, unknown>> };
 
-    // Re-asserted here, not just in hospital-directory.spec.ts: an "N
-    // upcoming events" badge would add a NAMED key, and the exact-key-set
-    // check fails on ANY addition, whatever it is called (design.md's own
-    // threat-model table).
+    // Re-asserted here, not just in hospital-directory.spec.ts: the exact-key-
+    // set check fails on ANY addition beyond the allow-list, whatever it is
+    // called — a `nextEventAt`, an activity title, a Slot relation.
     for (const hospital of body.hospitals) {
       expect(Object.keys(hospital).sort()).toEqual(ALLOWED_HOSPITAL_KEYS);
+      expect(typeof hospital.upcomingEventCount).toBe("number");
     }
+
+    // The seed hosts events at San Juan, so at least one centre must report a
+    // non-zero count — otherwise this suite would pass vacuously against a
+    // directory that silently stopped counting.
+    expect(
+      body.hospitals.some((h) => (h.upcomingEventCount as number) > 0),
+      "at least one seeded centre must report upcoming events",
+    ).toBe(true);
 
     expect(raw, "must not leak the seeded published event's title").not.toContain(SEED_PUBLISHED_EVENT_TITLE);
     expect(raw, "must not leak the seeded completed event's title").not.toContain(SEED_COMPLETED_EVENT_TITLE);
@@ -67,6 +86,21 @@ test.describe("/encuentra-tu-momento exposes NO event data (D10, hospital-to-eve
 
     await expect(page.getByText(SEED_PUBLISHED_EVENT_TITLE)).toHaveCount(0);
     await expect(page.getByText(SEED_COMPLETED_EVENT_TITLE)).toHaveCount(0);
+  });
+
+  test("a centre card links to its own filtered events list (the family path)", async ({ page }) => {
+    await page.goto("/encuentra-tu-momento");
+
+    // San Juan hosts seeded events, so its card is a link to the events page
+    // pre-filtered to it — the flow a family actually takes.
+    const link = page.getByRole("link", { name: /Hospital San Juan/i }).first();
+    await expect(link).toBeVisible();
+    await link.click();
+
+    await expect(page).toHaveURL(/\/events\?centre=/);
+    // The filtered list shows that centre's events and no other centre's.
+    await expect(page.locator("p").filter({ hasText: "Hospital San Juan" }).first()).toBeVisible();
+    await expect(page.locator("p").filter({ hasText: "Residencia Urumea" })).toHaveCount(0);
   });
 });
 

@@ -96,6 +96,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     return { accountId, profileId };
   }
 
+  /** Returns the artist's profile id; existing callers ignore it. */
   async function seedArtist(name: string) {
     const accountId = nextId("account-artist");
     await accounts.save({
@@ -117,7 +118,87 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
       PLACEHOLDER_CLOCK,
     );
     await profiles.save(profile);
+    return profile.id;
   }
+
+  it("upcomingEventCount counts ONLY published, still-upcoming events of that centre (D10 second revision)", async () => {
+    // Names deliberately share no substring with the fixture event title
+    // below, so the "no event detail leaks" assertion cannot pass or fail by
+    // accident on the centre's own name.
+    const { profileId: centreId } = await seedHospital({
+      name: "Hospital Alfa",
+      status: "active",
+    });
+    const { profileId: otherCentreId } = await seedHospital({
+      name: "Hospital Beta",
+      status: "active",
+    });
+    const artistId = await seedArtist("Clara la Artista");
+
+    // Rows are created directly: this test is about the QUERY's counting
+    // predicate, and `createSlot` refuses a past `scheduledAt` by design, so a
+    // past slot cannot be built through the domain factory.
+    async function seedEvent(input: {
+      centreId: string;
+      daysFromNow: number;
+      status: "PUBLISHED" | "CREATED" | "COMPLETED";
+    }) {
+      const scheduledAt = new Date(Date.now() + input.daysFromNow * 86_400_000);
+      const slot = await client.slot.create({
+        data: {
+          id: nextId("slot"),
+          hospitalProfileId: input.centreId,
+          title: "TituloDeSlotPrivado",
+          description: "Descripción",
+          scheduledAt,
+          durationMinutes: 45,
+          location: "Planta 2, sala de estar",
+          status: "FILLED",
+          audience: "ALL_AGES",
+        },
+      });
+      const proposal = await client.proposal.create({
+        data: {
+          id: nextId("proposal"),
+          slotId: slot.id,
+          artistProfileId: artistId,
+          message: "Propuesta",
+          status: "ACCEPTED",
+        },
+      });
+      await client.event.create({
+        data: {
+          id: nextId("event"),
+          slotId: slot.id,
+          proposalId: proposal.id,
+          title: "TituloDeEventoPrivado",
+          status: input.status,
+        },
+      });
+    }
+
+    await seedEvent({ centreId, daysFromNow: 3, status: "PUBLISHED" }); // counts
+    await seedEvent({ centreId, daysFromNow: 10, status: "PUBLISHED" }); // counts
+    await seedEvent({ centreId, daysFromNow: 5, status: "CREATED" }); // not published
+    await seedEvent({ centreId, daysFromNow: -4, status: "PUBLISHED" }); // already happened
+    await seedEvent({ centreId, daysFromNow: -9, status: "COMPLETED" }); // both
+    // Another centre's event must never be counted against this one.
+    await seedEvent({ centreId: otherCentreId, daysFromNow: 6, status: "PUBLISHED" });
+
+    const results = await new PrismaPublicHospitalDirectoryQuery(client).listActive();
+    const byName = new Map(results.map((r) => [r.name, r]));
+
+    expect(byName.get("Hospital Alfa")!.upcomingEventCount).toBe(2);
+    expect(byName.get("Hospital Beta")!.upcomingEventCount).toBe(1);
+
+    // The aggregate is the ONLY event-derived value that crosses: no title,
+    // no date, no Slot ward/room location may appear in the raw projection.
+    const raw = JSON.stringify(results);
+    expect(raw).not.toContain("TituloDeEventoPrivado");
+    expect(raw).not.toContain("TituloDeSlotPrivado");
+    expect(raw).not.toContain("Planta 2");
+    expect(raw).not.toContain("Propuesta");
+  });
 
   it("returns only ACTIVE Hospital profiles, excluding PENDING/REJECTED/DEACTIVATED/Artist", async () => {
     await seedHospital({
@@ -187,7 +268,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(results.map((r) => r.name)).toEqual(["Hospital San Juan"]);
   });
 
-  it("exposes exactly the 6 allow-listed keys (incl. centreType), with `addressLine`/`type` absent from the raw result (D19)", async () => {
+  it("exposes exactly the 7 allow-listed keys (incl. centreType and upcomingEventCount), with `addressLine`/`type` absent from the raw result (D19, D10 second revision)", async () => {
     await seedHospital({
       name: "Hospital San Juan",
       status: "active",
@@ -205,7 +286,7 @@ describe.skipIf(!dbAvailable)("PrismaPublicHospitalDirectoryQuery (3.1)", () => 
     expect(results).toHaveLength(1);
     const projection = results[0]!;
     expect(Object.keys(projection).sort()).toEqual(
-      ["centreType", "city", "latitude", "longitude", "name", "postalCode"].sort(),
+      ["centreType", "city", "latitude", "longitude", "name", "postalCode", "upcomingEventCount"].sort(),
     );
     expect(projection.centreType).toBe("hospital");
     expect(JSON.stringify(projection)).not.toContain("Plaza de Cruces");
