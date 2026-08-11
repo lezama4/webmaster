@@ -138,38 +138,26 @@ export async function AppPreview() {
         </div>
 
         <div className="flex flex-wrap items-start justify-center gap-10 sm:gap-12">
-          {/* Screen 0 — home: a REAL snapshot of the site's home on mobile,
-              edge to edge — the actual hero image, badge and title. */}
+          {/* Screen 0 — an ACTUAL screenshot of this site's home rendered on a
+              phone, shown edge to edge. Deliberately a real capture rather than
+              a hand-drawn imitation: earlier CSS approximations never matched
+              the page's real typography and crop. It is NOT an iframe of the
+              live page either — `X-Frame-Options: DENY` and CSP
+              `frame-ancestors 'none'` are deliberate clickjacking controls
+              (see next.config.ts / middleware.ts) that must not be relaxed for
+              a decorative mockup.
+              The capture is decorative here (the real home is the very page
+              the visitor is on, so its content is already available), hence the
+              empty alt. Re-capture it if the home hero changes. */}
           <Phone label={t("app.screenHome")} bleed>
             <Image
-              src="/images/hero-cello-community-v2.png"
+              src="/images/home-mobile-snapshot.jpg"
               alt=""
               fill
               sizes="208px"
-              className="object-cover object-[72%_50%]"
+              className="object-cover object-top"
               aria-hidden="true"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-scrim/95 via-scrim/40 to-scrim/25" aria-hidden="true" />
-            {/* status bar over the image */}
-            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2.5">
-              <span className="text-[9px] font-semibold text-on-scrim/90">9:41</span>
-              <span className="flex items-center gap-0.5" aria-hidden="true">
-                <span className="h-1.5 w-1.5 rounded-full bg-on-scrim/60" />
-                <span className="h-1.5 w-1.5 rounded-full bg-on-scrim/60" />
-                <span className="h-1.5 w-3 rounded-[3px] bg-on-scrim/60" />
-              </span>
-            </div>
-            {/* hero copy at the bottom, exactly as the real home */}
-            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-3.5">
-              <span className="w-fit rounded-full border border-on-scrim/25 bg-on-scrim/10 px-2 py-0.5 text-[7px] font-medium leading-tight text-on-scrim backdrop-blur-sm">
-                {t("badge")}
-              </span>
-              <p className="font-heading text-[14px] font-normal leading-[1.1] tracking-tight text-on-scrim">
-                {t("title.firstLine")}
-                <br />
-                {t("title.secondLine")}
-              </p>
-            </div>
           </Phone>
 
           {/* Screen 1 — discover events: a feed of event cards with ratings */}
