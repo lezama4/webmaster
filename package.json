@@ -27,17 +27,17 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "prisma": "^6.19.3",
+    "eslint": "^10",
+    "eslint-config-next": "16.3.1",
+    "prisma": "^7.9.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "^7",
     "vitest": "^4.1.10"
   },
   "allowScripts": {
