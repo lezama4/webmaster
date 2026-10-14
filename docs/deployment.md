@@ -70,7 +70,11 @@ unique indexes that protect accepted and submitted Proposals.
 
 ## 4. Seed the fictional demo dataset once
 
-After migration, execute:
+**Demo and local databases only. Never run this against production** (see
+[Section 9](#9-production-vs-demo-environments)); the seed refuses to run unless
+`DEMO_MODE=true` or `DATABASE_URL` points at `localhost`/`127.0.0.1`.
+
+After migration of a demo database, execute:
 
 ```bash
 npm run db:seed
@@ -92,7 +96,7 @@ Verify the seed before deployment:
 - S4 closed with a cascade-rejected Proposal;
 - S5 filled with an accepted Proposal and a completed Event.
 
-The fictional credentials are maintained in [README.md](../README.md#seed-credentials).
+The fictional credentials are generated from `prisma/seed.ts` (see [README.md](../README.md#seed-credentials)). They must exist only locally and in the demo environment; see [Section 9](#9-production-vs-demo-environments).
 
 ## 5. Deploy the application on Vercel
 
@@ -191,3 +195,55 @@ restore is necessary:
 
 Never delete Prisma migration records or run ad-hoc destructive SQL merely to
 make a deployment look reverted.
+
+## 9. Production vs demo environments
+
+Production must never contain fictional data, and the demo must be clearly
+labelled. They are two separate deployments with separate databases. These are
+**manual maintainer steps**; nothing here is executed by the repository or CI.
+
+### Production
+
+1. Create a **new** Neon project in an EU region (AWS Europe, Frankfurt,
+   `eu-central-1`). Do not reuse a database that has ever been seeded.
+2. Set the Vercel function region of the production project to an EU region
+   next to the database (Frankfurt, `fra1`), under **Project -> Settings ->
+   Functions**, so the app and database share a region.
+3. Set the Section 2 variables in the production project, with the new
+   database's `DATABASE_URL`. Do **not** set `DEMO_MODE` (it is off by default).
+4. Run `npx prisma migrate deploy` against the new database (Section 3).
+   **Do not run `npm run db:seed`.** The seed would create accounts with a
+   published password.
+5. Redeploy and run the Section 6 checks.
+
+### Demo
+
+1. Create a **separate** Vercel project (or a dedicated environment with its
+   own variables) for the demo, with its own Neon database. Never share a
+   database with production.
+2. Set `DEMO_MODE=true` (exactly `true`) together with its own `DATABASE_URL`,
+   `SESSION_SECRET`, `RATE_LIMIT_HMAC_SECRET` and `APP_ORIGIN`. Every page then
+   shows a banner saying that centres, artists and events are fictional.
+3. From a controlled shell with the demo `DATABASE_URL` and `DEMO_MODE=true`
+   exported, run `npx prisma migrate deploy` and `npm run db:seed`. The seed
+   guard refuses to run against a non-local database without `DEMO_MODE=true`.
+
+### Migrating real accounts, if any exist
+
+If real accounts were created in the current (pre-split) database, move only
+those, never the seed rows:
+
+1. Freeze writes (maintenance window), then take a backup of the old database.
+2. List real accounts: seeded rows have ids prefixed `seed-` and emails ending
+   in `@vtt.test`; everything else is real. Review the list with the maintainer.
+3. Export the real rows with their related profile rows, in dependency order,
+   using `pg_dump --data-only` with `--table` filters or `COPY (SELECT ...)`
+   restricted to the real ids, and load them into the new production database
+   after `migrate deploy`.
+4. Verify row counts and that no `seed-` id or `@vtt.test` email exists in
+   production. Real password hashes move as they are; no user needs to reset.
+5. Switch DNS or `APP_ORIGIN` to the new production deployment, then retire the
+   old database only after the maintainer confirms.
+
+If there are no real accounts yet, skip the migration: provision the new
+production database empty.
