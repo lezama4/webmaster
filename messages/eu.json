@@ -16,7 +16,6 @@
   },
   "Home": {
     "badge": "Irabazi-asmorik gabea · doakoa parte hartzen duten guztientzat", "title": { "firstLine": "Laguntzen dugu bizitza", "secondLine": "ez dadila gelditu." }, "description": "Ikusi itzazu berriz irribarre egiten, hunkitzen, kantatzen, ikasten —eta, zergatik ez, negar ere egiten— maite dituzten pertsonez inguratuta, ahaztuko ez dituzuen uneetan.",
-    "ariaRating": "{rating} / 5 izar",
     "hero": { "imageAlt": "Biolontxelo-jotzaile batek ospitaleko areto komunean pazienteentzat eta senideentzat jotzen du, gurpil-aulkian dagoen pertsona bat entzuleen artean dela." },
     "mission": {
       "eyebrow": "Zergatik gaude hemen",
@@ -25,45 +24,9 @@
       "imageAlt": "Artista batek kolorezko paper-mozketak erakusten dizkie pazienteen talde bati, nerabe bati eta erizain bati, eskulan-materialez betetako mahai baten inguruan."
     },
     "trust": {
-      "eyebrow": "Erakundeen babesa",
+      "eyebrow": "Zentro bakoitzak berrikusia",
       "title": "Hutsune bakoitza zaintza-zentro batek irekitzen du, ez plataforma anonimo batek.",
-      "description": "Zentro bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte beren zaintzapean dauden pertsonengana iritsi aurretik. Horrela mantentzen da Todo el tiempo cuenta segurua eta zentzuduna.",
-      "hospitalsLabel": "Parte hartzen duten zentroak",
-      "patronsLabel": "Mezenas-erakundeak",
-      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
-      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "MVP fase honetarako adibide-multzoa: demo-datu-baseko zentroak eta adibide-erakundeak biltzen ditu, ez baieztatutako mezenasgo-akordioak."
-    },
-    "artists": {
-      "eyebrow": "Kolaboratzaile nabarmenak",
-      "title": "Beren lana zentroetara eramaten ari diren artista baloratuenak.",
-      "description": "Demo-datu-baseko adibide-profilak, ekitaldi bat amaitu ondoren jasoko luketen balorazioarekin.",
-      "disclaimer": "MVP fase honetarako adibide-profilak eta balorazioak.",
-      "items": [
-        { "name": "Clara Romero", "role": "Biolontxelo-jotzailea", "quote": "Aste batzuk gelatik atera gabe daraman norbaiti jotzeak kontzertuaren zentzua aldatzen du.", "rating": 5 },
-        { "name": "Mateo Díaz", "role": "Gitarra-jotzailea eta kantautorea", "quote": "Gelan elkarrekin abesten dugunean, une batez ospitalea izateari uzten dio.", "rating": 5 }
-      ]
-    },
-    "reviews": {
-      "eyebrow": "Zentroetatik datozen ahotsak",
-      "title": "Jada une bat bizi izan dutenek kontatzen dutena.",
-      "imageAlt": "Abesbatza batek eserita dauden pazienteen eta senideen entzuleen aurrean jotzen du, gurpil-aulkian dauden bi pertsona lehen lerroan direla.",
-      "disclaimer": "MVP fase honetarako adibideak; ez dira benetako ekitaldien balorazio egiaztatuak.",
-      "items": [
-        { "quote": "Hiru aste ingresatuta egon ondoren, kontzertu hura izan zen nire alaba benetan irribarre egin zuen lehen unea.", "author": "Itziar Goikoetxea", "context": "Pazientearen ama, Hospital San Juan", "rating": 5 },
-        { "quote": "Tailerrak korridoreko errutina hautsi zuen. Arratsalde batez, ez genuen analisiei edo ordutegiei buruz hitz egin.", "author": "Fernando Cabrera", "context": "Pazientea, Hospital Esperanza", "rating": 5 },
-        { "quote": "Hutsunea martitzen argitaratu genuen eta osteguneko artista baieztatua genuen jada. Koordinatzea horren erraza izan zen.", "author": "Marta Elizondo dra.", "context": "Gela-koordinatzailea, Hospital San Juan", "rating": 5 }
-      ]
-    },
-    "app": {
-      "eyebrow": "Mugikorrean",
-      "badge": "Laster",
-      "title": "Eraman poltsikoan.",
-      "description": "Weba mugikorrean dabil jada: aurkitu zure zentroa, ikusi ekitaldiak eta erabili plataforma osoa telefonotik. Hauek benetako pantaila-argazkiak dira. App natiboa geroago iritsiko da.",
-      "screenHome": "Hasiera",
-      "screen1": "Aurkitu ekitaldiak",
-      "screen2": "Aurkitu zure zentroa",
-      "disclaimer": "Webaren benetako pantaila-argazkiak mugikorrean. App natiboa garatzen ari da."
+      "description": "Zentro bakoitzeko koordinatzaileek proposamenak berrikusi eta baieztatzen dituzte beren zaintzapean dauden pertsonengana iritsi aurretik. Horrela mantentzen da Todo el tiempo cuenta segurua eta zentzuduna."
     },
     "closing": {
       "title": "Prest lehen hutsunea irekitzeko, edo lehen unea proposatzeko?",

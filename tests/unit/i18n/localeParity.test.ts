@@ -26,7 +26,7 @@ type MessageTree = Record<string, unknown>;
 
 /** Flattens a nested message object to dot-path -> leaf value. Arrays are
  * treated as leaves (never recursed into) — matches how this repo's
- * namespaces use arrays (e.g. `Home.trust.hospitals`, `Home.artists.items`)
+ * namespaces use arrays (e.g. `About.roles.items`, `Home.what.steps`)
  * as opaque content lists, not as sets of independently-keyed strings. */
 function flatten(tree: MessageTree, prefix = ""): Record<string, unknown> {
   const out: Record<string, unknown> = {};

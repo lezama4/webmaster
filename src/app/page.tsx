@@ -2,20 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { primaryButton, secondaryButton } from "@ui/components/ui";
-import { AppPreview } from "./_home/AppPreview";
 import { Reveal } from "./_home/Reveal";
-import { StarRating } from "./StarRating";
-
-type ArtistItem = { name: string; role: string; quote: string; rating: number };
-type ReviewItem = { quote: string; author: string; context: string; rating: number };
 
 export default async function Home() {
   const t = await getTranslations("Home");
 
-  const hospitals = t.raw("trust.hospitals") as string[];
-  const patrons = t.raw("trust.patrons") as string[];
-  const artists = t.raw("artists.items") as ArtistItem[];
-  const reviews = t.raw("reviews.items") as ReviewItem[];
   const whatSteps = t.raw("what.steps") as string[];
 
   return (
@@ -116,7 +107,7 @@ export default async function Home() {
         </section>
       </Reveal>
 
-      {/* 3. Institutional trust — the one deep/dark section, for gravity and seriousness. */}
+      {/* 3. Review by each centre — the one deep/dark section, for gravity and seriousness. */}
       <Reveal>
         <section className="bg-foreground py-20 text-background md:py-28">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6">
@@ -127,103 +118,11 @@ export default async function Home() {
               </h2>
               <p className="max-w-[56ch] text-background/75">{t("trust.description")}</p>
             </div>
-            <div className="grid gap-10 border-t border-background/15 pt-10 sm:grid-cols-2">
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-medium uppercase tracking-wide text-background/60">
-                  {t("trust.hospitalsLabel")}
-                </span>
-                <ul className="flex flex-col divide-y divide-background/10">
-                  {hospitals.map((name) => (
-                    <li key={name} className="py-2.5 font-heading text-xl first:pt-0">
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-medium uppercase tracking-wide text-background/60">
-                  {t("trust.patronsLabel")}
-                </span>
-                <ul className="flex flex-col divide-y divide-background/10">
-                  {patrons.map((name) => (
-                    <li key={name} className="py-2.5 font-heading text-xl first:pt-0">
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <p className="max-w-[64ch] text-sm text-background/60">{t("trust.disclaimer")}</p>
           </div>
         </section>
       </Reveal>
 
-      {/* 4. Top-rated artists. */}
-      <Reveal>
-        <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 md:py-28">
-          <div className="mb-10 flex flex-col gap-4 md:max-w-2xl">
-            <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("artists.eyebrow")}</span>
-            <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
-              {t("artists.title")}
-            </h2>
-            <p className="text-muted">{t("artists.description")}</p>
-          </div>
-          <ul className="grid gap-10 border-t border-border sm:grid-cols-2 sm:divide-x sm:divide-border">
-            {artists.map((artist) => (
-              <li key={artist.name} className="flex flex-col gap-3 pt-8 sm:px-8 sm:first:pl-0 sm:last:pr-0">
-                <StarRating rating={artist.rating} label={t("ariaRating", { rating: artist.rating })} />
-                <p className="font-heading text-xl leading-snug text-balance">&ldquo;{artist.quote}&rdquo;</p>
-                <div>
-                  <p className="font-medium">{artist.name}</p>
-                  <p className="text-sm text-muted">{artist.role}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-10 text-sm text-muted">{t("artists.disclaimer")}</p>
-        </section>
-      </Reveal>
-
-      {/* 5. Voices / reviews — beside the choir image. */}
-      <Reveal className="border-t border-border">
-        <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.1fr] md:items-center md:gap-16 md:py-28">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[20px]">
-            <Image
-              src="/images/community-choir-audience-integrated-v2.png"
-              alt={t("reviews.imageAlt")}
-              fill
-              sizes="(min-width: 768px) 45vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("reviews.eyebrow")}</span>
-              <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
-                {t("reviews.title")}
-              </h2>
-            </div>
-            <ul className="flex flex-col divide-y divide-border">
-              {reviews.map((review) => (
-                <li key={review.author} className="flex flex-col gap-2 py-6 first:pt-0 last:pb-0">
-                  <StarRating rating={review.rating} label={t("ariaRating", { rating: review.rating })} />
-                  <p className="text-lg leading-relaxed">&ldquo;{review.quote}&rdquo;</p>
-                  <p className="text-sm text-muted">
-                    {review.author} · {review.context}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            <p className="text-sm text-muted">{t("reviews.disclaimer")}</p>
-          </div>
-        </section>
-      </Reveal>
-
-      {/* 5.5 App preview — clearly-labelled "Próximamente" concept, never a
-          shipped feature (honesty: the web "works today", the app is future). */}
-      <AppPreview />
-
-      {/* 6. Closing CTA. */}
+      {/* 4. Closing CTA. */}
       <Reveal className="border-t border-border bg-surface-2">
         <section className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 px-4 py-20 sm:px-6 md:flex-row md:items-center md:justify-between md:py-24">
           <div className="flex flex-col gap-3 md:max-w-xl">
