@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 
 /** Primary call-to-action styling (sage, tactile push on :active). */
 export const primaryButton =
-  "inline-flex items-center justify-center rounded-[13px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary-hover active:translate-y-px disabled:pointer-events-none disabled:opacity-45";
+  "inline-flex items-center justify-center rounded-[13px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary-hover active:translate-y-px disabled:pointer-events-none disabled:bg-surface-2 disabled:text-muted";
 
 /** Secondary / neutral button styling. */
 export const secondaryButton =
-  "inline-flex items-center justify-center rounded-[13px] border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-surface-2 active:translate-y-px disabled:pointer-events-none disabled:opacity-45";
+  "inline-flex items-center justify-center rounded-[13px] border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-surface-2 active:translate-y-px disabled:pointer-events-none disabled:bg-surface-2 disabled:text-muted";
 
 /** Shared input styling — used by form fields across the auth and dashboard pages. Focus ring comes from the global `*:focus-visible` accent outline. */
 export const inputClasses =
