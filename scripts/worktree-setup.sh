@@ -5,11 +5,10 @@
 set -euo pipefail
 
 REQUIRED_NPM="11.18.0"
-DB_PREFIX="vivetutiempo"
-MAIN_DB="vivetutiempo"
-PG_USER="vivetutiempo"
 
-die() { echo "error: $*" >&2; exit 1; }
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/worktree-common.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/worktree-common.sh"
 
 force=false
 case "${1:-}" in
@@ -18,50 +17,37 @@ case "${1:-}" in
   *) die "usage: $0 [--force]" ;;
 esac
 
-root="$(git rev-parse --show-toplevel)"
 cd "$root"
-
-# The main checkout owns the compose file and the shared Postgres container.
-common_dir="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
-main_root="$(dirname "$common_dir")"
-[ "$root" != "$main_root" ] || die "run this from a linked worktree, not the main checkout"
-compose=(docker compose -f "$main_root/docker-compose.yml")
-
-# Slug: lowercase, [a-z0-9_] only, max 40 chars.
-slug="$(basename "$root" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_\n' '_' | cut -c1-40)"
-[ -n "$slug" ] || slug="wt"
-db_name="${DB_PREFIX}_${slug}"
-[ "$db_name" != "$MAIN_DB" ] || die "refusing to use the main database name"
 
 command -v npm >/dev/null || die "npm not found (load nvm first)"
 [ "$(npm -v)" = "$REQUIRED_NPM" ] || die "npm $REQUIRED_NPM required, found $(npm -v) (fix with: npm i -g npm@$REQUIRED_NPM, never sudo)"
+command -v flock >/dev/null || die "flock not found (install util-linux)"
 
 psql_main() { "${compose[@]}" exec -T postgres psql -U "$PG_USER" -d postgres -Atq "$@"; }
 
-# 1. Shared Postgres must already be up; never start a second one.
-"${compose[@]}" exec -T postgres pg_isready -U "$PG_USER" >/dev/null 2>&1 \
-  || die "shared Postgres is not running; start it from $main_root with: docker compose up -d --wait"
+# Value of a key as written in .env (not the caller's environment), quotes stripped.
+env_value() { awk -F= -v k="$1" '$1 == k { v = substr($0, length(k) + 2); gsub(/^"|"$/, "", v); print v }' .env; }
 
-# 2. Database for this worktree (slug is [a-z0-9_] only, safe to inline).
-if [ "$(psql_main -c "SELECT 1 FROM pg_database WHERE datname = '$db_name'")" = "1" ]; then
-  echo "database $db_name already exists"
-else
-  psql_main -c "CREATE DATABASE \"$db_name\"" >/dev/null
-  echo "created database $db_name"
-fi
+# Ports claimed by sibling worktrees' .env files; siblings without one are skipped.
+taken_ports() {
+  local wt
+  while read -r wt; do
+    if [ "$wt" != "$root" ] && [ -f "$wt/.env" ]; then
+      awk -F: '/^APP_ORIGIN=/ { gsub(/[^0-9]/, "", $NF); print $NF }' "$wt/.env" || true
+    fi
+  done < <(git worktree list --porcelain | awk '/^worktree / { print substr($0, 10) }')
+}
 
-# 3. .env with a deterministic, collision-free port.
-if [ -e .env ] && ! $force; then
-  echo ".env exists, keeping it (use --force to regenerate)"
-else
+# Pick a free port and write .env. Runs under an exclusive lock so two
+# concurrent setups cannot choose the same port.
+write_env() {
   [ -f .env.example ] || die ".env.example not found"
-  # Ports already claimed by sibling worktrees' .env files.
-  taken="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10)}' \
-    | while read -r wt; do [ "$wt" = "$root" ] || awk -F: '/^APP_ORIGIN=/{gsub(/[^0-9]/,"",$NF); print $NF}' "$wt/.env" 2>/dev/null; done)"
+  local taken port
+  taken="$(taken_ports)"
   # 3001..3500: 3000 stays free for the main checkout.
   port=$((3001 + $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 500))
   for _ in $(seq 500); do
-    if echo "$taken" | grep -qx "$port" || (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
+    if grep -qx "$port" <<<"$taken" || (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
       port=$((port >= 3500 ? 3001 : port + 1))
     else
       break
@@ -77,7 +63,30 @@ else
     { print }' .env.example > .env
   chmod 600 .env
   echo "wrote .env (port $port)"
+}
+
+# 1. Shared Postgres must already be up; never start a second one.
+"${compose[@]}" exec -T postgres pg_isready -U "$PG_USER" >/dev/null 2>&1 \
+  || die "shared Postgres is not running; start it from $main_root with: docker compose up -d --wait"
+
+# 2. Database for this worktree (db_name is [a-z0-9_] only, safe to inline).
+if [ "$(psql_main -c "SELECT 1 FROM pg_database WHERE datname = '$db_name'")" = "1" ]; then
+  echo "database $db_name already exists"
+else
+  psql_main -c "CREATE DATABASE \"$db_name\"" >/dev/null
+  echo "created database $db_name"
 fi
+
+# 3. .env with a deterministic, collision-free port.
+if [ -e .env ] && ! $force; then
+  echo ".env exists, keeping it (use --force to regenerate)"
+else
+  ( flock 9; write_env ) 9>"$common_dir/worktree-setup.lock"
+fi
+
+for key in DATABASE_URL SESSION_SECRET RATE_LIMIT_HMAC_SECRET APP_ORIGIN; do
+  [ -n "$(env_value "$key")" ] || die ".env has no value for $key; rerun with --force"
+done
 
 # Export the worktree env so a DATABASE_URL already set in the caller's shell
 # can never point Prisma at another database.
