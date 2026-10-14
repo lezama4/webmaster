@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton, secondaryButton } from "@ui/components/ui";
+import { FormError } from "@ui/components/FormError";
 
 type Action = "approve" | "reject" | "deactivate";
 type ProfileType = "centre" | "artist";
@@ -96,7 +97,7 @@ export function ProfileRowActions({
           </button>
         ))}
       </div>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <FormError>{error}</FormError> : null}
     </div>
   );
 }

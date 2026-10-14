@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 /** Primary call-to-action styling (sage, tactile push on :active). */
 export const primaryButton =
@@ -16,33 +16,51 @@ export const inputClasses =
 export const audienceBadgeClasses =
   "inline-flex items-center rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted";
 
-/** A labelled form control: label above, control (children) in the middle, hint or error below. Errors use the semantic danger token, not the brand accent. */
+type ControlProps = { "aria-invalid"?: boolean; "aria-describedby"?: string };
+
+/**
+ * A labelled form control: label above, control (children) in the middle, hint and error below.
+ * Errors use the semantic danger token, not the brand accent. The single control child is wired
+ * to its own hint and error (`aria-describedby`, ids combined when both exist) and flagged
+ * `aria-invalid` only while THIS field has an error (override with `invalid`).
+ */
 export function Field({
   label,
   htmlFor,
   hint,
   error,
+  invalid = Boolean(error),
   children,
 }: {
   label: string;
   htmlFor: string;
   hint?: string;
   error?: string;
+  invalid?: boolean;
   children: ReactNode;
 }) {
+  const describedBy = [hint ? `${htmlFor}-hint` : null, error ? `${htmlFor}-error` : null];
+  const control = isValidElement<ControlProps>(children)
+    ? cloneElement(children as ReactElement<ControlProps>, {
+        "aria-invalid": invalid ? true : children.props["aria-invalid"],
+        "aria-describedby":
+          [children.props["aria-describedby"], ...describedBy].filter(Boolean).join(" ") || undefined,
+      })
+    : children;
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={htmlFor} className="text-sm font-medium">
         {label}
       </label>
-      {children}
+      {control}
+      {hint ? (
+        <p id={`${htmlFor}-hint`} className="text-sm text-muted">
+          {hint}
+        </p>
+      ) : null}
       {error ? (
         <p id={`${htmlFor}-error`} role="alert" className="text-sm text-danger">
           {error}
-        </p>
-      ) : hint ? (
-        <p id={`${htmlFor}-hint`} className="text-sm text-muted">
-          {hint}
         </p>
       ) : null}
     </div>
