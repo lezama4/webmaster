@@ -111,13 +111,13 @@
     },
     "dataStance": {
       "title": "Qué datos publicamos, y qué no",
-      "description": "Los centros y los eventos son públicos, y cada evento indica el centro que lo acoge. Publicamos solo lo necesario para encontrarlos: de un centro, su nombre, ciudad, código postal, tipo de centro, posición en el mapa y número de próximos eventos; de un evento, su título, descripción, fecha, duración, artista, público, aforo y el nombre y la ciudad del centro anfitrión.",
+      "description": "Los centros y los eventos son públicos, y cada evento indica el centro que lo acoge. Publicamos solo lo necesario para encontrarlos: de un centro, su nombre, ciudad, código postal, tipo de centro, posición en el mapa y número de próximos eventos; de un evento, su título, descripción, fecha, duración, artista, público, aforo, valoración media y número de valoraciones, y el nombre y la ciudad del centro anfitrión.",
       "excludedTitle": "Deliberadamente, nunca publicamos:",
       "excluded": [
         "La sala o el espacio exacto donde ocurre un evento",
         "La calle y el número de un centro",
         "El contenido de las propuestas entre centros y artistas",
-        "Direcciones de correo electrónico ni identificadores de cuentas, perfiles o huecos",
+        "Direcciones de correo electrónico e identificadores de cuentas, perfiles o huecos",
         "Datos de las personas atendidas (la plataforma no los registra)"
       ],
       "note": "La sala o el espacio de un hueco solo lo ven los artistas identificados con perfil aprobado mientras el hueco está abierto, y nunca aparece en las páginas públicas. Los títulos y las descripciones de los eventos los escriben los propios centros, a los que se les pide que no incluyan salas ni datos personales; no se comprueban automáticamente."

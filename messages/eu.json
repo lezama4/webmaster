@@ -111,13 +111,13 @@
     },
     "dataStance": {
       "title": "Zer datu argitaratzen ditugun, eta zer ez",
-      "description": "Zentroak eta ekitaldiak publikoak dira, eta ekitaldi bakoitzak hura hartzen duen zentroa adierazten du. Aurkitzeko behar dena bakarrik argitaratzen dugu: zentro baten kasuan, izena, herria, posta-kodea, zentro mota, mapako posizioa eta hurrengo ekitaldien kopurua; ekitaldi baten kasuan, izenburua, deskribapena, data, iraupena, artista, publikoa, edukiera eta ostalari den zentroaren izena eta herria.",
+      "description": "Zentroak eta ekitaldiak publikoak dira, eta ekitaldi bakoitzak hura hartzen duen zentroa adierazten du. Aurkitzeko behar dena bakarrik argitaratzen dugu: zentro baten kasuan, izena, herria, posta-kodea, zentro mota, mapako posizioa eta hurrengo ekitaldien kopurua; ekitaldi baten kasuan, izenburua, deskribapena, data, iraupena, artista, publikoa, edukiera, batez besteko balorazioa eta balorazio kopurua, eta ostalari den zentroaren izena eta herria.",
       "excludedTitle": "Nahita, inoiz ez dugu argitaratzen:",
       "excluded": [
         "Ekitaldia gertatzen den gela edo espazio zehatza",
         "Zentro baten kalea eta zenbakia",
         "Zentro eta artisten arteko proposamenen edukia",
-        "Helbide elektronikoak, ez eta kontuen, profilen edo hutsuneen identifikadoreak",
+        "Helbide elektronikoak eta kontuen, profilen edo hutsuneen identifikadoreak",
         "Zaintzapean dauden pertsonen datuak (plataformak ez ditu erregistratzen)"
       ],
       "note": "Hutsune baten gela edo espazioa profil onartua duten artista identifikatuek bakarrik ikusten dute, hutsunea irekita dagoen bitartean, eta ez da inoiz orri publikoetan agertzen. Ekitaldien izenburuak eta deskribapenak zentroek berek idazten dituzte, eta gela edo datu pertsonalik ez sartzeko eskatzen zaie; ez dira automatikoki egiaztatzen."

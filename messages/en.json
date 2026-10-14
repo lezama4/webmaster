@@ -121,13 +121,13 @@
     },
     "dataStance": {
       "title": "What data we publish, and what we don't",
-      "description": "Centres and events are public, and each event names the centre that hosts it. We publish only what is needed to find them: for a centre, its name, city, postal code, centre type, map position and number of upcoming events; for an event, its title, description, date, duration, artist, audience, capacity, and the host centre's name and city.",
+      "description": "Centres and events are public, and each event names the centre that hosts it. We publish only what is needed to find them: for a centre, its name, city, postal code, centre type, map position and number of upcoming events; for an event, its title, description, date, duration, artist, audience, capacity, average rating and number of ratings, and the host centre's name and city.",
       "excludedTitle": "Deliberately, we never publish:",
       "excluded": [
         "The exact room or space where an event takes place",
         "A centre's street address",
         "The content of proposals between centres and artists",
-        "Email addresses, or the identifiers of accounts, profiles or slots",
+        "Email addresses and the identifiers of accounts, profiles or slots",
         "Data about the people being cared for (the platform does not record it)"
       ],
       "note": "A slot's room or space is visible only to signed-in artists with an approved profile, while the slot is open, and never appears on public pages. Event titles and descriptions are written by the centres, who are asked not to include rooms or personal details; they are not checked automatically."
