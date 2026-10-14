@@ -46,6 +46,26 @@ async function seedArtist(
 }
 
 describe("login", () => {
+  it.each(["known", "unknown"])(
+    "denies a >128 character password for a %s email with the generic error and never calls the hasher",
+    async (kind) => {
+      const deps = makeDeps();
+      await seedArtist(deps);
+      const verify = vi.spyOn(deps.passwordHasher, "verify");
+      const hash = vi.spyOn(deps.passwordHasher, "hash");
+      const email = kind === "known" ? "artist.clara@vtt.test" : "nobody@vtt.test";
+
+      const denial = await login({ email, password: "a".repeat(129) }, deps).catch((e) => e);
+      const wrong = await login({ email, password: "wrong-password" }, deps).catch((e) => e);
+
+      expect(denial).toBeInstanceOf(UnauthenticatedError);
+      expect(denial.message).toBe(wrong.message);
+      expect(verify).toHaveBeenCalledTimes(1); // only the normal wrong-password attempt
+      expect(hash).not.toHaveBeenCalledWith("a".repeat(129));
+      expect(verify).not.toHaveBeenCalledWith("a".repeat(129), expect.anything());
+    },
+  );
+
   it("issues a session for valid credentials and an active profile", async () => {
     const deps = makeDeps();
     const { account } = await seedArtist(deps, "active");
