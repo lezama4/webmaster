@@ -1,4 +1,5 @@
 import { createAccount } from "@domain/account/Account";
+import { assertPasswordPolicy } from "@domain/account/Password";
 import { profileTypeForRole } from "@domain/account/Account";
 import {
   createProfile,
@@ -96,6 +97,11 @@ export async function registerProfile(
   if (!type) {
     throw new ForbiddenError(`Role '${input.role}' cannot self-register a Profile`);
   }
+
+  // Checked before the lock and for EVERY registration (new or existing
+  // email), so it never doubles as an "email exists" oracle and an oversized
+  // input never reaches Argon2 (`verify` or `hash`).
+  assertPasswordPolicy(input.password);
 
   return deps.registrationUnitOfWork.withLockedRegistration(
     input.email,

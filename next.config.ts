@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 /**
  * Static security response headers applied to every route (Phase 7 hardening).
  * The per-request Content-Security-Policy is NOT here — it carries a fresh
- * nonce and is set in `src/middleware.ts`.
+ * nonce and is set in `src/proxy.ts`.
  *
  * - HSTS: force HTTPS for two years incl. subdomains (safe: the app is served
  *   over TLS on Vercel; browsers ignore it on plain-HTTP localhost).

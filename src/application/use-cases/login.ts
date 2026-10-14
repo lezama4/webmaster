@@ -1,4 +1,5 @@
 import type { Account } from "@domain/account/Account";
+import { PASSWORD_MAX_LENGTH } from "@domain/account/Password";
 import { UnauthenticatedError } from "@application/errors";
 import type { AccountRepository } from "@application/ports/AccountRepository";
 import type { LoginRateLimiter } from "@application/ports/LoginRateLimiter";
@@ -101,6 +102,13 @@ export async function login(
   const allowed = await deps.rateLimiter.consumeAttempt(attemptKey);
   if (!allowed) {
     // Denied BEFORE verifying credentials — no session issued, no oracle.
+    throw new UnauthenticatedError(GENERIC_LOGIN_DENIAL);
+  }
+
+  // No stored password can exceed the registration cap, so an oversized one
+  // is a plain credential failure — denied identically, without ever handing
+  // the input to Argon2. The attempt above still counts against the limiter.
+  if ([...credentials.password].length > PASSWORD_MAX_LENGTH) {
     throw new UnauthenticatedError(GENERIC_LOGIN_DENIAL);
   }
 

@@ -4,6 +4,7 @@ import {
   NotFoundError,
   UnauthenticatedError,
 } from "@application/errors";
+import { PasswordPolicyError } from "@domain/account/Password";
 import { DomainError } from "@domain/errors";
 
 /**
@@ -18,7 +19,11 @@ import { DomainError } from "@domain/errors";
  */
 export function toErrorResponse(error: unknown): Response {
   const [status, message] = statusAndMessage(error);
-  return new Response(JSON.stringify({ error: message }), {
+  // The password policy is public (shown in the form hint), so its reason is
+  // safe to expose; it lets the client show a localized message.
+  const code =
+    error instanceof PasswordPolicyError ? { code: `password_${error.reason}` } : {};
+  return new Response(JSON.stringify({ error: message, ...code }), {
     status,
     headers: { "Content-Type": "application/json" },
   });

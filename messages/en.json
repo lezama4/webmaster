@@ -189,7 +189,7 @@
     "role": { "label": "I am registering a", "centre": "Care centre", "artist": "Artist" }, "name": { "centre": "Centre name", "artist": "Artist / stage name" },
     "location": { "city": "City", "postalCode": "Postal code", "addressLine": "Street address", "hint": "Optional. Helps families find the centre on a map." },
     "centreType": { "label": "Centre type", "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
-    "errors": { "duplicateEmail": "An account with that email already exists.", "failure": "Registration could not be completed. Check your details and try again.", "generic": "Something went wrong. Please try again." },
+    "errors": { "passwordTooShort": "Use at least 8 characters.", "passwordTooLong": "Use no more than 128 characters.", "duplicateEmail": "An account with that email already exists.", "failure": "Registration could not be completed. Check your details and try again.", "generic": "Something went wrong. Please try again." },
     "success": { "title": "Request received", "description": "Your profile is pending review by a coordinator. You can log in once it has been approved.", "action": "Go to log in" }
   },
   "AdminProfiles": {
