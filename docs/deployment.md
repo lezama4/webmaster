@@ -211,7 +211,14 @@ labelled. They are two separate deployments with separate databases. These are
    Functions**, so the app and database share a region.
 3. Set the Section 2 variables in the production project, with the new
    database's `DATABASE_URL`. Do **not** set `DEMO_MODE` (it is off by default).
-4. Run `npx prisma migrate deploy` against the new database (Section 3).
+4. Run `npx prisma migrate deploy` against the new database (Section 3), using
+   the Neon **direct** (non-`-pooler`) connection string. `prisma/schema.prisma`
+   has no `directUrl`, so Prisma uses `DATABASE_URL` for both migrations and the
+   app. Pooled (pgbouncer) URLs can fail on migration advisory locks, so export
+   the direct URL as `DATABASE_URL` for the migration shell only. Which URL the
+   Vercel runtime should use (direct or pooled) is a manual decision; **verify
+   against the current Neon and Prisma docs at execution time**. Do not change
+   `schema.prisma` for this without a separate review.
    **Do not run `npm run db:seed`.** The seed would create accounts with a
    published password.
 5. Redeploy and run the Section 6 checks.
@@ -234,8 +241,13 @@ If real accounts were created in the current (pre-split) database, move only
 those, never the seed rows:
 
 1. Freeze writes (maintenance window), then take a backup of the old database.
-2. List real accounts: seeded rows have ids prefixed `seed-` and emails ending
-   in `@vtt.test`; everything else is real. Review the list with the maintainer.
+2. List real accounts: treat as non-real any row whose id is prefixed `seed-`
+   **or** whose email ends in `@vtt.test` (the e2e specs create such accounts
+   without a `seed-` id, e.g. `centre.audit.<runId>@vtt.test`); everything else
+   is a candidate real account. Review the list with the maintainer. "Move only
+   real rows" does not cover rows tied to real accounts on seeded records (for
+   example a real artist's proposals on a seeded slot): review those and decide
+   case by case before cutting over.
 3. Export the real rows with their related profile rows, in dependency order,
    using `pg_dump --data-only` with `--table` filters or `COPY (SELECT ...)`
    restricted to the real ids, and load them into the new production database
