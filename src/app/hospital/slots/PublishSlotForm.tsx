@@ -37,7 +37,7 @@ export function PublishSlotForm() {
           not these). The platform cannot content-scan them, so warn the author
           not to type a ward/room or the centre's own identity here — that is
           the honest boundary of the D10 non-correlation guarantee (Codex review). */}
-      <p className="text-xs text-muted">{t("publicHint")}</p>
+      <p className="text-sm text-muted">{t("publicHint")}</p>
       <Field label={t("fields.title")} htmlFor="title"><input id="title" name="title" type="text" required value={form.title} onChange={(e) => update("title", e.target.value)} className={inputClasses} /></Field>
       <Field label={t("fields.description")} htmlFor="description"><textarea id="description" name="description" required rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClasses} /></Field>
       <div className="grid gap-4 sm:grid-cols-2"><Field label={t("fields.dateTime")} htmlFor="scheduledAt"><input id="scheduledAt" name="scheduledAt" type="datetime-local" required value={form.scheduledAt} onChange={(e) => update("scheduledAt", e.target.value)} className={inputClasses} /></Field><Field label={t("fields.duration")} htmlFor="durationMinutes"><input id="durationMinutes" name="durationMinutes" type="number" min={1} required value={form.durationMinutes} onChange={(e) => update("durationMinutes", e.target.value)} className={inputClasses} /></Field></div>

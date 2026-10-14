@@ -244,7 +244,7 @@ export function HospitalFinder({
       {/* The map is a linear stretch over a fixed bounding box, not a real
           geographic projection — this caption is the honesty statement
           ADR D11 requires in visible UI copy, not only a doc comment. */}
-      <p className="text-xs text-muted">{t("map.caption")}</p>
+      <p className="text-sm text-muted">{t("map.caption")}</p>
 
       {/* The list stays FIRST in the DOM so a screen-reader/keyboard user
           reaches the primary representation before the map's pin buttons

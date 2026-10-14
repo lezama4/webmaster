@@ -84,7 +84,7 @@ export async function AppPreview() {
           <Phone label={t("app.screen2")} src="/images/centres-mobile-snapshot.jpg" width={1078} height={2088} />
         </div>
 
-        <p className="text-center text-xs text-muted">{t("app.disclaimer")}</p>
+        <p className="text-center text-sm text-muted">{t("app.disclaimer")}</p>
       </section>
     </Reveal>
   );

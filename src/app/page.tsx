@@ -153,7 +153,7 @@ export default async function Home() {
                 </ul>
               </div>
             </div>
-            <p className="max-w-[64ch] text-xs text-background/60">{t("trust.disclaimer")}</p>
+            <p className="max-w-[64ch] text-sm text-background/60">{t("trust.disclaimer")}</p>
           </div>
         </section>
       </Reveal>
@@ -180,7 +180,7 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-          <p className="mt-10 text-xs text-muted">{t("artists.disclaimer")}</p>
+          <p className="mt-10 text-sm text-muted">{t("artists.disclaimer")}</p>
         </section>
       </Reveal>
 
@@ -214,7 +214,7 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted">{t("reviews.disclaimer")}</p>
+            <p className="text-sm text-muted">{t("reviews.disclaimer")}</p>
           </div>
         </section>
       </Reveal>

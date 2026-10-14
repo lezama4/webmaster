@@ -79,7 +79,7 @@ export function RateEventControl({
           </button>
         ))}
       </div>
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </div>
   );
 }
