@@ -10,7 +10,7 @@ import { Reveal } from "./Reveal";
  * the pages' real typography, crop and proportions. They are NOT iframes of
  * the live pages either: `X-Frame-Options: DENY` and CSP
  * `frame-ancestors 'none'` are deliberate clickjacking controls
- * (next.config.ts / middleware.ts) that must not be relaxed for a decorative
+ * (next.config.ts / proxy.ts) that must not be relaxed for a decorative
  * preview.
  *
  * The captures are decorative here — every page they show is reachable from

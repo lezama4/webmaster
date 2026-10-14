@@ -21,7 +21,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * eval for hot-module replacement; production builds never eval, so the
  * deployed policy stays strict.
  */
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const isDev = process.env.NODE_ENV !== "production";
   const scriptSrc = `'self' 'nonce-${nonce}' 'strict-dynamic'${
