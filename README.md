@@ -242,26 +242,15 @@ Tres trampas:
 
 ## Seed credentials
 
-Todas las cuentas siguientes son ficticias y exclusivas del seed aislado del
-TFM. No deben reutilizarse en un entorno real. La contraseña de todas es
-`VivetuTiempo2026!`.
+Las cuentas ficticias del seed (administración, centros y artistas, todas con
+el dominio `@vtt.test`) existen **solo en local y en el entorno de demo**. Sus
+emails y su contraseña compartida se generan desde
+[`prisma/seed.ts`](prisma/seed.ts), que es la única fuente de verdad; este
+README no las repite. **Nunca deben existir en producción.**
 
-| Rol | Email | Estado esperado |
-| --- | --- | --- |
-| Admin | `admin@vtt.test` | Puede validar y desactivar Profiles. |
-| Centro (hospital) — San Juan | `hospital.sanjuan@vtt.test` | Activo; propietario de los cinco Slots demo. |
-| Centro (hospital) — Esperanza | `hospital.esperanza@vtt.test` | Pendiente; demuestra la validación del Admin. |
-| Artista — Clara | `artist.clara@vtt.test` | Activa; Proposal competidora de S1 y aceptada de S5. |
-| Artista — Mateo | `artist.mateo@vtt.test` | Activo; Proposal competidora de S1, aceptada de S2 y rechazada en cascada en S4. |
-| Artista — Lucía | `artist.lucia@vtt.test` | Pendiente; demuestra la validación del Admin. |
-| Paciente/Familiar — Ana | `patient.ana@vtt.test` | Rol ligero de consulta; sin Profile en el Bloque 1. |
-
-El seed crea además diez Centros `ACTIVE` más para poblar el directorio y su
-filtro por tipo: cinco hospitales (del Mar, Santa Clara, San Rafael, do Orzán y
-del Guadiana, todos con email `hospital.<nombre>@vtt.test`) y los cinco centros
-no hospitalarios listados arriba (Urumea, Monteverde, Besòs, Bernesga —también
-con prefijo de email `hospital.*`, un identificador interno conservado— y Aravaca
-con `centre.aravaca@vtt.test`). Todos comparten la misma contraseña de demo.
+Para impedirlo, `prisma db seed` se niega a ejecutarse salvo que
+`DEMO_MODE=true` o que `DATABASE_URL` apunte a `localhost` o `127.0.0.1`. Ver
+[`docs/deployment.md`](docs/deployment.md#9-production-vs-demo-environments).
 
 El seed reproduce estos estados:
 
