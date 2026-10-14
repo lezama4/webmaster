@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { FormError } from "@ui/components/FormError";
 import { Field, inputClasses, primaryButton, secondaryButton } from "@ui/components/ui";
 
 export function ProposeActivityForm({ slotId }: { slotId: string }) {
@@ -18,5 +19,5 @@ export function ProposeActivityForm({ slotId }: { slotId: string }) {
   }
   if (sent) return <p className="text-sm font-medium text-success">{t("sent")}</p>;
   if (!open) return <button type="button" onClick={() => setOpen(true)} className={primaryButton}>{t("open")}</button>;
-  return <form onSubmit={onSubmit} className="flex flex-col gap-3" noValidate><Field label={t("label")} htmlFor={`message-${slotId}`} hint={t("hint")} error={error ?? undefined}><textarea id={`message-${slotId}`} name="message" required rows={3} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClasses} /></Field><div className="flex gap-2"><button type="submit" disabled={pending} className={primaryButton}>{pending ? t("sending") : t("submit")}</button><button type="button" disabled={pending} onClick={() => setOpen(false)} className={secondaryButton}>{t("cancel")}</button></div></form>;
+  return <form onSubmit={onSubmit} className="flex flex-col gap-3" noValidate><Field label={t("label")} htmlFor={`message-${slotId}`} hint={t("hint")}><textarea id={`message-${slotId}`} name="message" required rows={3} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClasses} /></Field>{error ? <FormError>{error}</FormError> : null}<div className="flex gap-2"><button type="submit" disabled={pending} className={primaryButton}>{pending ? t("sending") : t("submit")}</button><button type="button" disabled={pending} onClick={() => setOpen(false)} className={secondaryButton}>{t("cancel")}</button></div></form>;
 }
