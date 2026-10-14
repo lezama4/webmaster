@@ -287,6 +287,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          {/* Server-side flag only (never NEXT_PUBLIC_). A complementary
+              landmark, not a second banner/heading: the page keeps one h1 and
+              one `banner`. In normal flow so it never covers content. */}
+          {process.env.DEMO_MODE === "true" ? (
+            <aside
+              aria-label={t("demo.label")}
+              className="border-b border-border-strong bg-surface-2 px-4 py-2 text-center text-sm font-medium text-foreground"
+            >
+              <p>{t("demo.text")}</p>
+            </aside>
+          ) : null}
           <SiteHeader
             eventsLabel={t("nav.events")}
             finderLabel={tFinder("nav")}
