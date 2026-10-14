@@ -217,6 +217,27 @@ dataset de demostración. Después de ejecutarlas, volvé a correr
 `npm run db:seed` antes de lanzar `npm run test:e2e`, o cada prueba E2E fallará
 por falta de datos.
 
+## Parallel worktrees
+
+Run several agents in separate `git worktree`s against the one shared Postgres
+container (started from the main checkout with `docker compose up -d --wait`).
+
+```bash
+git worktree add ../wt-feature && cd ../wt-feature
+scripts/worktree-setup.sh      # add --force to regenerate .env
+scripts/worktree-teardown.sh   # drops this worktree's database after confirmation
+```
+
+Setup creates the database `vivetutiempo_<slug>` (slug = directory name), writes
+a `.env` with fresh secrets and a deterministic port (3001–3500), then runs
+`npm ci`, Prisma generate/migrate and the seed. It prints the exact commands.
+
+Three traps:
+
+- **Shared database wipe**: integration tests call `resetDatabase()` and delete every table. Never point a worktree at the `vivetutiempo` database.
+- **Port and `APP_ORIGIN`**: each worktree needs its own port, and `APP_ORIGIN` must equal the dev server origin or the CSRF guard fails closed. Use `npm run dev -- --port <port>`.
+- **Vitest ignores `.env`**: export it first, or all integration files skip silently: `set -a; . ./.env; set +a; VIVETUTIEMPO_RUN_INTEGRATION=true npm test`.
+
 ## Seed credentials
 
 Todas las cuentas siguientes son ficticias y exclusivas del seed aislado del
