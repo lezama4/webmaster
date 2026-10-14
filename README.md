@@ -240,6 +240,10 @@ Tres trampas:
 - **Puerto y `APP_ORIGIN`**: cada worktree necesita su puerto, y `APP_ORIGIN` debe coincidir con el origen del servidor de desarrollo o el guard CSRF falla cerrado. Usa `npm run dev -- --port <port>`.
 - **Vitest no carga `.env`**: expórtalo antes o los archivos de integración se saltan en silencio: `set -a; . ./.env; set +a; VIVETUTIEMPO_RUN_INTEGRATION=true npm test`.
 
+## Revisión de traducciones
+
+Para que una persona traductora revise el euskera, `node scripts/export-translations.mjs > traducciones.csv` imprime en CSV (clave, es, eu, en) todos los textos de `messages/`. Es de solo lectura; las claves que falten en un idioma salen como celdas vacías. No subas el CSV generado al repositorio.
+
 ## Seed credentials
 
 Las cuentas ficticias del seed (administración, centros y artistas, todas con
