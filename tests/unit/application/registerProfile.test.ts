@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { PasswordPolicyError } from "@domain/account/Password";
 import { DomainValidationError } from "@domain/errors";
 import type { CentreType } from "@domain/profile/Profile";
 import { ConflictError, ForbiddenError, UnauthenticatedError } from "@application/errors";
@@ -520,5 +521,35 @@ describe("registerProfile (self-registration -> pending Profile)", () => {
         await deps.accounts.findByEmail("artist.with-centretype@vtt.test"),
       ).toBeNull();
     });
+  });
+});
+
+describe("registerProfile password policy", () => {
+  const base = {
+    email: "policy@vtt.test",
+    role: "artist",
+    name: "Policy Artist",
+  } as const;
+
+  it.each([
+    ["too_short", "short"],
+    ["too_long", "a".repeat(129)],
+  ])("rejects a %s password and persists nothing", async (reason, password) => {
+    const deps = makeDeps();
+
+    await expect(registerProfile({ ...base, password }, deps)).rejects.toMatchObject({
+      constructor: PasswordPolicyError,
+      reason,
+    });
+    expect(await deps.accounts.findByEmail(base.email)).toBeNull();
+  });
+
+  it("rejects before touching the lock, even for an existing email (no existence oracle)", async () => {
+    const deps = makeDeps();
+    await registerProfile({ ...base, password: "long-enough-pw" }, deps);
+
+    await expect(
+      registerProfile({ ...base, password: "short" }, deps),
+    ).rejects.toBeInstanceOf(PasswordPolicyError);
   });
 });

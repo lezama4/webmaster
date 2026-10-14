@@ -118,3 +118,39 @@ describe.skipIf(!dbAvailable)("PrismaRegistrationUnitOfWork (pr2a-M5)", () => {
     expect(await client.profile.findUnique({ where: { id: existingProfile.id } })).not.toBeNull();
   });
 });
+
+describe.skipIf(!dbAvailable)("registerProfile password policy (real Postgres + Argon2)", () => {
+  const client = getTestPrismaClient();
+
+  beforeEach(async () => {
+    await resetDatabase(client);
+  });
+
+  const deps = () => ({
+    registrationUnitOfWork: new PrismaRegistrationUnitOfWork(client),
+    passwordHasher: new Argon2PasswordHasher(),
+    idGenerator: new CryptoIdGenerator(),
+    clock: new SystemClock(),
+  });
+
+  it.each([
+    ["too_short", "short"],
+    ["too_long", "a".repeat(129)],
+  ])("rejects a %s password and creates no Account row", async (reason, password) => {
+    const email = `policy-${reason}@vtt.test`;
+    await expect(
+      registerProfile({ email, password, role: "artist", name: "Policy Artist" }, deps()),
+    ).rejects.toMatchObject({ reason });
+    expect(await client.account.count({ where: { email } })).toBe(0);
+  });
+
+  it("accepts a password at the minimum length", async () => {
+    const email = "policy-ok@vtt.test";
+    const profile = await registerProfile(
+      { email, password: "12345678", role: "artist", name: "Policy Artist" },
+      deps(),
+    );
+    expect(profile.status).toBe("pending");
+    expect(await client.account.count({ where: { email } })).toBe(1);
+  });
+});

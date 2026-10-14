@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton } from "@ui/components/ui";
@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [centreType, setCentreType] = useState<CentreType>("hospital");
   // Optional PUBLIC centre location (Phase 2) — centre-only, never shown/sent for artists.
   const [city, setCity] = useState(""); const [postalCode, setPostalCode] = useState(""); const [addressLine, setAddressLine] = useState("");
+  const passwordRef = useRef<HTMLInputElement>(null);
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setPending(true);
     try {
@@ -37,7 +38,14 @@ export default function RegisterPage() {
         if (addressLine.trim()) body.addressLine = addressLine.trim();
       }
       const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) { setError(res.status === 409 ? t("errors.duplicateEmail") : t("errors.failure")); return; }
+      if (!res.ok) {
+        const { code } = (await res.json().catch(() => ({}))) as { code?: string };
+        if (code === "password_too_short") setError(t("errors.passwordTooShort"));
+        else if (code === "password_too_long") setError(t("errors.passwordTooLong"));
+        else setError(res.status === 409 ? t("errors.duplicateEmail") : t("errors.failure"));
+        if (code?.startsWith("password_")) passwordRef.current?.focus();
+        return;
+      }
       setDone(true);
     } catch { setError(t("errors.generic")); } finally { setPending(false); }
   }
@@ -57,7 +65,7 @@ export default function RegisterPage() {
           </>
         ) : null}
         <Field label={t("email")} htmlFor="email"><input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} /></Field>
-        <Field label={t("password")} htmlFor="password" hint={t("passwordHint")} error={error ?? undefined}><input id="password" name="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
+        <Field label={t("password")} htmlFor="password" hint={t("passwordHint")} error={error ?? undefined}><input ref={passwordRef} id="password" name="password" type="password" autoComplete="new-password" required aria-invalid={error ? true : undefined} aria-describedby={error ? "password-error" : "password-hint"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
         <button type="submit" disabled={pending} className={`${primaryButton} mt-2`}>{pending ? t("submitting") : t("submit")}</button>
       </form>
       <p className="text-sm text-muted">{t("alreadyRegistered")} <Link href="/login" className="font-medium text-foreground underline underline-offset-4">{t("login")}</Link></p>
