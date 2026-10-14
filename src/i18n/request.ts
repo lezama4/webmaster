@@ -9,11 +9,15 @@ function isLocale(value: string | undefined): value is Locale {
   return locales.some((locale) => locale === value);
 }
 
+/** A valid NEXT_LOCALE cookie wins; anything else is Basque. Accept-Language is deliberately ignored. */
+export function resolveLocale(cookieValue: string | undefined): Locale {
+  return isLocale(cookieValue) ? cookieValue : defaultLocale;
+}
+
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value;
-  // Basque is the default on first visit; Accept-Language is deliberately ignored.
-  const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
+  const locale = resolveLocale(cookieLocale);
 
   return {
     locale,
