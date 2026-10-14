@@ -9,7 +9,7 @@ export function StarRating({ rating, label }: { rating: number; label: string })
   const filledCount = Math.max(0, Math.min(5, Math.round(rating)));
 
   return (
-    <div role="img" aria-label={label} className="flex items-center gap-0.5 text-accent">
+    <div role="img" aria-label={label} className="flex items-center gap-0.5 text-accent-text">
       {Array.from({ length: 5 }, (_, index) => index < filledCount).map((filled, index) => (
         <svg
           key={index}

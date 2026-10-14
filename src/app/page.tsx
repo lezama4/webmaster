@@ -65,7 +65,7 @@ export default async function Home() {
       <Reveal className="border-t border-border">
         <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-20 sm:px-6 md:py-28">
           <div className="flex flex-col gap-4 md:max-w-2xl">
-            <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("what.eyebrow")}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("what.eyebrow")}</span>
             <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
               {t("what.title")}
             </h2>
@@ -85,7 +85,7 @@ export default async function Home() {
             </Link>
             <Link
               href="/quienes-somos"
-              className="text-sm font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-accent"
+              className="text-sm font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-accent-text"
             >
               {t("what.secondaryCta")}
               <span aria-hidden="true"> →</span>
@@ -98,7 +98,7 @@ export default async function Home() {
       <Reveal className="border-t border-border">
         <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 md:items-center md:gap-16 md:py-28">
           <div className="flex flex-col gap-5">
-            <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("mission.eyebrow")}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("mission.eyebrow")}</span>
             <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
               {t("mission.title")}
             </h2>
@@ -121,7 +121,7 @@ export default async function Home() {
         <section className="bg-foreground py-20 text-background md:py-28">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6">
             <div className="flex flex-col gap-4 md:max-w-2xl">
-              <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("trust.eyebrow")}</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-accent-inverse">{t("trust.eyebrow")}</span>
               <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
                 {t("trust.title")}
               </h2>
@@ -129,7 +129,7 @@ export default async function Home() {
             </div>
             <div className="grid gap-10 border-t border-background/15 pt-10 sm:grid-cols-2">
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-medium uppercase tracking-wide text-background/50">
+                <span className="text-xs font-medium uppercase tracking-wide text-background/60">
                   {t("trust.hospitalsLabel")}
                 </span>
                 <ul className="flex flex-col divide-y divide-background/10">
@@ -141,7 +141,7 @@ export default async function Home() {
                 </ul>
               </div>
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-medium uppercase tracking-wide text-background/50">
+                <span className="text-xs font-medium uppercase tracking-wide text-background/60">
                   {t("trust.patronsLabel")}
                 </span>
                 <ul className="flex flex-col divide-y divide-background/10">
@@ -153,7 +153,7 @@ export default async function Home() {
                 </ul>
               </div>
             </div>
-            <p className="max-w-[64ch] text-xs text-background/50">{t("trust.disclaimer")}</p>
+            <p className="max-w-[64ch] text-sm text-background/60">{t("trust.disclaimer")}</p>
           </div>
         </section>
       </Reveal>
@@ -162,7 +162,7 @@ export default async function Home() {
       <Reveal>
         <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 md:py-28">
           <div className="mb-10 flex flex-col gap-4 md:max-w-2xl">
-            <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("artists.eyebrow")}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("artists.eyebrow")}</span>
             <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
               {t("artists.title")}
             </h2>
@@ -180,7 +180,7 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-          <p className="mt-10 text-xs text-muted">{t("artists.disclaimer")}</p>
+          <p className="mt-10 text-sm text-muted">{t("artists.disclaimer")}</p>
         </section>
       </Reveal>
 
@@ -198,7 +198,7 @@ export default async function Home() {
           </div>
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-4">
-              <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("reviews.eyebrow")}</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("reviews.eyebrow")}</span>
               <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
                 {t("reviews.title")}
               </h2>
@@ -214,7 +214,7 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted">{t("reviews.disclaimer")}</p>
+            <p className="text-sm text-muted">{t("reviews.disclaimer")}</p>
           </div>
         </section>
       </Reveal>

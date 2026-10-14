@@ -35,7 +35,7 @@ export default async function HelpPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <header className="flex flex-col gap-3 pb-10">
-        <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("eyebrow")}</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("eyebrow")}</span>
         <h1 className="font-heading text-balance text-4xl font-normal tracking-tight md:text-5xl">{t("title")}</h1>
         <p className="max-w-[52ch] text-lg text-muted">{t("intro")}</p>
       </header>

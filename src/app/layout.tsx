@@ -174,7 +174,7 @@ function SiteHeader({
                 </span>
               )}
               {identity.statusLabel ? (
-                <span className="rounded-full bg-accent/15 px-2 py-1 text-xs font-medium text-accent">
+                <span className="rounded-full bg-accent/10 px-2 py-1 text-xs font-medium text-accent-text">
                   {identity.statusLabel}
                 </span>
               ) : null}
