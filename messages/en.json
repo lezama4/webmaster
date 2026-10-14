@@ -12,6 +12,7 @@
     "events": "Browse upcoming events"
   },
   "LanguageSelector": { "label": "Language selector" },
+  "LoadingScreen": { "label": "Loading" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
   "Share": {
     "heading": "Share this page",

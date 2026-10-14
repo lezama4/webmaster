@@ -8,6 +8,7 @@
     "events": "Ver próximos eventos"
   },
   "LanguageSelector": { "label": "Selector de idioma" },
+  "LoadingScreen": { "label": "Cargando" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" },
   "Share": {
     "heading": "Comparte esta página",
