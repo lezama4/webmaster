@@ -1,4 +1,5 @@
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { testLocaleStorageState } from "./locale";
 
 /**
  * Shared E2E fixtures/helpers (tasks 5.9/5.14/5.15/6.2/6.4). Every helper
@@ -227,7 +228,7 @@ export async function loginAsNewSession(
   browser: Browser,
   credentials: { email: string; password: string },
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: testLocaleStorageState });
   const page = await context.newPage();
   await page.goto("/login");
   await page.locator("#email").fill(credentials.email);

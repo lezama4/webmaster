@@ -8,6 +8,7 @@
     "events": "Ikusi hurrengo ekitaldiak"
   },
   "LanguageSelector": { "label": "Hizkuntza-hautatzailea" },
+  "LoadingScreen": { "label": "Kargatzen" },
   "CentreType": { "hospital": "Ospitalea", "nursing_home": "Adinekoen egoitza", "day_centre": "Eguneko zentroa", "day_hospital": "Eguneko ospitalea", "occupational_centre": "Zentro okupazionala", "palliative_unit": "Zaintza aringarrien unitatea" },
   "Share": {
     "heading": "Partekatu orrialde hau",
