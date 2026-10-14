@@ -7,10 +7,9 @@ import { expect, test } from "@playwright/test";
 // established for Feature A: these are UI/presentation tasks, so the
 // RED/GREEN cycle happens at the e2e level rather than a unit level.
 //
-// Default Playwright locale is `en-US` (see playwright.config.ts), which
-// `src/i18n/request.ts` resolves to the `en` messages via Accept-Language
-// when no `NEXT_LOCALE` cookie is set — so assertions below use the English
-// copy without needing to set a cookie.
+// playwright.config.ts sets a `NEXT_LOCALE=en` cookie for every test (the app
+// itself defaults to Basque) — so assertions below use the English copy without
+// needing to set a cookie.
 
 test.describe("Home clarity block (Home.what) — spec: 'Home Displays an Explanatory Block Before Mission'", () => {
   test("renders an h2 between the Hero h1 and the Mission h2, and links to /quienes-somos", async ({ page }) => {

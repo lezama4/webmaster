@@ -1,5 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import { baseURL, isDeployedTarget } from "./e2e/support/baseUrl";
+import { testLocaleStorageState } from "./e2e/support/locale";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -13,6 +14,7 @@ export default defineConfig({
   use: {
     baseURL,
     locale: "en-US",
+    storageState: testLocaleStorageState,
     trace: "on-first-retry",
   },
   webServer: isDeployedTarget
