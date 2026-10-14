@@ -3,6 +3,13 @@
     "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register", "logout": "Log out", "loggingOut": "Logging out…" }, "account": { "centre": "Centre", "artist": "Artist", "admin": "Administration", "patient": "My account", "noName": "My account", "pending": "Pending review", "inactive": "No permissions" },
     "footer": { "description": "A non-profit initiative bringing live performances to the people in care centres, during long stays or days away from home. Free for centres, artists, and families.", "help": "Help" }
   },
+  "NotFound": {
+    "eyebrow": "Error 404",
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has moved.",
+    "home": "Back to the home page",
+    "events": "Browse upcoming events"
+  },
   "LanguageSelector": { "label": "Language selector" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
   "Share": {
@@ -21,7 +28,6 @@
     "badge": "Non-profit · free for everyone involved",
     "title": { "firstLine": "We help keep life", "secondLine": "from standing still." },
     "description": "See them smile again, be moved, sing, learn —and, why not, cry too— surrounded by the people they love, in moments none of you will forget.",
-    "ariaRating": "{rating} out of 5 stars",
     "hero": { "imageAlt": "A cellist performs for a group of patients and family members in a hospital common room, with a person in a wheelchair among the audience." },
     "mission": {
       "eyebrow": "Why we exist",
@@ -30,45 +36,9 @@
       "imageAlt": "An artist shows coloured paper cut-outs to a group of patients, a teenager, and a nurse gathered around a table covered in craft materials."
     },
     "trust": {
-      "eyebrow": "Institutional backing",
+      "eyebrow": "Reviewed by each centre",
       "title": "Every slot is opened by a care centre, not an anonymous platform.",
-      "description": "Coordinators at each centre review and confirm proposals before they reach the people in their care. That's how Todo el tiempo cuenta stays safe and meaningful.",
-      "hospitalsLabel": "Participating centres",
-      "patronsLabel": "Patron organisations",
-      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
-      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "Illustrative set for this MVP phase: it includes centres from the demo database and example organisations, not confirmed patronage agreements."
-    },
-    "artists": {
-      "eyebrow": "Featured collaborators",
-      "title": "The best-rated artists already bringing their craft into care centres.",
-      "description": "Example profiles from the demo database, with the rating they'd receive after a completed event.",
-      "disclaimer": "Illustrative profiles and ratings for this MVP phase.",
-      "items": [
-        { "name": "Clara Romero", "role": "Cellist", "quote": "Playing for someone who hasn't left the ward in weeks changes what a concert means.", "rating": 5 },
-        { "name": "Mateo Díaz", "role": "Guitarist and songwriter", "quote": "When we sing together in the room, it stops being a hospital for a while.", "rating": 5 }
-      ]
-    },
-    "reviews": {
-      "eyebrow": "Voices from the centres",
-      "title": "What people who've already had a moment say.",
-      "imageAlt": "A choir performs for an audience of seated patients and family members, with two people in wheelchairs in the front row.",
-      "disclaimer": "Illustrative examples for this MVP phase; not verified reviews of real events.",
-      "items": [
-        { "quote": "After three weeks admitted, that concert was the first time my daughter really smiled.", "author": "Itziar Goikoetxea", "context": "Patient's mother, Hospital San Juan", "rating": 5 },
-        { "quote": "The workshop broke the routine of the corridor. For one afternoon, we didn't talk about test results or schedules.", "author": "Fernando Cabrera", "context": "Patient, Hospital Esperanza", "rating": 5 },
-        { "quote": "We published the slot on a Tuesday and had a confirmed artist by Thursday. Coordinating was that simple.", "author": "Dr. Marta Elizondo", "context": "Ward coordinator, Hospital San Juan", "rating": 5 }
-      ]
-    },
-    "app": {
-      "eyebrow": "On mobile",
-      "badge": "Coming soon",
-      "title": "Take it in your pocket.",
-      "description": "The site already works on your phone: find your centre, browse events and use the whole platform from mobile. These are real screenshots. The native app will come later.",
-      "screenHome": "Home",
-      "screen1": "Discover events",
-      "screen2": "Find your centre",
-      "disclaimer": "Real screenshots of the site on mobile. The native app is in development."
+      "description": "Coordinators at each centre review and confirm proposals before they reach the people in their care. That's how Todo el tiempo cuenta stays safe and meaningful."
     },
     "closing": {
       "title": "Ready to open the first slot, or propose the first moment?",
@@ -94,14 +64,14 @@
       "01": { "role": "Centres", "text": "Open a slot in the centre's agenda — a date, a time, a place where the people there could use some company." },
       "02": { "role": "Artists", "text": "Browse open slots and propose an activity: music, storytelling, magic, a workshop." },
       "03": { "role": "Centres", "text": "The same centre reviews the proposals it received and confirms one. The moment becomes a scheduled event." },
-      "04": { "role": "Families", "text": "The people there and their families see what's coming up, and share how it went." }
+      "04": { "role": "Families", "text": "The people there and their families see what's coming up." }
     },
     "faq": {
       "title": "Frequently asked questions",
       "items": [
-        { "question": "How are events and artists rated?", "answer": "Registered users can rate a published event 1–5 stars, and each event shows its average. The testimonial quotes on the homepage remain illustrative examples, not verified reviews." },
+        { "question": "How are events rated?", "answer": "Only signed-in users can rate, and the only sign-up is for care centres and artists, so families and visitors cannot rate yet. A signed-in user can rate a published event from 1 to 5 stars and change the rating later. Each event shows only the average and the number of ratings, never who rated." },
         { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a centre publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
-        { "question": "How is people's location protected?", "answer": "Todo el tiempo cuenta never publishes personal data. A slot's room or space is visible only to signed-in artists considering a proposal; it never appears in the public event listing. No one's name, exact location, or reason for their stay is recorded on the platform at all." }
+        { "question": "How is people's location protected?", "answer": "The platform does not record the name, location or reason for stay of the people being cared for. Public pages show the name and city of the centre hosting each event, never its room or street address. A slot's room or space is visible only to signed-in artists with an approved profile, while the slot is open; it never appears on public pages. Event titles and descriptions are public and written by the centres, who are asked not to include rooms or personal details." }
       ]
     }
   },
@@ -151,15 +121,16 @@
     },
     "dataStance": {
       "title": "What data we publish, and what we don't",
-      "description": "We publish what's needed to find a centre or an event: name, city, postal code, the centre type, and, for centres, an approximate map location.",
+      "description": "Centres and events are public, and each event names the centre that hosts it. We publish only what is needed to find them: for a centre, its name, city, postal code, centre type, map position and number of upcoming events; for an event, its title, description, date, duration, artist, audience, capacity, average rating and number of ratings, and the host centre's name and city.",
       "excludedTitle": "Deliberately, we never publish:",
       "excluded": [
         "The exact room or space where an event takes place",
+        "A centre's street address",
         "The content of proposals between centres and artists",
-        "Email addresses or internal database identifiers",
-        "Any visible link between a specific centre and its events"
+        "Email addresses and the identifiers of accounts, profiles or slots",
+        "Data about the people being cared for (the platform does not record it)"
       ],
-      "note": "The centre directory and the event listing are deliberately kept unlinked: seeing a centre never reveals which events it has had, and seeing an event never reveals which centre it happened at."
+      "note": "A slot's room or space is visible only to signed-in artists with an approved profile, while the slot is open, and never appears on public pages. Event titles and descriptions are written by the centres, who are asked not to include rooms or personal details; they are not checked automatically."
     },
     "funding": {
       "title": "Why it's free",
@@ -167,7 +138,7 @@
     }
   },
   "Events": {
-    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed; exact locations are shared privately with each centre.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "centreLabel": "Centre", "allCentres": "All centres", "apply": "Filter" },
+    "title": "Upcoming events", "description": "Live performances scheduled at participating care centres. Times and artists are confirmed. Each event shows the centre that hosts it; the exact room or space is not published.", "filters": { "dateLabel": "Date", "audienceLabel": "Audience", "allDates": "Any date", "week": "This week", "month": "This month", "allAudiences": "All audiences", "centreLabel": "Centre", "allCentres": "All centres", "apply": "Filter" },
     "empty": { "title": "No events scheduled yet", "description": "As centres confirm proposals from artists, the moments they arrange will appear here.", "action": "Register a profile" },
     "withArtist": "with", "atCentre": "At", "capacity": "Max capacity:", "capacityValue": "{count, plural, one {# person} other {# people}}", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" },
     "rating": {

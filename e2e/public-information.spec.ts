@@ -85,6 +85,8 @@ test.describe("/quienes-somos — spec: 'Covers Purpose, Roles, Flow, Validation
     await page.goto("/quienes-somos");
     await expect(page.getByText(/exact room or space/i)).toBeVisible();
     await expect(page.getByText(/content of proposals/i)).toBeVisible();
-    await expect(page.getByText(/deliberately kept unlinked/i)).toBeVisible();
+    await expect(page.getByText(/street address/i)).toBeVisible();
+    // D10 was revised: events name their host centre, and the copy says so.
+    await expect(page.getByText(/each event names the centre that hosts it/i)).toBeVisible();
   });
 });

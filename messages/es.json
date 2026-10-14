@@ -1,5 +1,12 @@
 {
   "Layout": { "nav": { "events": "Eventos", "help": "Ayuda", "login": "Iniciar sesión", "register": "Registrarse", "logout": "Cerrar sesión", "loggingOut": "Cerrando sesión…" }, "account": { "centre": "Centro", "artist": "Artista", "admin": "Administración", "patient": "Mi cuenta", "noName": "Mi cuenta", "pending": "Pendiente de revisión", "inactive": "Sin permisos" }, "footer": { "description": "Una iniciativa sin ánimo de lucro que lleva actuaciones en directo a las personas que están en centros de cuidado, durante estancias largas o días lejos de casa. Gratuita para centros, artistas y familias.", "help": "Ayuda" } },
+  "NotFound": {
+    "eyebrow": "Error 404",
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o se ha movido.",
+    "home": "Volver al inicio",
+    "events": "Ver próximos eventos"
+  },
   "LanguageSelector": { "label": "Selector de idioma" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" },
   "Share": {
@@ -16,7 +23,6 @@
   },
   "Home": {
     "badge": "Sin ánimo de lucro · gratuito para todas las personas implicadas", "title": { "firstLine": "Ayudamos a que la vida", "secondLine": "no se detenga." }, "description": "Vuelve a verles sonreír, emocionarse, cantar, aprender —y por qué no, también llorar— rodeados de sus seres queridos, en momentos que no podréis olvidar.",
-    "ariaRating": "{rating} de 5 estrellas",
     "hero": { "imageAlt": "Una violonchelista toca para un grupo de pacientes y familiares en la sala común de un hospital, con una persona en silla de ruedas entre el público." },
     "mission": {
       "eyebrow": "Por qué existimos",
@@ -25,45 +31,9 @@
       "imageAlt": "Un artista muestra recortes de papel de colores a un grupo de pacientes, un adolescente y una enfermera alrededor de una mesa cubierta de materiales de manualidades."
     },
     "trust": {
-      "eyebrow": "Respaldo institucional",
+      "eyebrow": "Revisado por cada centro",
       "title": "Cada hueco lo abre un centro de cuidado, no una plataforma anónima.",
-      "description": "Los coordinadores de cada centro revisan y confirman las propuestas antes de que lleguen a las personas a su cuidado. Así es como Todo el tiempo cuenta se mantiene seguro y con sentido.",
-      "hospitalsLabel": "Centros participantes",
-      "patronsLabel": "Organizaciones mecenas",
-      "hospitals": ["Hospital San Juan", "Hospital Esperanza", "Hospital Clínico del Puerto", "Complejo Hospitalario Ribera Alta"],
-      "patrons": ["Fundación Horizonte Solidario", "Obra Social Puente Abierto"],
-      "disclaimer": "Conjunto ilustrativo para esta fase MVP: incluye centros de la base de datos de demostración y organizaciones de ejemplo, no acuerdos de mecenazgo confirmados."
-    },
-    "artists": {
-      "eyebrow": "Colaboradores destacados",
-      "title": "Los artistas mejor valorados que ya llevan su oficio a los centros.",
-      "description": "Perfiles de ejemplo de la base de datos de demostración, con la valoración que recibirían tras un evento completado.",
-      "disclaimer": "Perfiles y valoraciones ilustrativos para esta fase MVP.",
-      "items": [
-        { "name": "Clara Romero", "role": "Violonchelista", "quote": "Tocar para alguien que lleva semanas sin salir de planta cambia el sentido del concierto.", "rating": 5 },
-        { "name": "Mateo Díaz", "role": "Guitarrista y cantautor", "quote": "Cuando cantamos juntos en la sala, deja de ser un hospital por un rato.", "rating": 5 }
-      ]
-    },
-    "reviews": {
-      "eyebrow": "Voces desde los centros",
-      "title": "Lo que cuentan quienes ya vivieron un momento.",
-      "imageAlt": "Un coro actúa ante un público de pacientes y familiares sentados, con dos personas en silla de ruedas en primera fila.",
-      "disclaimer": "Ejemplos ilustrativos para esta fase MVP; no son reseñas verificadas de eventos reales.",
-      "items": [
-        { "quote": "Después de tres semanas ingresada, ese concierto fue el primer momento en que mi hija sonrió de verdad.", "author": "Itziar Goikoetxea", "context": "Madre de paciente, Hospital San Juan", "rating": 5 },
-        { "quote": "El taller rompió la rutina del pasillo. Por una tarde, no hablamos de análisis ni de horarios.", "author": "Fernando Cabrera", "context": "Paciente, Hospital Esperanza", "rating": 5 },
-        { "quote": "Publicamos el hueco un martes y el jueves ya teníamos artista confirmado. Coordinar fue así de simple.", "author": "Dra. Marta Elizondo", "context": "Coordinadora de planta, Hospital San Juan", "rating": 5 }
-      ]
-    },
-    "app": {
-      "eyebrow": "En el móvil",
-      "badge": "Próximamente",
-      "title": "Llévalo en el bolsillo.",
-      "description": "La web ya funciona en el móvil: encuentra tu centro, mira los eventos y usa toda la plataforma desde el teléfono. Estas son capturas reales. La app nativa llegará después.",
-      "screenHome": "Inicio",
-      "screen1": "Descubre eventos",
-      "screen2": "Encuentra tu centro",
-      "disclaimer": "Capturas reales de la web en el móvil. La app nativa está en desarrollo."
+      "description": "Los coordinadores de cada centro revisan y confirman las propuestas antes de que lleguen a las personas a su cuidado. Así es como Todo el tiempo cuenta se mantiene seguro y con sentido."
     },
     "closing": {
       "title": "¿Listo para abrir el primer hueco, o para proponer el primer momento?",
@@ -85,13 +55,13 @@
     "title": "Cómo funciona Todo el tiempo cuenta",
     "intro": "Una guía rápida del proceso, pensada para centros, artistas y familias.",
     "howItWorks": { "title": "Cómo se crea un momento", "description": "Cuatro pasos, una tarde compartida. Antes de empezar, un administrador valida cada centro y cada artista; después, cada paso se revisa antes de llegar a las personas que lo recibirán." },
-    "steps": { "01": { "role": "Centros", "text": "Abren un hueco en la agenda del centro: una fecha, una hora y un lugar donde a las personas que están allí les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Centros", "text": "El mismo centro revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Las personas que están allí y sus familias ven lo que está por llegar y comparten cómo fue." } },
+    "steps": { "01": { "role": "Centros", "text": "Abren un hueco en la agenda del centro: una fecha, una hora y un lugar donde a las personas que están allí les vendría bien compañía." }, "02": { "role": "Artistas", "text": "Exploran huecos abiertos y proponen una actividad: música, narración, magia o un taller." }, "03": { "role": "Centros", "text": "El mismo centro revisa las propuestas recibidas y confirma una. El momento se convierte en un evento programado." }, "04": { "role": "Familias", "text": "Las personas que están allí y sus familias ven lo que está por llegar." } },
     "faq": {
       "title": "Preguntas frecuentes",
       "items": [
-        { "question": "¿Cómo se valoran los eventos y los artistas?", "answer": "Los usuarios registrados pueden valorar un evento publicado de 1 a 5 estrellas, y cada evento muestra su media. Los testimonios de la portada siguen siendo ejemplos ilustrativos, no reseñas verificadas." },
+        { "question": "¿Cómo se valoran los eventos?", "answer": "Solo pueden valorar los usuarios con la sesión iniciada, y el único registro disponible es el de centros y artistas, así que las familias y los visitantes todavía no pueden valorar. Quien ha iniciado sesión puede valorar un evento publicado de 1 a 5 estrellas y cambiar su valoración después. Cada evento muestra solo la media y el número de valoraciones, nunca quién ha valorado." },
         { "question": "¿Qué significan las franjas de edad (audiencia) de un hueco?", "answer": "Cada hueco publicado por un centro indica una franja orientativa —por ejemplo, 0–5 años, 6–12 años, adultos o todos los públicos— para que los artistas propongan una actividad adecuada a quienes van a asistir." },
-        { "question": "¿Cómo se protege la ubicación de las personas?", "answer": "Todo el tiempo cuenta nunca publica datos personales. El espacio o la sala de un hueco solo es visible para los artistas identificados que valoran postularse; en la agenda pública de eventos esa ubicación nunca aparece. El nombre, la ubicación exacta o el motivo de estancia de cualquier persona no se registran en la plataforma." }
+        { "question": "¿Cómo se protege la ubicación de las personas?", "answer": "La plataforma no registra el nombre, la ubicación ni el motivo de estancia de las personas atendidas. Las páginas públicas muestran el nombre y la ciudad del centro que acoge cada evento, nunca su sala ni su calle. La sala o el espacio de un hueco solo lo ven los artistas identificados con perfil aprobado mientras el hueco está abierto; nunca aparece en las páginas públicas. Los títulos y las descripciones de los eventos son públicos y los escriben los centros, a los que se les pide que no incluyan salas ni datos personales." }
       ]
     }
   },
@@ -141,22 +111,23 @@
     },
     "dataStance": {
       "title": "Qué datos publicamos, y qué no",
-      "description": "Publicamos lo necesario para encontrar un centro o un evento: nombre, ciudad, código postal, el tipo de centro y, para los centros, una ubicación aproximada en el mapa.",
+      "description": "Los centros y los eventos son públicos, y cada evento indica el centro que lo acoge. Publicamos solo lo necesario para encontrarlos: de un centro, su nombre, ciudad, código postal, tipo de centro, posición en el mapa y número de próximos eventos; de un evento, su título, descripción, fecha, duración, artista, público, aforo, valoración media y número de valoraciones, y el nombre y la ciudad del centro anfitrión.",
       "excludedTitle": "Deliberadamente, nunca publicamos:",
       "excluded": [
         "La sala o el espacio exacto donde ocurre un evento",
+        "La calle y el número de un centro",
         "El contenido de las propuestas entre centros y artistas",
-        "Direcciones de correo electrónico o identificadores internos de la base de datos",
-        "Cualquier relación visible entre un centro concreto y sus eventos"
+        "Direcciones de correo electrónico e identificadores de cuentas, perfiles o huecos",
+        "Datos de las personas atendidas (la plataforma no los registra)"
       ],
-      "note": "El directorio de centros y el listado de eventos se mantienen deliberadamente sin enlazar entre sí: ver un centro nunca revela qué eventos ha tenido, y ver un evento nunca revela en qué centro ocurrió."
+      "note": "La sala o el espacio de un hueco solo lo ven los artistas identificados con perfil aprobado mientras el hueco está abierto, y nunca aparece en las páginas públicas. Los títulos y las descripciones de los eventos los escriben los propios centros, a los que se les pide que no incluyan salas ni datos personales; no se comprueban automáticamente."
     },
     "funding": {
       "title": "Por qué es gratis",
       "description": "Todo el tiempo cuenta es una iniciativa sin ánimo de lucro. Centros, artistas y familias no pagan nada por participar; el proyecto se sostiene al margen de cualquier transacción entre las partes."
     }
   },
-  "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en centros participantes. Las horas y los artistas están confirmados; las ubicaciones exactas se comparten de forma privada con cada centro.", "filters": { "dateLabel": "Fecha", "audienceLabel": "Público", "allDates": "Cualquier fecha", "week": "Esta semana", "month": "Este mes", "allAudiences": "Todos los públicos", "centreLabel": "Centro", "allCentres": "Todos los centros", "apply": "Filtrar" }, "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los centros aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "atCentre": "En", "capacity": "Aforo máximo:", "capacityValue": "{count, plural, one {# persona} other {# personas}}", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Sin valoraciones todavía", "average": "{average} de media · {count} valoraciones", "averageLabel": "Valoración media: {value} de 5 estrellas", "title": "Valora este evento", "yourRating": "Tu valoración", "starLabel": "{value} de 5 estrellas", "error": "No se ha podido guardar tu valoración. Vuelve a intentarlo." } },
+  "Events": { "title": "Próximos eventos", "description": "Actuaciones en directo programadas en centros participantes. Las horas y los artistas están confirmados. Cada evento indica el centro que lo acoge; la sala o el espacio exacto no se publica.", "filters": { "dateLabel": "Fecha", "audienceLabel": "Público", "allDates": "Cualquier fecha", "week": "Esta semana", "month": "Este mes", "allAudiences": "Todos los públicos", "centreLabel": "Centro", "allCentres": "Todos los centros", "apply": "Filtrar" }, "empty": { "title": "Aún no hay eventos programados", "description": "Los momentos que organicen los centros aparecerán aquí cuando confirmen propuestas de artistas.", "action": "Registrar un perfil" }, "withArtist": "con", "atCentre": "En", "capacity": "Aforo máximo:", "capacityValue": "{count, plural, one {# persona} other {# personas}}", "duration": { "minutes": "{minutes} min", "hours": "{hours} h", "hoursAndMinutes": "{hours} h {minutes} min" }, "rating": { "noRatings": "Sin valoraciones todavía", "average": "{average} de media · {count} valoraciones", "averageLabel": "Valoración media: {value} de 5 estrellas", "title": "Valora este evento", "yourRating": "Tu valoración", "starLabel": "{value} de 5 estrellas", "error": "No se ha podido guardar tu valoración. Vuelve a intentarlo." } },
   "Login": { "title": "Te damos la bienvenida", "description": "Inicia sesión para coordinar o revisar eventos.", "email": "Correo electrónico", "password": "Contraseña", "submit": "Iniciar sesión", "submitting": "Iniciando sesión…", "noAccount": "¿Aún no tienes una cuenta?", "register": "Registrar un centro o artista", "errors": { "invalidCredentials": "Correo electrónico o contraseña no válidos.", "generic": "Algo ha salido mal. Vuelve a intentarlo." } },
   "Register": { "title": "Registrarse", "description": "Centros y artistas se unen aquí. Cada perfil se revisa antes de poder actuar.", "email": "Correo electrónico", "password": "Contraseña", "passwordHint": "Al menos 8 caracteres.", "submit": "Crear perfil", "submitting": "Enviando…", "alreadyRegistered": "¿Ya estás registrado?", "login": "Iniciar sesión", "role": { "label": "Quiero registrar un", "centre": "Centro de cuidado", "artist": "Artista" }, "name": { "centre": "Nombre del centro", "artist": "Nombre artístico" }, "location": { "city": "Ciudad", "postalCode": "Código postal", "addressLine": "Dirección", "hint": "Opcional. Ayuda a las familias a encontrar el centro en el mapa." }, "centreType": { "label": "Tipo de centro", "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" }, "errors": { "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.", "passwordTooLong": "La contraseña no puede tener más de 128 caracteres.", "duplicateEmail": "Ya existe una cuenta con ese correo electrónico.", "failure": "No se ha podido completar el registro. Revisa tus datos y vuelve a intentarlo.", "generic": "Algo ha salido mal. Vuelve a intentarlo." }, "success": { "title": "Solicitud recibida", "description": "Tu perfil está pendiente de revisión por parte de un coordinador. Puedes iniciar sesión cuando se apruebe.", "action": "Ir al inicio de sesión" } },
   "AdminProfiles": { "title": "Cola de validación de perfiles", "description": "Revisa los centros y artistas que esperan aprobación. Los perfiles que se registran de nuevo tras un rechazo también aparecen aquí: la misma cola, sin lista aparte.", "requested": "Solicitado el {date}", "types": { "centre": "Centro de cuidado", "artist": "Artista" }, "centreType": { "hospital": "Hospital", "nursing_home": "Residencia de mayores", "day_centre": "Centro de día", "day_hospital": "Hospital de día", "occupational_centre": "Centro ocupacional", "palliative_unit": "Unidad de cuidados paliativos" }, "empty": { "title": "No hay nada que revisar", "description": "Los nuevos registros de centros y artistas aparecerán aquí en cuanto lleguen." }, "active": { "title": "Centros y artistas activos", "description": "Perfiles ya aprobados. Desactiva uno si deja de cumplir los requisitos de la plataforma.", "empty": { "title": "No hay perfiles activos", "description": "Los perfiles que se aprueben aparecerán aquí." } }, "review": { "legacy": "Sin base registrada (anterior a la auditoría)" } },
