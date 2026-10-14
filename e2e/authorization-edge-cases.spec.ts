@@ -1,5 +1,6 @@
 import { expect, request, test, type APIRequestContext } from "@playwright/test";
 import { SEED_PROPOSAL_IDS, SEED_SLOT_IDS, SEED_USERS } from "./support/helpers";
+import { baseURL } from "./support/baseUrl";
 
 // Task 5.15 — the authorization/denial matrix, exercised through DIRECT API
 // calls (Playwright's `request`, not the browser) so each assertion proves the
@@ -11,7 +12,6 @@ import { SEED_PROPOSAL_IDS, SEED_SLOT_IDS, SEED_USERS } from "./support/helpers"
 // (every seeded Slot belongs to the active Hospital "San Juan"; "Esperanza" is
 // a pending, non-active Hospital) and are denials, so none mutates state.
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const APPROVE_S1_CLARA = `/api/slots/${SEED_SLOT_IDS.s1OpenCompeting}/proposals/${SEED_PROPOSAL_IDS.s1Clara}/approve`;
 
 function sameOriginContext(): Promise<APIRequestContext> {

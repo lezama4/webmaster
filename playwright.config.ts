@@ -1,10 +1,5 @@
 import { defineConfig } from "@playwright/test";
-
-// M6: PLAYWRIGHT_BASE_URL (named by tasks.md 7.8) lets the same suite target
-// a deployed environment. When it is set, no local dev server is started —
-// a production/staging smoke run must not try to spawn `npm run dev`.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-const isDeployedTarget = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+import { baseURL, isDeployedTarget } from "./e2e/support/baseUrl";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -23,7 +18,7 @@ export default defineConfig({
   webServer: isDeployedTarget
     ? undefined
     : {
-        command: "npm run dev",
+        command: `npm run dev -- --port ${new URL(baseURL).port}`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

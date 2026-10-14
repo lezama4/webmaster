@@ -11,6 +11,7 @@ import {
   SEED_RATING_IDS,
   SEED_SLOT_IDS,
 } from "./support/helpers";
+import { baseURL } from "./support/baseUrl";
 
 // Tasks 6.2 + 6.4 — the public, anonymous Event projection (ADR D6). It must
 // expose ONLY published Events and ONLY the five allow-listed fields; a
@@ -26,7 +27,6 @@ import {
 // name + city from the centre `Profile` — never its address-level fields — and
 // never the Slot ward/room location.
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // Phase 3/Block 2: the projection now also carries the Event's OWN `id`
 // (needed to POST a rating) plus the read-only `averageStars`/`ratingCount`
 // aggregate. Still no Slot/Proposal/Profile/Account id, Slot `location`,

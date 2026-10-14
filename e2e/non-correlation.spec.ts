@@ -6,6 +6,7 @@ import {
   SEED_LOCATIONS,
   SEED_PUBLISHED_EVENT_TITLE,
 } from "./support/helpers";
+import { baseURL } from "./support/baseUrl";
 
 // Task 10.2 — ADR D10's non-correlation invariant, asserted at the BROWSER
 // boundary, in both directions. This is the top layer of D10's defence
@@ -28,7 +29,6 @@ import {
 // HOSPITAL-direction test failed after adding a field, you are changing D10 —
 // read it first.
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list.
 // D10 SECOND REVISION (centre-event-counts): `upcomingEventCount` is admitted
 // — an AGGREGATE of the centre's published, still-upcoming events. It leaks

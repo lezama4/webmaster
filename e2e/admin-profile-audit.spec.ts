@@ -1,6 +1,7 @@
 import { expect, request, test, type BrowserContext, type Page } from "@playwright/test";
 import es from "../messages/es.json";
 import { SEED_USERS, loginAsNewSession, registerViaUi, uniqueSuffix } from "./support/helpers";
+import { baseURL } from "./support/baseUrl";
 
 // Task 5.10 — auditable-profile-approval (D21-D27). Covers the
 // `auditable-admin-decisions` and `public-hospital-directory`
@@ -22,7 +23,6 @@ import { SEED_USERS, loginAsNewSession, registerViaUi, uniqueSuffix } from "./su
 // hospital-directory, non-correlation all assert on Esperanza's PENDING
 // status).
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // `upcomingEventCount` joined the list in the D10 second revision
 // (centre-event-counts) — an aggregate of the centre's published, upcoming
 // events. The audit fields this suite guards (reviewBasis, adminAccountId,
