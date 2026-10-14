@@ -10,7 +10,7 @@ export const secondaryButton =
 
 /** Shared input styling — used by form fields across the auth and dashboard pages. Focus ring comes from the global `*:focus-visible` accent outline. */
 export const inputClasses =
-  "w-full rounded-[8px] border border-border bg-surface px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted";
+  "w-full rounded-[8px] border border-border-strong bg-surface px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted";
 
 /** Shared pill styling for a Slot/Event's audience (age band) badge (Phase 1). */
 export const audienceBadgeClasses =
