@@ -75,8 +75,8 @@ test.describe("Admin decision audit (auditable-profile-approval, D21-D27)", () =
 
       const admin = await loginAsNewSession(browser, SEED_USERS.admin);
       contexts.push(admin.context);
-      // Deterministic locale for the DOM assertions below, independent of
-      // the runner's own Accept-Language header (defaults to `es`, D13).
+      // Deterministic locale for the DOM assertions below: the app defaults to
+      // Basque and ignores Accept-Language, and the suite default is `en`.
       await admin.context.addCookies([{ name: "NEXT_LOCALE", value: "es", url: baseURL }]);
       await admin.page.goto("/admin/profiles");
 
