@@ -67,7 +67,7 @@ export function RateEventControl({
             aria-label={t("rating.starLabel", { value })}
             aria-pressed={value <= stars}
             onClick={() => rate(value)}
-            className="p-0.5 text-accent transition-opacity disabled:opacity-60"
+            className="p-0.5 text-accent-text transition-opacity disabled:opacity-60"
           >
             <svg
               aria-hidden="true"

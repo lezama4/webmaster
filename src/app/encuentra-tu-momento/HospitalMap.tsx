@@ -91,7 +91,7 @@ export function HospitalMap({
           >
             <span
               className={`h-3 w-3 rounded-full border-2 border-surface shadow transition-transform duration-150 motion-reduce:transition-none ${
-                isSelected ? "scale-125 bg-primary" : "bg-accent"
+                isSelected ? "scale-125 bg-primary" : "bg-accent-text"
               }`}
             />
           </button>

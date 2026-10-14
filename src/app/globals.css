@@ -12,12 +12,19 @@
   --surface: #ffffff;
   --surface-2: #eceee3;
   --foreground: #1d211c;
-  --muted: #6d766a;
+  --muted: #656d62;
   --border: #dde1d3;
   --primary: #3f6b4a;
   --primary-hover: #2f5238;
   --primary-foreground: #f5faf2;
   --accent: #c98a4b;
+  /* Amber for TEXT and meaningful graphics on light surfaces: --accent is
+     decoration only (2.7:1 on --background). This is the minimal darkening
+     that reaches 4.5:1 on background, surface and surface-2. */
+  --accent-text: #8e6135;
+  /* Amber for text on the INVERTED section (bg-foreground): that surface is dark
+     in light mode and light in dark mode, so this token flips the other way. */
+  --accent-inverse: #c98a4b;
   --success: #3f6b4a;
   --warning: #c98a4b;
   --danger: #a8432f;
@@ -44,6 +51,8 @@
     --primary-hover: #8bbd97;
     --primary-foreground: #0c1710;
     --accent: #dba468;
+    --accent-text: #dba468;
+    --accent-inverse: #8e6135;
     --success: #6fa87e;
     --warning: #dba468;
     --danger: #d97b64;
@@ -62,6 +71,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-inverse: var(--accent-inverse);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

@@ -66,7 +66,7 @@ export async function AppPreview() {
     <Reveal className="border-t border-border bg-surface-2">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-20 sm:px-6 md:py-28">
         <div className="flex flex-col gap-4 md:max-w-2xl">
-          <span className="text-xs font-medium uppercase tracking-wide text-accent">{t("app.eyebrow")}</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-accent-text">{t("app.eyebrow")}</span>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-heading text-balance text-4xl font-normal leading-tight tracking-tight md:text-5xl">
               {t("app.title")}
