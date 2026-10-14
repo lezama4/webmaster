@@ -3,6 +3,13 @@
     "nav": { "events": "Events", "help": "Help", "login": "Log in", "register": "Register", "logout": "Log out", "loggingOut": "Logging out…" }, "account": { "centre": "Centre", "artist": "Artist", "admin": "Administration", "patient": "My account", "noName": "My account", "pending": "Pending review", "inactive": "No permissions" },
     "footer": { "description": "A non-profit initiative bringing live performances to the people in care centres, during long stays or days away from home. Free for centres, artists, and families.", "help": "Help" }
   },
+  "NotFound": {
+    "eyebrow": "Error 404",
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has moved.",
+    "home": "Back to the home page",
+    "events": "Browse upcoming events"
+  },
   "LanguageSelector": { "label": "Language selector" },
   "CentreType": { "hospital": "Hospital", "nursing_home": "Nursing home", "day_centre": "Day centre", "day_hospital": "Day hospital", "occupational_centre": "Occupational centre", "palliative_unit": "Palliative care unit" },
   "Share": {
