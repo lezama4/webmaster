@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { assertSeedAllowed } from "./seedGuard";
 import { createAccount } from "../src/domain/account/Account";
 import { completeEvent } from "../src/domain/event/Event";
 import { approveProfile, createProfile } from "../src/domain/profile/Profile";
@@ -93,6 +94,14 @@ const IDS = {
     s2Lucia: "seed-rating-s2-lucia",
   },
 } as const;
+
+// Fail closed before any client or connection exists.
+try {
+  assertSeedAllowed(process.env);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}
 
 const prisma = new PrismaClient();
 
