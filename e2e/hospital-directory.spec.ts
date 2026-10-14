@@ -6,6 +6,7 @@ import {
   SEED_NO_COORDINATES_HOSPITAL_NAME,
   SEED_PENDING_HOSPITAL_NAME,
 } from "./support/helpers";
+import { baseURL } from "./support/baseUrl";
 
 // Task 10.1 — the `/encuentra-tu-momento` journey (ADR D9 allow-list, D11
 // mocked map + accessibility, D12 client-side search). Mirrors
@@ -26,7 +27,6 @@ import {
 // containment checks and search terms chosen to be collision-free against
 // known fixture-naming patterns from other spec files.
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 // widen-beyond-hospitals (D19): `centreType` joined the allow-list; the
 // internal `type` (role) field stays forbidden — see ADR D19 and
 // `PublicHospitalProjection`'s doc comment.
