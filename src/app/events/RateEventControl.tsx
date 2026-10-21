@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { FormError } from "@ui/components/FormError";
 
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
@@ -79,7 +80,7 @@ export function RateEventControl({
           </button>
         ))}
       </div>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <FormError>{error}</FormError> : null}
     </div>
   );
 }

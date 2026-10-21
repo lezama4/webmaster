@@ -82,6 +82,7 @@ function UserMark() {
 }
 
 function SiteHeader({
+  navLabel,
   eventsLabel,
   finderLabel,
   aboutLabel,
@@ -92,6 +93,7 @@ function SiteHeader({
   loggingOutLabel,
   identity,
 }: Record<
+  | "navLabel"
   | "eventsLabel"
   | "finderLabel"
   | "aboutLabel"
@@ -130,7 +132,7 @@ function SiteHeader({
             centres/artists stays reachable but is deliberately NOT the loud
             primary CTA it used to be; registering is for the small minority
             who onboard, so it reads as a quiet link, not the headline. */}
-        <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
+        <nav aria-label={navLabel} className="flex flex-wrap items-center justify-end gap-1 text-sm">
           {/* "Find your centre" leads the nav and is the one emphasised entry:
               it is the first thing a family needs to do. The emphasis is the
               quiet one previously carried by "Register" — weight and full
@@ -287,6 +289,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          {/* First focusable element on every page. Hidden until focused (never
+              display:none, which would remove it from the tab order), then
+              pinned top-left above the sticky header. Targets <main>. */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[13px] focus:bg-primary focus:px-5 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-primary-foreground"
+          >
+            {t("skipLink")}
+          </a>
           {/* Server-side flag only (never NEXT_PUBLIC_). A complementary
               landmark, not a second banner/heading: the page keeps one h1 and
               one `banner`. In normal flow so it never covers content. */}
@@ -299,6 +310,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </aside>
           ) : null}
           <SiteHeader
+            navLabel={t("nav.label")}
             eventsLabel={t("nav.events")}
             finderLabel={tFinder("nav")}
             aboutLabel={tAbout("nav")}
@@ -309,7 +321,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             loggingOutLabel={t("nav.loggingOut")}
             identity={identity}
           />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
           <SiteFooter
             description={t("footer.description")}
             helpLabel={t("footer.help")}

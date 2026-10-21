@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton } from "@ui/components/ui";
+import { FormError } from "@ui/components/FormError";
 
 // Keyed by the post-rename role value: `centre` (was `hospital` before
 // widen-beyond-hospitals, ADR D16). The dashboard route stays /hospital/slots
@@ -40,7 +41,8 @@ export default function LoginPage() {
       <div className="flex flex-col gap-2"><h1 className="font-heading text-2xl font-semibold tracking-tight">{t("title")}</h1><p className="text-muted">{t("description")}</p></div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <Field label={t("email")} htmlFor="email"><input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} /></Field>
-        <Field label={t("password")} htmlFor="password" error={error ?? undefined}><input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
+        <Field label={t("password")} htmlFor="password"><input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
+        {error ? <FormError>{error}</FormError> : null}
         <button type="submit" disabled={pending} className={`${primaryButton} mt-2`}>{pending ? t("submitting") : t("submit")}</button>
       </form>
       <p className="text-sm text-muted">{t("noAccount")} <Link href="/register" className="font-medium text-foreground underline underline-offset-4">{t("register")}</Link></p>

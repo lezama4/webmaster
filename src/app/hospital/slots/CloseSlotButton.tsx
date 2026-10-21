@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { secondaryButton } from "@ui/components/ui";
+import { FormError } from "@ui/components/FormError";
 
 export function CloseSlotButton({ slotId }: { slotId: string }) {
   const t = useTranslations("CloseSlot");
@@ -16,5 +17,5 @@ export function CloseSlotButton({ slotId }: { slotId: string }) {
       router.refresh();
     } catch { setError(t("genericError")); } finally { setPending(false); }
   }
-  return <div className="flex flex-col items-start gap-2 sm:items-end"><button type="button" disabled={pending} onClick={onClose} className={secondaryButton}>{pending ? t("closing") : t("submit")}</button>{error ? <p className="text-sm text-danger">{error}</p> : null}</div>;
+  return <div className="flex flex-col items-start gap-2 sm:items-end"><button type="button" disabled={pending} onClick={onClose} className={secondaryButton}>{pending ? t("closing") : t("submit")}</button>{error ? <FormError>{error}</FormError> : null}</div>;
 }

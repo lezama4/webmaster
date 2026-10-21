@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Field, inputClasses, primaryButton } from "@ui/components/ui";
+import { FormError } from "@ui/components/FormError";
 
 type Role = "centre" | "artist";
 
@@ -21,14 +22,16 @@ type CentreType = (typeof CENTRE_TYPE_OPTIONS)[number];
 export default function RegisterPage() {
   const t = useTranslations("Register");
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>("centre"); const [error, setError] = useState<string | null>(null); const [passwordInvalid, setPasswordInvalid] = useState(false); const [pending, setPending] = useState(false); const [done, setDone] = useState(false);
+  const [role, setRole] = useState<Role>("centre"); const [error, setError] = useState<string | null>(null);
+  // An error that belongs to one field (shown under it, field marked invalid, focus moved to it); `error` stays for form-level failures.
+  const [fieldError, setFieldError] = useState<{ field: "email" | "password"; message: string } | null>(null); const [pending, setPending] = useState(false); const [done, setDone] = useState(false);
   // Required-when-centre `centreType` (D18) — one of the six kinds; ignored/never sent for an Artist.
   const [centreType, setCentreType] = useState<CentreType>("hospital");
   // Optional PUBLIC centre location (Phase 2) — centre-only, never shown/sent for artists.
   const [city, setCity] = useState(""); const [postalCode, setPostalCode] = useState(""); const [addressLine, setAddressLine] = useState("");
-  const passwordRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (fieldError) document.getElementById(fieldError.field)?.focus(); }, [fieldError]);
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault(); setError(null); setPasswordInvalid(false); setPending(true);
+    e.preventDefault(); setError(null); setFieldError(null); setPending(true);
     try {
       const body: Record<string, unknown> = { name, email, password, role };
       if (role === "centre") {
@@ -40,10 +43,10 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
         const { code } = (await res.json().catch(() => ({}))) as { code?: string };
-        if (code === "password_too_short") setError(t("errors.passwordTooShort"));
-        else if (code === "password_too_long") setError(t("errors.passwordTooLong"));
-        else setError(res.status === 409 ? t("errors.duplicateEmail") : t("errors.failure"));
-        if (code?.startsWith("password_")) { setPasswordInvalid(true); passwordRef.current?.focus(); }
+        if (code === "password_too_short") setFieldError({ field: "password", message: t("errors.passwordTooShort") });
+        else if (code === "password_too_long") setFieldError({ field: "password", message: t("errors.passwordTooLong") });
+        else if (res.status === 409) setFieldError({ field: "email", message: t("errors.duplicateEmail") });
+        else setError(t("errors.failure"));
         return;
       }
       setDone(true);
@@ -64,8 +67,9 @@ export default function RegisterPage() {
             <Field label={t("location.addressLine")} htmlFor="addressLine"><input id="addressLine" name="addressLine" type="text" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className={inputClasses} /></Field>
           </>
         ) : null}
-        <Field label={t("email")} htmlFor="email"><input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} /></Field>
-        <Field label={t("password")} htmlFor="password" hint={t("passwordHint")} error={error ?? undefined}><input ref={passwordRef} id="password" name="password" type="password" autoComplete="new-password" required aria-invalid={passwordInvalid ? true : undefined} aria-describedby={passwordInvalid ? "password-error" : error ? undefined : "password-hint"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
+        <Field label={t("email")} htmlFor="email" error={fieldError?.field === "email" ? fieldError.message : undefined}><input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} /></Field>
+        <Field label={t("password")} htmlFor="password" hint={t("passwordHint")} error={fieldError?.field === "password" ? fieldError.message : undefined}><input id="password" name="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} /></Field>
+        {error ? <FormError>{error}</FormError> : null}
         <button type="submit" disabled={pending} className={`${primaryButton} mt-2`}>{pending ? t("submitting") : t("submit")}</button>
       </form>
       <p className="text-sm text-muted">{t("alreadyRegistered")} <Link href="/login" className="font-medium text-foreground underline underline-offset-4">{t("login")}</Link></p>

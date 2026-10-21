@@ -105,3 +105,28 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* <main> is only a programmatic focus target (skip link, tabIndex -1), never a
+   control: a ring around the whole page would be noise, not a focus indicator. */
+main:focus-visible {
+  outline: none;
+}
+
+/*
+ * Honour the OS "reduce motion" setting everywhere: animations and transitions
+ * collapse to ~0ms (not `none`, so end states and animationend/transitionend
+ * still fire and meaningful state changes keep working) and smooth scrolling is
+ * off. Component-level `motion-reduce:*` utilities and the JS checks in
+ * Reveal/HospitalFinder stay as they are; this is the catch-all behind them.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

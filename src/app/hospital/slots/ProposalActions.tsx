@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { primaryButton, secondaryButton } from "@ui/components/ui";
+import { FormError } from "@ui/components/FormError";
 
 type Action = "approve" | "reject";
 
@@ -18,5 +19,5 @@ export function ProposalActions({ slotId, proposalId }: { slotId: string; propos
       router.refresh();
     } catch { setError(t("genericError")); } finally { setPending(null); }
   }
-  return <div className="flex flex-col items-start gap-2"><div className="flex flex-wrap gap-2"><button type="button" disabled={pending !== null} onClick={() => run("approve")} className={primaryButton}>{pending === "approve" ? t("approving") : t("approve")}</button><button type="button" disabled={pending !== null} onClick={() => run("reject")} className={secondaryButton}>{pending === "reject" ? t("rejecting") : t("reject")}</button></div>{error ? <p className="text-sm text-danger">{error}</p> : null}</div>;
+  return <div className="flex flex-col items-start gap-2"><div className="flex flex-wrap gap-2"><button type="button" disabled={pending !== null} onClick={() => run("approve")} className={primaryButton}>{pending === "approve" ? t("approving") : t("approve")}</button><button type="button" disabled={pending !== null} onClick={() => run("reject")} className={secondaryButton}>{pending === "reject" ? t("rejecting") : t("reject")}</button></div>{error ? <FormError>{error}</FormError> : null}</div>;
 }
