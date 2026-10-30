@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // Automated WCAG 2.x A/AA scan of every public page, so the a11y work (skip
 // link, named nav, form errors, contrast) cannot regress. Locale is forced to
@@ -30,26 +30,47 @@ const publicPages = [
   { name: "404", path: "/this-page-does-not-exist" },
 ];
 
-for (const { name, path, skipRuleOn } of publicPages) {
-  test(`${name} page has no WCAG A/AA axe violations`, async ({ page }) => {
-    await page.goto(path);
-    await page.waitForLoadState("networkidle");
-    const scan = new AxeBuilder({ page }).withTags(wcagTags);
-    if (skipRuleOn) scan.disableRules([skipRuleOn.rule]);
-    const violations = [...(await scan.analyze()).violations];
-    if (skipRuleOn) {
-      // Re-run the skipped rule on everything except the scoped selector.
-      const scoped = await new AxeBuilder({ page })
-        .withRules([skipRuleOn.rule])
-        .exclude(skipRuleOn.selector)
-        .analyze();
-      violations.push(...scoped.violations);
-    }
-    expect(
-      violations.map((v) => ({
-        id: v.id,
-        nodes: v.nodes.map((n) => n.target),
-      })),
-    ).toEqual([]);
-  });
+async function scan(page: Page, skipRuleOn?: { rule: string; selector: string }) {
+  const builder = new AxeBuilder({ page }).withTags(wcagTags);
+  if (skipRuleOn) builder.disableRules([skipRuleOn.rule]);
+  const violations = [...(await builder.analyze()).violations];
+  if (skipRuleOn) {
+    // Re-run the skipped rule on everything except the scoped selector.
+    const scoped = await new AxeBuilder({ page })
+      .withRules([skipRuleOn.rule])
+      .exclude(skipRuleOn.selector)
+      .analyze();
+    violations.push(...scoped.violations);
+  }
+  return violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }));
+}
+
+// Desktop (the default viewport) plus the two phone widths where the header
+// collapses into the Menu button.
+const viewports = [
+  { label: "desktop", size: null },
+  { label: "375px", size: { width: 375, height: 812 } },
+  { label: "412px", size: { width: 412, height: 915 } },
+];
+
+for (const { label, size } of viewports) {
+  for (const { name, path, skipRuleOn } of publicPages) {
+    test(`${name} page has no WCAG A/AA axe violations (${label})`, async ({ page }) => {
+      if (size) await page.setViewportSize(size);
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      expect(await scan(page, skipRuleOn)).toEqual([]);
+    });
+  }
+
+  if (size) {
+    test(`home page has no WCAG A/AA axe violations with the menu open (${label})`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+      await page.getByRole("button", { name: "Menu", exact: true }).click();
+      await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
+      expect(await scan(page)).toEqual([]);
+    });
+  }
 }
