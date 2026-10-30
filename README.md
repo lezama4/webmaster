@@ -135,7 +135,7 @@ Las decisiones y especificaciones detalladas están en
 
 ### Requisitos
 
-- Node.js 22.x y npm.
+- Node.js 24.x (ver `.nvmrc`) y npm.
 - Docker Desktop, o una base PostgreSQL 16 compatible accesible.
 
 ### 1. Instalar dependencias y configurar el entorno
