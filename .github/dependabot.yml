@@ -9,8 +9,15 @@ updates:
     groups:
       production-dependencies:
         dependency-type: production
+      # Test tooling whose bumps can break CI on their own (new axe rules,
+      # Vitest majors) gets its own PR so it never blocks the routine group.
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      axe:
+        patterns: ["@axe-core/*", "axe-core"]
       development-dependencies:
         dependency-type: development
+        exclude-patterns: ["vitest", "@vitest/*", "@axe-core/*", "axe-core"]
     # Majors that break the build and need a deliberate migration, not a
     # routine bump. Remove an entry when its migration lands.
     ignore:
@@ -23,6 +30,10 @@ updates:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # Types must match the runtime major (Node 22 in CI and Vercel); bump it
+      # by hand together with the runtime.
+      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
   # Keep the CI workflow actions patched (supply-chain surface).
