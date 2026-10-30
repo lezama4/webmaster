@@ -6,9 +6,12 @@ import { uniqueSuffix } from "./support/helpers";
 
 // Next's dev server adds an alert live region (route announcer) to every page,
 // so alerts are always matched by their text, never bare.
-const alertWith = (page: Page, text: string) => page.getByRole("alert").filter({ hasText: text });
+const alertWith = (page: Page, text: string) =>
+  page.getByRole("alert").filter({ hasText: text });
 
-test("the skip link is the first Tab stop, shows on focus and moves focus to main", async ({ page }) => {
+test("the skip link is the first Tab stop, shows on focus and moves focus to main", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to content" });
@@ -25,10 +28,14 @@ test("the skip link is the first Tab stop, shows on focus and moves focus to mai
 
 test("the header navigation has an accessible name", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation" }),
+  ).toBeVisible();
 });
 
-test("a failed login is announced and focus moves to the message", async ({ page }) => {
+test("a failed login is announced and focus moves to the message", async ({
+  page,
+}) => {
   await page.goto("/login");
   await page.locator("#email").fill(`nobody-${uniqueSuffix()}@vtt.test`);
   await page.locator("#password").fill("wrong-password-123");
@@ -40,7 +47,9 @@ test("a failed login is announced and focus moves to the message", async ({ page
   await expect(page.locator('[aria-invalid="true"]')).toHaveCount(0);
 });
 
-test("registering with a short password flags the password field only", async ({ page }) => {
+test("registering with a short password flags the password field only", async ({
+  page,
+}) => {
   await page.goto("/register");
   await page.locator("#name").fill(`A11y Hospital ${uniqueSuffix()}`);
   await page.locator("#email").fill(`a11y-${uniqueSuffix()}@vtt.test`);
@@ -50,17 +59,31 @@ test("registering with a short password flags the password field only", async ({
   await expect(alert).toBeVisible();
   const password = page.locator("#password");
   await expect(password).toHaveAttribute("aria-invalid", "true");
-  await expect(password).toHaveAttribute("aria-describedby", "password-hint password-error");
+  await expect(password).toHaveAttribute(
+    "aria-describedby",
+    "password-hint password-error",
+  );
   await expect(password).toBeFocused();
   await expect(page.locator('[aria-invalid="true"]')).toHaveCount(1);
-  await expect(page.locator("#email")).not.toHaveAttribute("aria-invalid", /.*/);
+  await expect(page.locator("#email")).not.toHaveAttribute(
+    "aria-invalid",
+    /.*/,
+  );
 });
 
 // Walks the page with the Tab key only. A "focus trap" would never leave the
 // page, so the walk must reach the end (body, or the dev-only Next portal) well
 // within the cap; order must follow the DOM; every stop needs a drawn indicator.
-for (const path of ["/", "/login", "/register", "/encuentra-tu-momento", "/events"]) {
-  test(`keyboard walkthrough of ${path}: logical order, no trap, visible focus`, async ({ page }) => {
+for (const path of [
+  "/",
+  "/login",
+  "/register",
+  "/encuentra-tu-momento",
+  "/events",
+]) {
+  test(`keyboard walkthrough of ${path}: logical order, no trap, visible focus`, async ({
+    page,
+  }) => {
     await page.goto(path);
     await page.evaluate(() => {
       (window as unknown as { __prev: Element | null }).__prev = null;
@@ -71,13 +94,24 @@ for (const path of ["/", "/login", "/register", "/encuentra-tu-momento", "/event
       await page.keyboard.press("Tab");
       const stop = await page.evaluate(() => {
         const el = document.activeElement;
-        if (!el || el === document.body || el.tagName === "NEXTJS-PORTAL") return null;
+        if (!el || el === document.body || el.tagName === "NEXTJS-PORTAL")
+          return null;
         const w = window as unknown as { __prev: Element | null };
-        const ordered = !w.__prev || Boolean(w.__prev.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+        const ordered =
+          !w.__prev ||
+          Boolean(
+            w.__prev.compareDocumentPosition(el) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+          );
         w.__prev = el;
         const s = getComputedStyle(el);
-        const indicator = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
-        return { label: `${el.tagName.toLowerCase()} ${(el.textContent || el.getAttribute("aria-label") || el.id).trim().slice(0, 40)}`, ordered, indicator };
+        const indicator =
+          s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
+        return {
+          label: `${el.tagName.toLowerCase()} ${(el.textContent || el.getAttribute("aria-label") || el.id).trim().slice(0, 40)}`,
+          ordered,
+          indicator,
+        };
       });
       if (!stop) {
         reachedEnd = true;
@@ -88,7 +122,41 @@ for (const path of ["/", "/login", "/register", "/encuentra-tu-momento", "/event
     expect(reachedEnd, "Tab left the page (no focus trap)").toBe(true);
     expect(stops[0]?.label).toContain("Skip to content");
     expect(stops.length).toBeGreaterThan(3);
-    expect(stops.filter((s) => !s.ordered).map((s) => s.label), "focus follows DOM order").toEqual([]);
-    expect(stops.filter((s) => !s.indicator).map((s) => s.label), "focus is visibly indicated").toEqual([]);
+    expect(
+      stops.filter((s) => !s.ordered).map((s) => s.label),
+      "focus follows DOM order",
+    ).toEqual([]);
+    expect(
+      stops.filter((s) => !s.indicator).map((s) => s.label),
+      "focus is visibly indicated",
+    ).toEqual([]);
+  });
+}
+
+// WCAG 2.5.3 Label in Name (#93): each finder card link is named by its own
+// visible text (centre name, type, location, event count), so speech-input
+// users can say what they see. Checked in every locale.
+for (const locale of ["es", "en", "eu"]) {
+  test(`finder card links are named by their visible text (${locale})`, async ({
+    context,
+    page,
+    baseURL,
+  }) => {
+    await context.addCookies([
+      { name: "NEXT_LOCALE", value: locale, url: baseURL! },
+    ]);
+    await page.goto("/encuentra-tu-momento");
+    const cards = page.locator('a[href^="/events?centre="]');
+    await expect(cards.first()).toBeVisible();
+    for (const card of (await cards.all()).slice(0, 3)) {
+      // The trailing arrow is decorative (aria-hidden), so it is not part of the name.
+      const visible = (await card.innerText())
+        .replace("→", "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const centre = (await card.getByRole("heading").innerText()).trim();
+      expect(visible.startsWith(centre)).toBe(true);
+      await expect(card).toHaveAccessibleName(visible);
+    }
   });
 }
