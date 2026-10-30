@@ -315,6 +315,41 @@ copy. These are manual maintainer steps.
    exported, run `npx prisma migrate deploy` and `npm run db:seed`. The seed
    guard refuses to run against a non-local database without `DEMO_MODE=true`.
 
+#### Current demo deployment (#88)
+
+- **Public URL:** `https://vivetutiempo.kbika.com`, served by the Vercel
+  **Production** environment of `kabiender/webmaster`.
+  - DNS: Cloudflare, `CNAME vivetutiempo` → the Vercel target, DNS only (no
+    proxy).
+  - TLS: a Let's Encrypt certificate issued by Vercel. `kbika.com` has no CAA
+    records.
+  - The domain went live on 2026-10-30.
+- **Database:** the existing Neon `production` branch. The maintainer
+  confirmed it holds test accounts only.
+  - The seed was **skipped** because the demonstration data was already
+    loaded. Unlike step 1 above, the demo shares the Vercel project and Neon
+    project with what was previously production.
+- **Verified on 2026-10-30, read-only checks only:**
+  - DNS resolves at Cloudflare's authoritative servers and public resolvers.
+  - `https://vivetutiempo.kbika.com` returns 200 with a valid certificate and
+    shows the demo banner.
+  - The maintainer confirmed it opens on a phone.
+- **Not verified yet** (pending, in this order):
+  1. **Login** with a seed account on the new domain. This needs
+     `APP_ORIGIN=https://vivetutiempo.kbika.com` in Production; otherwise the
+     CSRF guard rejects every mutation.
+  2. **One data-changing action** on the new domain, for example a centre
+     publishing a slot.
+  3. **A cross-origin POST returns 403:** `curl -s -o /dev/null -w
+     '%{http_code}' -X POST -H 'Origin: https://evil.example'
+     https://vivetutiempo.kbika.com/api/auth/logout`.
+  4. **The `vtt_session` cookie** shows `HttpOnly`, `Secure` and
+     `SameSite=Lax` in browser devtools.
+  5. **Redirect `webmaster-lemon.vercel.app`** to the new domain with a 308.
+     It still returns 200 and serves the app directly.
+     `webmaster-kabiender.vercel.app` is behind Vercel Deployment Protection
+     (302 to Vercel login).
+
 ### Migrating real accounts, if any exist
 
 If real accounts were created in the current (pre-split) database, move only
