@@ -44,9 +44,11 @@ this exact variable and compares it with `Origin`, or `Referer` as a fallback,
 for every unsafe request. An empty, malformed, or mismatched value fails
 closed with a denial. Never derive it from an incoming `Host` header.
 
-For Preview deployments, configure a separate Preview database, separate
-secrets, and the exact Preview URL as `APP_ORIGIN`. Do not point a Preview build
-at production data.
+Scope every variable to exactly one environment. A value ticked for both
+Production and Preview means unreviewed branch code runs with production
+secrets. Preview gets its own database, secrets and `DEMO_MODE=true`; see
+[Preview](#preview) in Section 9. Never point a Preview build at production
+data.
 
 ## 3. Provision and migrate the database
 
@@ -70,7 +72,7 @@ unique indexes that protect accepted and submitted Proposals.
 
 ## 4. Seed the fictional demo dataset once
 
-**Demo and local databases only. Never run this against production** (see
+**Demo, Preview and local databases only. Never run this against production** (see
 [Section 9](#9-production-vs-demo-environments)); the seed refuses to run unless
 `DEMO_MODE=true` or `DATABASE_URL` points at `localhost`/`127.0.0.1`.
 
@@ -96,7 +98,7 @@ Verify the seed before deployment:
 - S4 closed with a cascade-rejected Proposal;
 - S5 filled with an accepted Proposal and a completed Event.
 
-The fictional credentials are generated from `prisma/seed.ts` (see [README.md](../README.md#seed-credentials)). They must exist only locally and in the demo environment; see [Section 9](#9-production-vs-demo-environments).
+The fictional credentials are generated from `prisma/seed.ts` (see [README.md](../README.md#seed-credentials)). They must exist only locally and in the Preview and demo environments; see [Section 9](#9-production-vs-demo-environments).
 
 ## 5. Deploy the application on Vercel
 
@@ -222,6 +224,73 @@ labelled. They are two separate deployments with separate databases. These are
    **Do not run `npm run db:seed`.** The seed would create accounts with a
    published password.
 5. Redeploy and run the Section 6 checks.
+
+### Preview
+
+Preview deployments build unreviewed branch code. They therefore get a
+**separate Neon project** holding fictional data only, plus their own secrets.
+They never get a branch of the production project, whose data a branch would
+copy. These are manual maintainer steps.
+
+1. **Create the project.** In Neon, create a new project (for example
+   `vivetutiempo-preview`) in AWS Europe, Frankfurt (`eu-central-1`), on
+   PostgreSQL 16. Never restore or copy production data into it.
+2. **Create the role and database.** In that project, create a dedicated role
+   (for example `preview_app`) and a database owned by it (for example
+   `vivetutiempo_preview`).
+   - While `vercel-build` still runs `prisma migrate deploy`, this role has to
+     own the schema and so holds DDL rights. That is acceptable only because
+     the database holds fictional data.
+   - Copy the **direct** (non-`-pooler`) connection string, because
+     migrations take advisory locks.
+3. **Migrate and seed** from a controlled shell, in a checkout whose `.env`
+   does not point at production:
+
+   ```bash
+   read -rs DATABASE_URL && export DATABASE_URL  # paste the Preview direct URL; not echoed
+   export DEMO_MODE=true
+   npm ci
+   npx prisma migrate deploy
+   npm run db:seed
+   unset DATABASE_URL DEMO_MODE
+   ```
+
+   Prisma prints `Datasource "db": PostgreSQL database "<db>", schema "public"
+   at "<host>"`. Check that `<host>` is the Preview project's endpoint before
+   trusting the rest of the output.
+4. **Set the Vercel variables.** Under **Project -> Settings -> Environment
+   Variables**, scope each of these to **Preview only**:
+   - `DATABASE_URL`: the Preview direct URL. If Production and Preview already
+     have separate entries, edit only the Preview one.
+   - `SESSION_SECRET` and `RATE_LIMIT_HMAC_SECRET`: if one entry is shared by
+     Production and Preview, edit it and **untick Preview without changing
+     its value**, because changing the value changes Production. Then add a
+     new Preview-only entry for each, with a fresh value from
+     `openssl rand -base64 48`. Rotating the Production values is a separate
+     step.
+   - `DEMO_MODE`: exactly `true`. Never set it on Production.
+   - `APP_ORIGIN`: Preview needs a stable domain. Until it has one, every
+     mutation on a preview, including login, fails closed (Section 2).
+5. **Verify that the build migrates the Preview database.**
+   - Redeploy one preview without the build cache.
+   - In its build log, the `npm run vercel-build` step must print
+     `Datasource "db": PostgreSQL database "vivetutiempo_preview", schema
+     "public" at "ep-<id>...neon.tech"`. Then it prints either `No pending
+     migrations to apply.` or the list of applied migrations.
+   - `ep-<id>` must match the Preview project's endpoint (**Neon -> Preview
+     project -> Connection details**) and must differ from the production
+     endpoint.
+   - Confirm that the latest production build log still shows the production
+     endpoint, and that no Production variable changed. Compare **Last
+     updated** in Vercel.
+   - Open the preview and confirm the fictional-data banner.
+   - Record the deployment ID and the endpoint ID, never a URL with
+     credentials, in the release record.
+6. **Retire the old copy.** Only after step 5 passes, delete any production
+   branch that Preview used before, along with its data. Settle first whether
+   a data-protection assessment needs evidence of what it held. Keep any other
+   copy of production, such as a dated backup branch, only under a documented
+   retention period and access policy.
 
 ### Demo
 
