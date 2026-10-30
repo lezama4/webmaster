@@ -30,7 +30,7 @@
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^22.20.5",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^5.0.5",
@@ -49,6 +49,6 @@
     "@prisma/client@6.19.3": true
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   }
 }

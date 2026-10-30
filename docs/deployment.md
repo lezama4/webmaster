@@ -104,7 +104,8 @@ The fictional credentials are generated from `prisma/seed.ts` (see [README.md](.
 
 1. Import the GitHub repository into Vercel and select the repository root.
    Vercel detects the Next.js application.
-2. Use Node.js 22.x, matching the project and CI runtime.
+2. Use Node.js 24.x, matching the project and CI runtime. `engines.node` in
+   `package.json` overrides the Node.js version in Project Settings.
 3. Configure the four production variables from Section 2 and verify that
    `APP_ORIGIN` matches the final HTTPS URL exactly.
 4. Configure the production domain and DNS. If the public hostname changes,

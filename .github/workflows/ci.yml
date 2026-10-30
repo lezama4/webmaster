@@ -48,7 +48,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: "npm"
 
       # node 22 ships npm 10.x, which reads the npm-11-generated lockfile
@@ -82,7 +82,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: "npm"
 
       - name: Pin npm to match the lockfile
@@ -131,7 +131,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: "npm"
 
       - name: Pin npm to match the lockfile
