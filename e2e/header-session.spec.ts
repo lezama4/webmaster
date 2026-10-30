@@ -19,8 +19,8 @@ test.describe("site header reflects who is signed in", () => {
     const header = page.getByRole("banner");
 
     // Identified by its OWN kind ("Hospital"), not by the generic role.
-    await expect(header.getByText("Hospital San Juan")).toBeVisible();
-    await expect(header.getByText("Hospital", { exact: true })).toBeVisible();
+    await expect(header.getByText("Hospital San Juan").filter({ visible: true })).toBeVisible();
+    await expect(header.getByText("Hospital", { exact: true }).filter({ visible: true })).toBeVisible();
 
     // The anonymous entries are gone precisely because they were the bug.
     await expect(header.getByRole("link", { name: /^log in$/i })).toHaveCount(0);
@@ -38,8 +38,8 @@ test.describe("site header reflects who is signed in", () => {
     const { context, page } = await loginAsNewSession(browser, SEED_USERS.artistClara);
     const header = page.getByRole("banner");
 
-    await expect(header.getByText("Clara Romero")).toBeVisible();
-    await expect(header.getByText("Artist", { exact: true })).toBeVisible();
+    await expect(header.getByText("Clara Romero").filter({ visible: true })).toBeVisible();
+    await expect(header.getByText("Artist", { exact: true }).filter({ visible: true })).toBeVisible();
     await expect(header.getByRole("button", { name: /log out/i })).toBeVisible();
 
     await context.close();

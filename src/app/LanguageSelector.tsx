@@ -15,7 +15,7 @@ const languages: { code: Locale; label: string }[] = [
   { code: "en", label: "English" },
 ];
 
-export function LanguageSelector() {
+export function LanguageSelector({ touch = false }: { touch?: boolean }) {
   const router = useRouter();
   const t = useTranslations("LanguageSelector");
   const locale = useLocale() as Locale;
@@ -35,7 +35,7 @@ export function LanguageSelector() {
           lang={language.code}
           onClick={() => changeLocale(language.code)}
           aria-current={locale === language.code ? "true" : undefined}
-          className={`inline-flex min-h-6 items-center rounded-full px-2 py-1 text-xs font-medium transition-colors ${
+          className={`inline-flex items-center rounded-full font-medium ${touch ? "min-h-11 px-4 text-sm" : "min-h-6 px-2 py-1 text-xs"} transition-colors ${
             locale === language.code
               ? "bg-surface-2 text-foreground"
               : "text-muted hover:text-foreground"

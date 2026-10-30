@@ -4,10 +4,12 @@ import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ShareRow } from "@ui/share/ShareRow";
+import { primaryButton, secondaryButton } from "@ui/components/ui";
 import { getCurrentSessionIdentity } from "@infrastructure/http/sessionCookie";
 import "./globals.css";
 import { LanguageSelector } from "./LanguageSelector";
 import { LogoutButton } from "./LogoutButton";
+import { MobileMenu } from "./MobileMenu";
 import { absoluteUrl, buildPageMetadata, metadataBase, SITE_NAME } from "./metadata";
 
 const geistSans = Geist({
@@ -83,6 +85,7 @@ function UserMark() {
 
 function SiteHeader({
   navLabel,
+  menuLabel,
   eventsLabel,
   finderLabel,
   aboutLabel,
@@ -94,6 +97,7 @@ function SiteHeader({
   identity,
 }: Record<
   | "navLabel"
+  | "menuLabel"
   | "eventsLabel"
   | "finderLabel"
   | "aboutLabel"
@@ -109,13 +113,13 @@ function SiteHeader({
   // much of a phone screen costs more than a pinned header is worth — so on
   // small viewports it scrolls away like any other content.
   return (
-    <header className="z-40 border-b border-border bg-background/85 backdrop-blur sm:sticky sm:top-0">
+    <header className="relative z-40 border-b border-border bg-background/85 backdrop-blur sm:sticky sm:top-0">
       {/* The row wraps instead of holding a fixed height. Six links plus the
           language selector overflow a phone-width viewport, and an unwrapped
           flex row does not clip — it widens the document, so the ENTIRE page
           scrolls sideways. Wrapping keeps every destination reachable and
           keyboard-navigable at any width; the header simply grows taller. */}
-      <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 sm:px-6">
+      <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-x-4 gap-y-1 px-4 py-2 md:flex-wrap sm:px-6">
         {/* Left: brand + "Quiénes somos" — the about entry belongs beside the
             identity, not in the functional nav (review). */}
         <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
@@ -123,7 +127,7 @@ function SiteHeader({
             <BrandMark />
             <span>Todo el tiempo cuenta</span>
           </Link>
-          <Link href="/quienes-somos" className="rounded-full px-3 py-2 text-sm text-muted transition-colors hover:text-foreground">
+          <Link href="/quienes-somos" className="hidden rounded-full px-3 py-2 text-sm text-muted transition-colors hover:text-foreground md:block">
             {aboutLabel}
           </Link>
         </div>
@@ -132,7 +136,7 @@ function SiteHeader({
             centres/artists stays reachable but is deliberately NOT the loud
             primary CTA it used to be; registering is for the small minority
             who onboard, so it reads as a quiet link, not the headline. */}
-        <nav aria-label={navLabel} className="flex flex-wrap items-center justify-end gap-1 text-sm">
+        <nav aria-label={navLabel} className="hidden flex-wrap items-center justify-end gap-1 text-sm md:flex">
           {/* "Find your centre" leads the nav and is the one emphasised entry:
               it is the first thing a family needs to do. The emphasis is the
               quiet one previously carried by "Register" — weight and full
@@ -198,6 +202,61 @@ function SiteHeader({
           )}
           <LanguageSelector />
         </nav>
+        {/* Below md: one row (brand + Menu). The panel repeats the same
+            destinations as the desktop nav, as 44px-tall rows. */}
+        <MobileMenu label={menuLabel} navLabel={navLabel}>
+          {[
+            ["/encuentra-tu-momento", finderLabel],
+            ["/events", eventsLabel],
+            ["/ayuda", helpLabel],
+            ["/quienes-somos", aboutLabel],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="flex min-h-11 items-center rounded-full px-3 text-base font-medium text-foreground">
+              {label}
+            </Link>
+          ))}
+          {identity ? (
+            <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
+              {identity.href ? (
+                <Link href={identity.href} className="flex min-h-11 items-center gap-2 rounded-full px-3">
+                  <UserMark />
+                  <span className="font-medium text-foreground">{identity.name}</span>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <span className="text-muted">{identity.typeLabel}</span>
+                </Link>
+              ) : (
+                <span className="flex min-h-11 items-center gap-2 px-3">
+                  <UserMark />
+                  <span className="font-medium text-foreground">{identity.name}</span>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <span className="text-muted">{identity.typeLabel}</span>
+                </span>
+              )}
+              {identity.statusLabel ? (
+                <span className="w-fit rounded-full bg-accent/10 px-2 py-1 text-xs font-medium text-accent-text">
+                  {identity.statusLabel}
+                </span>
+              ) : null}
+              <LogoutButton
+                label={logoutLabel}
+                pendingLabel={loggingOutLabel}
+                className={`${secondaryButton} min-h-11`}
+              />
+            </div>
+          ) : (
+            <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-3">
+              <Link href="/login" className={`${secondaryButton} min-h-11`}>
+                {loginLabel}
+              </Link>
+              <Link href="/register" className={`${primaryButton} min-h-11`}>
+                {registerLabel}
+              </Link>
+            </div>
+          )}
+          <div className="pt-2">
+            <LanguageSelector touch />
+          </div>
+        </MobileMenu>
       </div>
     </header>
   );
@@ -311,6 +370,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           ) : null}
           <SiteHeader
             navLabel={t("nav.label")}
+            menuLabel={t("menu")}
             eventsLabel={t("nav.events")}
             finderLabel={tFinder("nav")}
             aboutLabel={tAbout("nav")}
