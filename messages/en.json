@@ -72,7 +72,7 @@
     "faq": {
       "title": "Frequently asked questions",
       "items": [
-        { "question": "How are events rated?", "answer": "Only signed-in users can rate, and the only sign-up is for care centres and artists, so families and visitors cannot rate yet. A signed-in user can rate a published event from 1 to 5 stars and change the rating later. Each event shows only the average and the number of ratings, never who rated." },
+        { "question": "How are events rated?", "answer": "Rating events is not open yet: for now nobody can rate, and we will enable it once there is a proper way for families to do so. Each event shows only the average and the number of ratings, never who rated." },
         { "question": "What do a slot's age bands (audience) mean?", "answer": "Each slot a centre publishes shows a rough age band — for example ages 0–5, 6–12, adults, or all ages — so artists can propose an activity suited to who'll attend." },
         { "question": "How is people's location protected?", "answer": "The platform does not record the name, location or reason for stay of the people being cared for. Public pages show the name and city of the centre hosting each event, never its room or street address. A slot's room or space is visible only to signed-in artists with an approved profile, while the slot is open; it never appears on public pages. Event titles and descriptions are public and written by the centres, who are asked not to include rooms or personal details." }
       ]

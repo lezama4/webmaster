@@ -12,6 +12,13 @@ import type { Audience } from "@domain/slot/Slot";
 import { audienceBadgeClasses, EmptyState, inputClasses, secondaryButton } from "@ui/components/ui";
 import { StarRating } from "../StarRating";
 import { RateEventControl } from "./RateEventControl";
+
+/**
+ * Rating control is hidden until a proper flow exists: `rateEvent` has no
+ * role/profile/ownership checks and families cannot register to rate. The
+ * public average + count stay visible. Flip to re-enable the control.
+ */
+const RATING_CONTROL_ENABLED = false;
 import { ShareRow } from "@ui/share/ShareRow";
 import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
 
@@ -105,9 +112,8 @@ export default async function EventsPage({
       ? await listPublishedEvents(publicDeps(), filters)
       : allEvents;
   // Pre-fills each event's interactive star control with the CALLER'S OWN
-  // rating only (never another rater's) — anonymous visitors see the
-  // read-only average instead, no fetch needed.
-  const myRatings = actor
+  // rating only (never another rater's). Skipped while the control is hidden.
+  const myRatings = RATING_CONTROL_ENABLED && actor
     ? await listMyEventRatings(actor, listMyEventRatingsDeps())
     : null;
   const dateFormat = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -206,7 +212,7 @@ export default async function EventsPage({
                 )}
               </div>
 
-              {actor ? (
+              {RATING_CONTROL_ENABLED && actor ? (
                 <RateEventControl eventId={event.id} initialStars={myRatings?.[event.id] ?? null} />
               ) : null}
             </li>
