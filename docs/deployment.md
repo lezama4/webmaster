@@ -232,9 +232,15 @@ Preview deployments build unreviewed branch code. They therefore get a
 They never get a branch of the production project, whose data a branch would
 copy. These are manual maintainer steps.
 
+> **Status: pending execution.** This procedure is documented but has not been
+> run yet. Until it is, Preview still uses its previous database. Record the
+> execution date and the deployment ID from step 5 here once it is done.
+
 1. **Create the project.** In Neon, create a new project (for example
-   `vivetutiempo-preview`) in AWS Europe, Frankfurt (`eu-central-1`), on
-   PostgreSQL 16. Never restore or copy production data into it.
+   `vivetutiempo-preview`). Use the **same PostgreSQL major version and the
+   same region as the production project**, so migrations and query behaviour
+   match. Read both values from the production project's settings; do not
+   assume them. Never restore or copy production data into it.
 2. **Create the role and database.** In that project, create a dedicated role
    (for example `preview_app`) and a database owned by it (for example
    `vivetutiempo_preview`).
@@ -287,7 +293,11 @@ copy. These are manual maintainer steps.
    - Record the deployment ID and the endpoint ID, never a URL with
      credentials, in the release record.
 6. **Retire the old copy.** Only after step 5 passes, delete any production
-   branch that Preview used before, along with its data. Settle first whether
+   branch that Preview used before, along with its data. Before deleting it,
+   confirm that nothing still points at it: no Vercel variable in any
+   environment, no local `.env` and no git worktree `.env`. Compare each
+   `DATABASE_URL` host with that branch's endpoint, without printing the
+   credentials. Settle first whether
    a data-protection assessment needs evidence of what it held. Keep any other
    copy of production, such as a dated backup branch, only under a documented
    retention period and access policy.
