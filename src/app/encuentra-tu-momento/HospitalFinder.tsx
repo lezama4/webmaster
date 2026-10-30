@@ -106,7 +106,6 @@ function CentreCardBody({ hospital }: { hospital: PublicHospitalProjection }) {
   return (
     <Link
       href={`/events?centre=${encodeURIComponent(hospital.name)}`}
-      aria-label={t("events.linkLabel", { name: hospital.name })}
       className="group flex flex-col gap-1 after:absolute after:inset-0 after:rounded-[20px]"
     >
       {details}
