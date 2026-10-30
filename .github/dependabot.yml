@@ -11,6 +11,19 @@ updates:
         dependency-type: production
       development-dependencies:
         dependency-type: development
+    # Majors that break the build and need a deliberate migration, not a
+    # routine bump. Remove an entry when its migration lands.
+    ignore:
+      # Prisma 7 drops `datasource.url` from schema.prisma (P1012) — see #84.
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      # Must stay within eslint-config-next's peer ranges.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   # Keep the CI workflow actions patched (supply-chain surface).
   - package-ecosystem: github-actions
