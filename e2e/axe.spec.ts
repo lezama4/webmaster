@@ -15,11 +15,13 @@ const publicPages = [
   {
     name: "find your moment",
     path: "/encuentra-tu-momento",
-    // KNOWN FINDING (wcag22aa target-size): two map pins are close enough that
-    // their 44px buttons overlap (HospitalMap.tsx), which axe flags. Fixing it
-    // needs a map layout decision (pin collision), so the pins are excluded
-    // from this scan until then. Remove the exclude once resolved.
-    exclude: ['[data-testid="hospital-pin"]'],
+    // KNOWN FINDING #83 (wcag22aa target-size): overlapping map pins in
+    // HospitalMap.tsx. Only that rule is skipped, only on the pins; every other
+    // rule still scans them. Remove once #83 is fixed.
+    skipRuleOn: {
+      rule: "target-size",
+      selector: '[data-testid="hospital-pin"]',
+    },
   },
   { name: "about", path: "/quienes-somos" },
   { name: "help", path: "/ayuda" },
@@ -28,13 +30,21 @@ const publicPages = [
   { name: "404", path: "/this-page-does-not-exist" },
 ];
 
-for (const { name, path, exclude } of publicPages) {
+for (const { name, path, skipRuleOn } of publicPages) {
   test(`${name} page has no WCAG A/AA axe violations`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
-    const builder = new AxeBuilder({ page }).withTags(wcagTags);
-    for (const selector of exclude ?? []) builder.exclude(selector);
-    const { violations } = await builder.analyze();
+    const scan = new AxeBuilder({ page }).withTags(wcagTags);
+    if (skipRuleOn) scan.disableRules([skipRuleOn.rule]);
+    const violations = [...(await scan.analyze()).violations];
+    if (skipRuleOn) {
+      // Re-run the skipped rule on everything except the scoped selector.
+      const scoped = await new AxeBuilder({ page })
+        .withRules([skipRuleOn.rule])
+        .exclude(skipRuleOn.selector)
+        .analyze();
+      violations.push(...scoped.violations);
+    }
     expect(
       violations.map((v) => ({
         id: v.id,
