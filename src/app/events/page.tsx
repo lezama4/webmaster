@@ -12,6 +12,8 @@ import type { Audience } from "@domain/slot/Slot";
 import { audienceBadgeClasses, EmptyState, inputClasses, secondaryButton } from "@ui/components/ui";
 import { StarRating } from "../StarRating";
 import { RateEventControl } from "./RateEventControl";
+import { ShareRow } from "@ui/share/ShareRow";
+import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
 
 /**
  * Rating control is hidden until a proper flow exists: `rateEvent` has no
@@ -19,8 +21,6 @@ import { RateEventControl } from "./RateEventControl";
  * public average + count stay visible. Flip to re-enable the control.
  */
 const RATING_CONTROL_ENABLED = false;
-import { ShareRow } from "@ui/share/ShareRow";
-import { absoluteUrl, buildPageMetadata, SITE_NAME } from "@/app/metadata";
 
 export const dynamic = "force-dynamic";
 
